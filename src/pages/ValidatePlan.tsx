@@ -12,9 +12,11 @@ import {
   Plus,
   Loader2,
   Clock,
+  RefreshCw,
 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import { useProjectsDB } from "@/hooks/useProjectsDB";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface SubtaskDraft {
@@ -64,6 +66,25 @@ export default function ValidatePlan() {
   );
   const [editingTitle, setEditingTitle] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
+
+  const handleRegenerate = async () => {
+    setRegenerating(true);
+    try {
+      const { data: fnData, error: fnError } = await supabase.functions.invoke("generate-plan", {
+        body: { description, status, availability },
+      });
+      if (fnError) throw fnError;
+      if (!fnData?.plan) throw new Error("Plan non généré");
+      setPlan(fnData.plan);
+      setExpandedPhases(new Set(fnData.plan.phases.map((_: any, i: number) => i)));
+      toast.success("Nouveau plan généré !");
+    } catch (error: any) {
+      toast.error(error.message || "Erreur lors de la régénération");
+    } finally {
+      setRegenerating(false);
+    }
+  };
 
   if (!initialPlan) {
     return (
@@ -415,13 +436,32 @@ export default function ValidatePlan() {
 
         {/* Actions */}
         <div className="flex items-center justify-between">
-          <button
-            onClick={() => navigate("/onboarding")}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground transition-all"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Recommencer
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate("/onboarding")}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground transition-all"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Recommencer
+            </button>
+            <button
+              onClick={handleRegenerate}
+              disabled={regenerating}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium border border-border hover:border-primary/30 hover:text-primary transition-all disabled:opacity-50"
+            >
+              {regenerating ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Régénération...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="w-4 h-4" />
+                  Régénérer le plan
+                </>
+              )}
+            </button>
+          </div>
           <button
             onClick={handleValidate}
             disabled={saving || plan.phases.length === 0}
