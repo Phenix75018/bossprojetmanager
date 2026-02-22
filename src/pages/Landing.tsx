@@ -59,15 +59,15 @@ export default function Landing() {
             transition={{ duration: 0.8 }}
             className="max-w-3xl mx-auto text-center">
 
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-8">
+            
 
-              <Zap className="w-4 h-4" />
-              Propulsé par l'Intelligence Artificielle
-            </motion.div>
+
+
+
+
+
+
+
 
             <h1 className="text-5xl md:text-7xl font-display font-black tracking-tight leading-[1.1] mb-6">
               Gérez vos projets
