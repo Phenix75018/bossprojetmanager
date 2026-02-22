@@ -15,7 +15,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],
-        display: ["Inter", "system-ui", "sans-serif"],
+        display: ["DM Serif Display", "Georgia", "serif"],
         mono: ["JetBrains Mono", "monospace"],
       },
       colors: {
