@@ -230,8 +230,19 @@ export default function CalendarView({ project, onCycleStatus }: CalendarViewPro
     setCurrentDate((prev) => addDays(prev, dir * (mode === "week" ? 7 : 30)));
   };
 
+  const hoursPerDay = useMemo(() => getAvailableHoursPerDay(timeSlots), [timeSlots]);
+
   const getTasksForDay = (date: Date): ScheduledTask[] => {
     return schedule.get(format(date, "yyyy-MM-dd")) || [];
+  };
+
+  const getDayLoad = (date: Date): { used: number; total: number; percent: number } => {
+    const tasks = getTasksForDay(date);
+    const used = tasks.reduce((sum, t) => sum + t.durationHours, 0);
+    const isAvailable = availableDayNums.has(getDay(date));
+    const total = isAvailable ? hoursPerDay : 0;
+    const percent = total > 0 ? Math.min(Math.round((used / total) * 100), 100) : 0;
+    return { used, total, percent };
   };
 
   return (
@@ -283,6 +294,7 @@ export default function CalendarView({ project, onCycleStatus }: CalendarViewPro
             <div className="p-2" />
             {days.map((day) => {
               const isAvailable = availableDayNums.has(getDay(day));
+              const load = getDayLoad(day);
               return (
                 <div
                   key={day.toISOString()}
@@ -302,6 +314,19 @@ export default function CalendarView({ project, onCycleStatus }: CalendarViewPro
                   >
                     {format(day, "d")}
                   </div>
+                  {isAvailable && load.total > 0 && (
+                    <div className="mt-1.5 mx-auto max-w-[80%]">
+                      <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-300 ${
+                            load.percent >= 100 ? "bg-emerald-500" : load.percent >= 70 ? "bg-amber-500" : "bg-primary"
+                          }`}
+                          style={{ width: `${load.percent}%` }}
+                        />
+                      </div>
+                      <div className="text-[9px] text-muted-foreground mt-0.5 font-mono">{load.used}h/{load.total}h</div>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -377,6 +402,7 @@ export default function CalendarView({ project, onCycleStatus }: CalendarViewPro
               const dayTasks = getTasksForDay(day);
               const isAvailable = availableDayNums.has(getDay(day));
               const inMonth = isSameMonth(day, currentDate);
+              const load = getDayLoad(day);
 
               return (
                 <div
@@ -385,14 +411,28 @@ export default function CalendarView({ project, onCycleStatus }: CalendarViewPro
                     !inMonth ? "opacity-30" : ""
                   } ${!isAvailable ? "bg-muted/20" : ""}`}
                 >
-                  <div
-                    className={`text-xs font-medium mb-1 ${
-                      isToday(day)
-                        ? "w-6 h-6 rounded-full gradient-bg text-primary-foreground flex items-center justify-center"
-                        : "text-muted-foreground"
-                    }`}
-                  >
-                    {format(day, "d")}
+                  <div className="flex items-center gap-1 mb-1">
+                    <div
+                      className={`text-xs font-medium ${
+                        isToday(day)
+                          ? "w-6 h-6 rounded-full gradient-bg text-primary-foreground flex items-center justify-center"
+                          : "text-muted-foreground"
+                      }`}
+                    >
+                      {format(day, "d")}
+                    </div>
+                    {isAvailable && inMonth && load.total > 0 && (
+                      <div className="flex-1 ml-0.5" title={`${load.used}h / ${load.total}h`}>
+                        <div className="w-full h-1 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-300 ${
+                              load.percent >= 100 ? "bg-emerald-500" : load.percent >= 70 ? "bg-amber-500" : "bg-primary"
+                            }`}
+                            style={{ width: `${load.percent}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-0.5">
                     {dayTasks.slice(0, 3).map((st, idx) => {
