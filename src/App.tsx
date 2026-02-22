@@ -11,6 +11,7 @@ import ValidatePlan from "./pages/ValidatePlan";
 import Dashboard from "./pages/Dashboard";
 import PlanDetail from "./pages/PlanDetail";
 import Integrations from "./pages/Integrations";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const AppRoutes = () => (
     <Routes>
       <Route path="/" element={<Landing />} />
       <Route path="/auth" element={<Auth />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route
         path="/onboarding"
         element={
