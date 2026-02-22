@@ -202,7 +202,7 @@ export default function Landing() {
               <Zap className="w-3 h-3 text-primary-foreground" />
             </div>
             <span className="font-display font-bold text-xl tracking-tight italic text-foreground">
-              Boss <span className="text-primary">Project Manager</span>
+              Boss <span className="text-primary">Project Manager  </span>
             </span>
           </div>
           <p>© 2026 Boss Projet Manager. Tous droits réservés.</p>
