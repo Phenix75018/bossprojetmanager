@@ -24,8 +24,8 @@ export default function Navbar() {
           <div className="w-8 h-8 rounded-lg gradient-bg flex items-center justify-center">
             <Zap className="w-4 h-4 text-primary-foreground" />
           </div>
-          <span className="font-display font-bold text-2xl tracking-tight italic">Boss Project Manager
-            <span className="text-primary">Project Manager</span>
+          <span className="font-display font-bold text-2xl tracking-tight italic">
+            Boss <span className="text-primary">Project Manager</span>
           </span>
         </Link>
 
