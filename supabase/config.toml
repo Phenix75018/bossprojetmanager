@@ -2,3 +2,6 @@ project_id = "eplxmeedcrbrmzlvqjxe"
 
 [functions.generate-plan]
 verify_jwt = false
+
+[functions.calendar-ics]
+verify_jwt = false
