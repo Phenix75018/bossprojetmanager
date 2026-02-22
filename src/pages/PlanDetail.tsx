@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronDown,
@@ -13,9 +13,22 @@ import {
   ArrowLeft,
   Loader2,
   Pencil,
+  Users,
+  AlertTriangle,
+  Shield,
+  Star,
+  Lightbulb,
+  BookOpen,
+  X,
+  GraduationCap,
+  Wrench,
+  UserCheck,
+  Bot,
 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import { useProjectsDB, ProjectWithDetails, TaskRow } from "@/hooks/useProjectsDB";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import CalendarView from "@/components/CalendarView";
 import TaskEditModal from "@/components/TaskEditModal";
 
@@ -35,8 +48,33 @@ const statusConfig: Record<TaskStatus, { label: string; icon: typeof Circle; cla
 
 type ViewMode = "list" | "kanban" | "calendar";
 
+interface TeamRecommendation {
+  role: string;
+  description: string;
+  importance: "nécessaire" | "fortement recommandé" | "recommandé";
+  skills: string[];
+  estimated_monthly_cost: string;
+}
+
+interface AlternativeResult {
+  has_alternatives: boolean;
+  summary: string;
+  alternatives: {
+    type: string;
+    title: string;
+    description: string;
+    duration: string;
+    estimated_cost: string;
+    pros: string[];
+    cons: string[];
+    feasibility: string;
+  }[];
+  no_alternative_reason: string | null;
+}
+
 export default function PlanDetail() {
   const { id } = useParams<{ id: string }>();
+  const location = useLocation();
   const { fetchProjectWithDetails, updateTaskStatus, updateTask, deleteTask, deleteSubtask, updateProjectCompletion } = useProjectsDB();
   const [project, setProject] = useState<ProjectWithDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -44,6 +82,21 @@ export default function PlanDetail() {
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set());
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
   const [editingTask, setEditingTask] = useState<(TaskRow & { subtasks: any[] }) | null>(null);
+
+  // Team recommendations from validation
+  const locationState = location.state as {
+    team_recommendations?: TeamRecommendation[];
+    projectType?: string;
+    projectDescription?: string;
+  } | null;
+  const [teamRecommendations] = useState<TeamRecommendation[]>(locationState?.team_recommendations || []);
+  const [projectType] = useState(locationState?.projectType || "personal");
+  const [projectDescription] = useState(locationState?.projectDescription || "");
+  
+  // Alternatives exploration
+  const [exploringRole, setExploringRole] = useState<string | null>(null);
+  const [alternativesResult, setAlternativesResult] = useState<AlternativeResult | null>(null);
+  const [loadingAlternatives, setLoadingAlternatives] = useState(false);
 
   const loadProject = useCallback(async () => {
     if (!id) return;
@@ -185,6 +238,39 @@ export default function PlanDetail() {
       });
     }
     return ok;
+  };
+
+  const handleExploreAlternatives = async (rec: TeamRecommendation) => {
+    setExploringRole(rec.role);
+    setLoadingAlternatives(true);
+    setAlternativesResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("explore-alternatives", {
+        body: {
+          role: rec.role,
+          description: rec.description,
+          skills: rec.skills,
+          importance: rec.importance,
+          projectDescription: projectDescription || project?.description || "",
+        },
+      });
+      if (error) throw error;
+      setAlternativesResult(data);
+    } catch (err: any) {
+      toast.error(err.message || "Erreur lors de la recherche d'alternatives");
+      setExploringRole(null);
+    } finally {
+      setLoadingAlternatives(false);
+    }
+  };
+
+  const alternativeTypeIcons: Record<string, typeof BookOpen> = {
+    formation: GraduationCap,
+    coaching: UserCheck,
+    "outil/logiciel": Wrench,
+    freelance: Users,
+    externalisation: Bot,
+    autoformation: BookOpen,
   };
 
   // Kanban
@@ -367,6 +453,154 @@ export default function PlanDetail() {
         {/* CALENDAR VIEW */}
         {viewMode === "calendar" && (
           <CalendarView project={project} onCycleStatus={cycleStatus} />
+        )}
+
+        {/* TEAM RECOMMENDATIONS */}
+        {teamRecommendations.length > 0 && projectType === "professional" && (
+          <div className="mt-8">
+            <div className="flex items-center gap-3 mb-4">
+              <Users className="w-5 h-5 text-primary" />
+              <h3 className="font-display font-bold text-lg">Équipe recommandée</h3>
+            </div>
+            <div className="space-y-3">
+              {teamRecommendations.map((rec, i) => {
+                const importanceConfig = {
+                  "nécessaire": { icon: AlertTriangle, class: "text-destructive bg-destructive/10 border-destructive/30", label: "Nécessaire" },
+                  "fortement recommandé": { icon: Shield, class: "text-amber-600 bg-amber-50 border-amber-300 dark:text-amber-400 dark:bg-amber-950 dark:border-amber-800", label: "Fortement recommandé" },
+                  "recommandé": { icon: Star, class: "text-primary bg-primary/10 border-primary/30", label: "Recommandé" },
+                };
+                const cfg = importanceConfig[rec.importance] || importanceConfig["recommandé"];
+                const ImportanceIcon = cfg.icon;
+                const isExploring = exploringRole === rec.role;
+
+                return (
+                  <div key={i} className="glass-card rounded-2xl p-5">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1">
+                        <h4 className="font-medium">{rec.role}</h4>
+                        <p className="text-sm text-muted-foreground mt-0.5">{rec.description}</p>
+                      </div>
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold border whitespace-nowrap ${cfg.class}`}>
+                        <ImportanceIcon className="w-3 h-3" />
+                        {cfg.label}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {rec.skills.map((skill, si) => (
+                        <span key={si} className="px-2 py-0.5 rounded-md bg-muted text-[10px] font-medium text-muted-foreground">
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                    {rec.estimated_monthly_cost && (
+                      <p className="text-xs text-muted-foreground mt-2">💰 Coût estimé : {rec.estimated_monthly_cost}/mois</p>
+                    )}
+                    <div className="mt-3">
+                      <button
+                        onClick={() => handleExploreAlternatives(rec)}
+                        disabled={loadingAlternatives}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-border hover:border-primary/30 hover:text-primary transition-all disabled:opacity-50"
+                      >
+                        {loadingAlternatives && isExploring ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Recherche d'alternatives...
+                          </>
+                        ) : (
+                          <>
+                            <Lightbulb className="w-4 h-4" />
+                            Explorer d'autres alternatives
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Alternatives panel */}
+                    <AnimatePresence>
+                      {isExploring && alternativesResult && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="mt-4 p-4 rounded-xl border border-border bg-background/50">
+                            <div className="flex items-center justify-between mb-3">
+                              <h5 className="font-medium text-sm flex items-center gap-2">
+                                <Lightbulb className="w-4 h-4 text-primary" />
+                                Alternatives au recrutement
+                              </h5>
+                              <button onClick={() => { setExploringRole(null); setAlternativesResult(null); }} className="p-1 hover:bg-muted rounded-lg">
+                                <X className="w-4 h-4 text-muted-foreground" />
+                              </button>
+                            </div>
+                            <p className="text-xs text-muted-foreground mb-4">{alternativesResult.summary}</p>
+
+                            {alternativesResult.has_alternatives ? (
+                              <div className="space-y-3">
+                                {alternativesResult.alternatives.map((alt, ai) => {
+                                  const AltIcon = alternativeTypeIcons[alt.type] || BookOpen;
+                                  const feasibilityColors = {
+                                    haute: "text-teal-600 bg-teal-50 dark:text-teal-400 dark:bg-teal-950",
+                                    moyenne: "text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-950",
+                                    faible: "text-destructive bg-destructive/10",
+                                  };
+                                  return (
+                                    <div key={ai} className="rounded-lg border border-border p-3">
+                                      <div className="flex items-start gap-3">
+                                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                          <AltIcon className="w-4 h-4 text-primary" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <div className="flex items-center gap-2 mb-1">
+                                            <span className="font-medium text-sm">{alt.title}</span>
+                                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${feasibilityColors[alt.feasibility as keyof typeof feasibilityColors] || feasibilityColors.moyenne}`}>
+                                              Faisabilité {alt.feasibility}
+                                            </span>
+                                          </div>
+                                          <p className="text-xs text-muted-foreground mb-2">{alt.description}</p>
+                                          <div className="flex flex-wrap gap-3 text-[11px] text-muted-foreground">
+                                            {alt.duration && <span>⏱ {alt.duration}</span>}
+                                            {alt.estimated_cost && <span>💰 {alt.estimated_cost}</span>}
+                                          </div>
+                                          {alt.pros.length > 0 && (
+                                            <div className="mt-2">
+                                              <p className="text-[10px] font-semibold text-teal-600 dark:text-teal-400 mb-0.5">Avantages</p>
+                                              <ul className="text-[11px] text-muted-foreground space-y-0.5">
+                                                {alt.pros.map((p, pi) => <li key={pi}>✓ {p}</li>)}
+                                              </ul>
+                                            </div>
+                                          )}
+                                          {alt.cons.length > 0 && (
+                                            <div className="mt-1.5">
+                                              <p className="text-[10px] font-semibold text-destructive mb-0.5">Inconvénients</p>
+                                              <ul className="text-[11px] text-muted-foreground space-y-0.5">
+                                                {alt.cons.map((c, ci) => <li key={ci}>✗ {c}</li>)}
+                                              </ul>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-center">
+                                <AlertTriangle className="w-5 h-5 text-destructive mx-auto mb-2" />
+                                <p className="text-sm font-medium text-destructive">Pas d'alternative viable</p>
+                                <p className="text-xs text-muted-foreground mt-1">{alternativesResult.no_alternative_reason}</p>
+                              </div>
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         )}
       </div>
 
