@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.calendar-ics]
 verify_jwt = false
+
+[functions.send-notification-emails]
+verify_jwt = false
