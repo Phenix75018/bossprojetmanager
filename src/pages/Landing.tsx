@@ -196,7 +196,7 @@ export default function Landing() {
 
       {/* Footer */}
       <footer className="border-t border-border py-8">
-        <div className="container flex items-center justify-between text-sm text-muted-foreground">
+        <div className="container flex items-center justify-center text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-md gradient-bg flex items-center justify-center">
               <Zap className="w-3 h-3 text-primary-foreground" />
