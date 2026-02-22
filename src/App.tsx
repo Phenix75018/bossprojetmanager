@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
+import ValidatePlan from "./pages/ValidatePlan";
 import Dashboard from "./pages/Dashboard";
 import PlanDetail from "./pages/PlanDetail";
 import NotFound from "./pages/NotFound";
@@ -30,6 +31,14 @@ const AppRoutes = () => (
         element={
           <ProtectedRoute>
             <Onboarding />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/validate-plan"
+        element={
+          <ProtectedRoute>
+            <ValidatePlan />
           </ProtectedRoute>
         }
       />
