@@ -3,8 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, ArrowRight, Check, Sparkles } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
-import { OnboardingData, ProjectStatus } from "@/lib/types";
-import { useProjects } from "@/hooks/useProjects";
+import { useAuth } from "@/hooks/useAuth";
+import { useProjectsDB } from "@/hooks/useProjectsDB";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+type ProjectStatus = "idea" | "planning" | "in-progress" | "halfway" | "finalizing";
 
 const steps = ["Décris ton projet", "État d'avancement", "Tes disponibilités"];
 
@@ -17,6 +21,18 @@ const statusOptions: { value: ProjectStatus; label: string; emoji: string }[] = 
 ];
 
 const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+
+interface OnboardingData {
+  description: string;
+  status: ProjectStatus;
+  statusDetails: string;
+  availability: {
+    daysPerWeek: string[];
+    hoursPerWeek: number;
+    timeSlots: string;
+    deadline: string;
+  };
+}
 
 export default function Onboarding() {
   const [step, setStep] = useState(0);
@@ -32,7 +48,9 @@ export default function Onboarding() {
     },
   });
   const [isGenerating, setIsGenerating] = useState(false);
-  const { createProject } = useProjects();
+  const [generationStatus, setGenerationStatus] = useState("Analyse du projet...");
+  const { user } = useAuth();
+  const { createProjectFromAI } = useProjectsDB();
   const navigate = useNavigate();
 
   const canNext =
@@ -40,12 +58,48 @@ export default function Onboarding() {
     (step === 1 && data.status) ||
     step === 2;
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
+    if (!user) {
+      toast.error("Vous devez être connecté");
+      navigate("/auth");
+      return;
+    }
+
     setIsGenerating(true);
-    setTimeout(() => {
-      const project = createProject(data);
-      navigate(`/plan/${project.id}`);
-    }, 2500);
+    setGenerationStatus("L'IA analyse votre projet...");
+
+    try {
+      const { data: fnData, error: fnError } = await supabase.functions.invoke("generate-plan", {
+        body: {
+          description: data.description,
+          status: data.status,
+          statusDetails: data.statusDetails,
+        },
+      });
+
+      if (fnError) throw new Error(fnError.message);
+      if (fnData?.error) throw new Error(fnData.error);
+
+      setGenerationStatus("Création du plan d'action...");
+
+      const projectId = await createProjectFromAI(
+        fnData.plan,
+        data.description,
+        data.status,
+        data.availability
+      );
+
+      if (projectId) {
+        setGenerationStatus("Terminé !");
+        setTimeout(() => navigate(`/plan/${projectId}`), 500);
+      } else {
+        throw new Error("Erreur lors de la sauvegarde");
+      }
+    } catch (error: any) {
+      console.error("Generation error:", error);
+      toast.error(error.message || "Erreur lors de la génération du plan");
+      setIsGenerating(false);
+    }
   };
 
   const toggleDay = (day: string) => {
@@ -75,14 +129,14 @@ export default function Onboarding() {
           >
             <Sparkles className="w-10 h-10 text-primary-foreground" />
           </motion.div>
-          <h2 className="text-2xl font-display font-bold mb-2">L'IA analyse votre projet…</h2>
-          <p className="text-muted-foreground">Génération du plan d'action en cours</p>
+          <h2 className="text-2xl font-display font-bold mb-2">{generationStatus}</h2>
+          <p className="text-muted-foreground">Génération du plan d'action par l'IA</p>
           <div className="mt-6 w-64 h-2 bg-muted rounded-full mx-auto overflow-hidden">
             <motion.div
               className="h-full gradient-bg rounded-full"
               initial={{ width: "0%" }}
-              animate={{ width: "100%" }}
-              transition={{ duration: 2.5 }}
+              animate={{ width: "90%" }}
+              transition={{ duration: 8 }}
             />
           </div>
         </motion.div>
@@ -157,9 +211,7 @@ export default function Onboarding() {
             {step === 1 && (
               <div>
                 <h2 className="text-2xl font-display font-bold mb-2">État d'avancement</h2>
-                <p className="text-muted-foreground mb-6">
-                  Où en es-tu dans ce projet ?
-                </p>
+                <p className="text-muted-foreground mb-6">Où en es-tu dans ce projet ?</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
                   {statusOptions.map((opt) => (
                     <button
@@ -189,10 +241,7 @@ export default function Onboarding() {
             {step === 2 && (
               <div>
                 <h2 className="text-2xl font-display font-bold mb-2">Tes disponibilités</h2>
-                <p className="text-muted-foreground mb-6">
-                  Quand peux-tu travailler sur ce projet ?
-                </p>
-
+                <p className="text-muted-foreground mb-6">Quand peux-tu travailler sur ce projet ?</p>
                 <div className="mb-6">
                   <label className="text-sm font-medium mb-3 block">Jours disponibles</label>
                   <div className="flex flex-wrap gap-2">
@@ -211,7 +260,6 @@ export default function Onboarding() {
                     ))}
                   </div>
                 </div>
-
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   <div>
                     <label className="text-sm font-medium mb-2 block">Heures / semaine</label>
@@ -221,10 +269,7 @@ export default function Onboarding() {
                       onChange={(e) =>
                         setData({
                           ...data,
-                          availability: {
-                            ...data.availability,
-                            hoursPerWeek: Number(e.target.value),
-                          },
+                          availability: { ...data.availability, hoursPerWeek: Number(e.target.value) },
                         })
                       }
                       className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -236,21 +281,17 @@ export default function Onboarding() {
                     <label className="text-sm font-medium mb-2 block">Date butoir</label>
                     <input
                       type="date"
-                      value={data.availability.deadline || ""}
+                      value={data.availability.deadline}
                       onChange={(e) =>
                         setData({
                           ...data,
-                          availability: {
-                            ...data.availability,
-                            deadline: e.target.value,
-                          },
+                          availability: { ...data.availability, deadline: e.target.value },
                         })
                       }
                       className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                     />
                   </div>
                 </div>
-
                 <div>
                   <label className="text-sm font-medium mb-2 block">Plages horaires préférées</label>
                   <input
@@ -259,10 +300,7 @@ export default function Onboarding() {
                     onChange={(e) =>
                       setData({
                         ...data,
-                        availability: {
-                          ...data.availability,
-                          timeSlots: e.target.value,
-                        },
+                        availability: { ...data.availability, timeSlots: e.target.value },
                       })
                     }
                     className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"

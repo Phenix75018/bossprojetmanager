@@ -14,7 +14,180 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      phases: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          project_id: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          project_id: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          project_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phases_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          completion_percent: number
+          created_at: string
+          days_per_week: string[]
+          deadline: string | null
+          description: string
+          hours_per_week: number
+          id: string
+          status: string
+          time_slots: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completion_percent?: number
+          created_at?: string
+          days_per_week?: string[]
+          deadline?: string | null
+          description: string
+          hours_per_week?: number
+          id?: string
+          status?: string
+          time_slots?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completion_percent?: number
+          created_at?: string
+          days_per_week?: string[]
+          deadline?: string | null
+          description?: string
+          hours_per_week?: number
+          id?: string
+          status?: string
+          time_slots?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      subtasks: {
+        Row: {
+          created_at: string
+          duration_hours: number
+          id: string
+          sort_order: number
+          status: string
+          task_id: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          duration_hours?: number
+          id?: string
+          sort_order?: number
+          status?: string
+          task_id: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          duration_hours?: number
+          id?: string
+          sort_order?: number
+          status?: string
+          task_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subtasks_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tasks: {
+        Row: {
+          created_at: string
+          dependencies: string[] | null
+          description: string | null
+          duration_hours: number
+          id: string
+          notes: string | null
+          optional: boolean
+          phase_id: string
+          priority: string
+          sort_order: number
+          status: string
+          tags: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          dependencies?: string[] | null
+          description?: string | null
+          duration_hours?: number
+          id?: string
+          notes?: string | null
+          optional?: boolean
+          phase_id: string
+          priority?: string
+          sort_order?: number
+          status?: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          dependencies?: string[] | null
+          description?: string | null
+          duration_hours?: number
+          id?: string
+          notes?: string | null
+          optional?: boolean
+          phase_id?: string
+          priority?: string
+          sort_order?: number
+          status?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "phases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
