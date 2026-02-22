@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
+import { X, Trash2 } from "lucide-react";
 import { TaskRow } from "@/hooks/useProjectsDB";
 
 interface TaskEditModalProps {
@@ -8,6 +8,8 @@ interface TaskEditModalProps {
   open: boolean;
   onClose: () => void;
   onSave: (taskId: string, updates: { title: string; description: string | null; priority: string; duration_hours: number }) => Promise<void>;
+  onDeleteTask?: (taskId: string) => Promise<boolean>;
+  onDeleteSubtask?: (subtaskId: string) => Promise<boolean>;
 }
 
 const priorities = [
@@ -16,12 +18,14 @@ const priorities = [
   { value: "P2", label: "P2 — Normale", class: "border-primary/40 bg-primary/10 text-primary" },
 ];
 
-export default function TaskEditModal({ task, open, onClose, onSave }: TaskEditModalProps) {
+export default function TaskEditModal({ task, open, onClose, onSave, onDeleteTask, onDeleteSubtask }: TaskEditModalProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState("P1");
   const [duration, setDuration] = useState(4);
   const [saving, setSaving] = useState(false);
+  const [confirmDeleteTask, setConfirmDeleteTask] = useState(false);
+  const [localSubtasks, setLocalSubtasks] = useState<any[]>([]);
 
   useEffect(() => {
     if (task) {
@@ -29,6 +33,8 @@ export default function TaskEditModal({ task, open, onClose, onSave }: TaskEditM
       setDescription(task.description || "");
       setPriority(task.priority);
       setDuration(task.duration_hours);
+      setLocalSubtasks(task.subtasks || []);
+      setConfirmDeleteTask(false);
     }
   }, [task]);
 
@@ -43,6 +49,20 @@ export default function TaskEditModal({ task, open, onClose, onSave }: TaskEditM
     });
     setSaving(false);
     onClose();
+  };
+
+  const handleDeleteTask = async () => {
+    if (!task || !onDeleteTask) return;
+    const ok = await onDeleteTask(task.id);
+    if (ok) onClose();
+  };
+
+  const handleDeleteSubtask = async (subtaskId: string) => {
+    if (!onDeleteSubtask) return;
+    const ok = await onDeleteSubtask(subtaskId);
+    if (ok) {
+      setLocalSubtasks((prev) => prev.filter((st) => st.id !== subtaskId));
+    }
   };
 
   return (
@@ -63,7 +83,7 @@ export default function TaskEditModal({ task, open, onClose, onSave }: TaskEditM
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ duration: 0.2 }}
-            className="relative w-full max-w-lg glass-card rounded-2xl p-6 space-y-5 shadow-2xl"
+            className="relative w-full max-w-lg glass-card rounded-2xl p-6 space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto"
           >
             {/* Close */}
             <button onClick={onClose} className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-muted transition-colors">
@@ -131,8 +151,53 @@ export default function TaskEditModal({ task, open, onClose, onSave }: TaskEditM
               </div>
             </div>
 
+            {/* Subtasks with delete */}
+            {localSubtasks.length > 0 && (
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Sous-tâches</label>
+                <div className="space-y-1.5">
+                  {localSubtasks.map((st) => (
+                    <div key={st.id} className="flex items-center gap-2 rounded-xl border border-border bg-background/50 px-3 py-2">
+                      <div className={`w-3 h-3 rounded-full border-2 flex-shrink-0 ${st.status === "done" ? "bg-emerald-500 border-emerald-500" : "border-muted-foreground/30"}`} />
+                      <span className={`text-sm flex-1 truncate ${st.status === "done" ? "line-through text-muted-foreground" : ""}`}>
+                        {st.title}
+                      </span>
+                      <span className="text-xs font-mono text-muted-foreground">{st.duration_hours}h</span>
+                      {onDeleteSubtask && (
+                        <button
+                          onClick={() => handleDeleteSubtask(st.id)}
+                          className="p-1 rounded-lg hover:bg-destructive/10 transition-colors group"
+                          title="Supprimer la sous-tâche"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-muted-foreground group-hover:text-destructive" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Actions */}
             <div className="flex gap-3 pt-2">
+              {onDeleteTask && (
+                confirmDeleteTask ? (
+                  <button
+                    onClick={handleDeleteTask}
+                    className="px-4 py-2.5 rounded-xl bg-destructive text-destructive-foreground text-sm font-semibold transition-all"
+                  >
+                    Confirmer
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setConfirmDeleteTask(true)}
+                    className="p-2.5 rounded-xl border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors"
+                    title="Supprimer la tâche"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )
+              )}
               <button
                 onClick={onClose}
                 className="flex-1 px-4 py-2.5 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
