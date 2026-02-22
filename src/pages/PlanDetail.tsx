@@ -9,11 +9,13 @@ import {
   Clock,
   LayoutList,
   Columns3,
+  CalendarDays,
   ArrowLeft,
   Loader2,
 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import { useProjectsDB, ProjectWithDetails } from "@/hooks/useProjectsDB";
+import CalendarView from "@/components/CalendarView";
 
 type TaskStatus = "todo" | "in-progress" | "done";
 
@@ -29,7 +31,7 @@ const statusConfig: Record<TaskStatus, { label: string; icon: typeof Circle; cla
   done: { label: "Terminé", icon: CheckCircle2, class: "text-emerald-500" },
 };
 
-type ViewMode = "list" | "kanban";
+type ViewMode = "list" | "kanban" | "calendar";
 
 export default function PlanDetail() {
   const { id } = useParams<{ id: string }>();
@@ -160,7 +162,11 @@ export default function PlanDetail() {
 
         {/* View toggles */}
         <div className="flex items-center gap-2 mb-6">
-          {(["list", "kanban"] as ViewMode[]).map((mode) => (
+          {([
+            { mode: "list" as ViewMode, icon: LayoutList, label: "Liste" },
+            { mode: "kanban" as ViewMode, icon: Columns3, label: "Kanban" },
+            { mode: "calendar" as ViewMode, icon: CalendarDays, label: "Calendrier" },
+          ]).map(({ mode, icon: Icon, label }) => (
             <button
               key={mode}
               onClick={() => setViewMode(mode)}
@@ -168,8 +174,8 @@ export default function PlanDetail() {
                 viewMode === mode ? "gradient-bg text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
               }`}
             >
-              {mode === "list" ? <LayoutList className="w-4 h-4" /> : <Columns3 className="w-4 h-4" />}
-              {mode === "list" ? "Liste" : "Kanban"}
+              <Icon className="w-4 h-4" />
+              {label}
             </button>
           ))}
         </div>
@@ -284,6 +290,11 @@ export default function PlanDetail() {
               </div>
             ))}
           </div>
+        )}
+
+        {/* CALENDAR VIEW */}
+        {viewMode === "calendar" && (
+          <CalendarView project={project} onCycleStatus={cycleStatus} />
         )}
       </div>
     </div>
