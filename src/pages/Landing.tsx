@@ -111,7 +111,7 @@ export default function Landing() {
             map((stat) =>
             <div key={stat.label}>
                 
-                <div className="text-sm text-muted-foreground mt-1">{stat.label}</div>
+                <div className="text-sm text-muted-foreground mt-3">{stat.label}</div>
               </div>
             )}
           </motion.div>
