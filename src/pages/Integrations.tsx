@@ -8,7 +8,10 @@ import {
   Link2,
   Loader2,
   CalendarDays,
+  Bell,
+  BellOff,
 } from "lucide-react";
+import { useNotifications } from "@/hooks/useNotifications";
 import Navbar from "@/components/layout/Navbar";
 import { useCalendarIntegrations } from "@/hooks/useCalendarIntegrations";
 import { Switch } from "@/components/ui/switch";
@@ -131,6 +134,8 @@ function CalendarIcon({ cal }: { cal: (typeof CALENDARS)[0] }) {
 export default function Integrations() {
   const { integrations, loading, toggleIntegration, getICSUrl } =
     useCalendarIntegrations();
+  const { prefs: notifPrefs, loading: notifLoading, toggleEnabled: toggleNotifications, permissionState } =
+    useNotifications();
   const [selectedCal, setSelectedCal] = useState<
     (typeof CALENDARS)[0] | null
   >(null);
@@ -188,6 +193,46 @@ export default function Integrations() {
                 <span className="text-xs font-medium text-primary bg-primary/10 px-2.5 py-1 rounded-full">
                   Actif
                 </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Notifications */}
+          <div className="glass-card rounded-2xl p-6 mb-8">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-accent flex items-center justify-center">
+                  {notifPrefs.enabled ? (
+                    <Bell className="w-6 h-6 text-primary" />
+                  ) : (
+                    <BellOff className="w-6 h-6 text-muted-foreground" />
+                  )}
+                </div>
+                <div>
+                  <h2 className="font-display font-bold text-lg">
+                    Notifications de rappel
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    Recevez un rappel 12h et 5 min avant chaque tâche planifiée
+                  </p>
+                  {permissionState === "denied" && (
+                    <p className="text-xs text-destructive mt-1">
+                      Les notifications sont bloquées dans votre navigateur. Autorisez-les dans les paramètres.
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {notifPrefs.enabled && (
+                  <span className="text-xs font-medium text-primary bg-primary/10 px-2.5 py-1 rounded-full">
+                    Actif
+                  </span>
+                )}
+                <Switch
+                  checked={notifPrefs.enabled}
+                  onCheckedChange={toggleNotifications}
+                  disabled={notifLoading || permissionState === "denied"}
+                />
               </div>
             </div>
           </div>

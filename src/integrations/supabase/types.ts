@@ -107,6 +107,36 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_preferences: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          id: string
+          remind_12h: boolean
+          remind_5min: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          remind_12h?: boolean
+          remind_5min?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          remind_12h?: boolean
+          remind_5min?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       phases: {
         Row: {
           created_at: string
