@@ -29,6 +29,8 @@ interface ScheduledTask {
   phaseName: string;
   startHour: number;
   durationHours: number;
+  subtaskTitle?: string;
+  isSubtask?: boolean;
 }
 
 interface DaySchedule {
@@ -76,19 +78,40 @@ function dispatchTasks(
   const timeSlots = parseTimeSlots(project.time_slots);
   const hoursPerDay = getAvailableHoursPerDay(timeSlots);
 
-  // Collect all non-done tasks sorted by priority then phase order
-  const tasks: { task: TaskRow & { subtasks: any[] }; phaseName: string }[] = [];
+  // Collect all non-done items: expand subtasks when available
+  interface DispatchItem {
+    task: TaskRow & { subtasks: any[] };
+    phaseName: string;
+    duration: number;
+    subtaskTitle?: string;
+    isSubtask?: boolean;
+  }
+  const items: DispatchItem[] = [];
   for (const phase of project.phases) {
     for (const task of phase.tasks) {
-      if (task.status !== "done") {
-        tasks.push({ task, phaseName: phase.name });
+      if (task.status === "done") continue;
+      const activeSubtasks = (task.subtasks || []).filter((st: any) => st.status !== "done");
+      if (activeSubtasks.length > 0) {
+        // Schedule each subtask individually
+        for (const st of activeSubtasks) {
+          items.push({
+            task,
+            phaseName: phase.name,
+            duration: st.duration_hours || 1,
+            subtaskTitle: st.title,
+            isSubtask: true,
+          });
+        }
+      } else {
+        // No subtasks: schedule the task as a whole
+        items.push({ task, phaseName: phase.name, duration: task.duration_hours });
       }
     }
   }
 
   // Sort: P0 first, then P1, then P2, then by sort_order
   const priorityOrder: Record<string, number> = { P0: 0, P1: 1, P2: 2 };
-  tasks.sort(
+  items.sort(
     (a, b) =>
       (priorityOrder[a.task.priority] ?? 1) - (priorityOrder[b.task.priority] ?? 1) ||
       a.task.sort_order - b.task.sort_order
@@ -115,8 +138,8 @@ function dispatchTasks(
   currentSlotIdx = 0;
   currentHourInSlot = timeSlots[0]?.start || 9;
 
-  for (const { task, phaseName } of tasks) {
-    let remaining = task.duration_hours;
+  for (const { task, phaseName, duration, subtaskTitle, isSubtask } of items) {
+    let remaining = duration;
 
     while (remaining > 0) {
       if (remainingHoursToday <= 0) {
@@ -146,6 +169,8 @@ function dispatchTasks(
           phaseName,
           startHour: currentHourInSlot,
           durationHours: chunk,
+          subtaskTitle,
+          isSubtask,
         });
         schedule.set(key, existing);
 
@@ -317,14 +342,14 @@ export default function CalendarView({ project, onCycleStatus }: CalendarViewPro
                             className={`absolute inset-x-0.5 top-0.5 rounded-md border px-1.5 py-0.5 cursor-pointer overflow-hidden z-10 ${pCfg.class}`}
                             style={{ height: `${heightPx - 4}px` }}
                             onClick={() => onCycleStatus(st.task.id, st.task.status)}
-                            title={`${st.task.title} — ${st.durationHours}h (${st.phaseName})`}
+                            title={`${st.isSubtask ? `↳ ${st.subtaskTitle}` : st.task.title} — ${st.durationHours}h (${st.phaseName})`}
                           >
                             <div className="text-[10px] font-semibold leading-tight truncate">
-                              {st.task.title}
+                              {st.isSubtask ? st.subtaskTitle : st.task.title}
                             </div>
                             {st.durationHours > 1 && (
                               <div className="text-[9px] opacity-70 truncate mt-0.5">
-                                {st.phaseName} · {st.durationHours}h
+                                {st.isSubtask ? st.task.title : st.phaseName} · {st.durationHours}h
                               </div>
                             )}
                           </motion.div>
@@ -377,9 +402,9 @@ export default function CalendarView({ project, onCycleStatus }: CalendarViewPro
                           key={st.task.id + idx}
                           className={`text-[9px] leading-tight px-1 py-0.5 rounded border truncate cursor-pointer ${pCfg.class}`}
                           onClick={() => onCycleStatus(st.task.id, st.task.status)}
-                          title={st.task.title}
+                          title={st.isSubtask ? `↳ ${st.subtaskTitle} (${st.task.title})` : st.task.title}
                         >
-                          {st.task.title}
+                          {st.isSubtask ? `↳ ${st.subtaskTitle}` : st.task.title}
                         </div>
                       );
                     })}
