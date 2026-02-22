@@ -179,8 +179,8 @@ export default function Landing() {
               <h2 className="text-3xl md:text-5xl font-display font-black text-primary-foreground mb-4">
                 Prêt à devenir un Boss ?
               </h2>
-              <p className="text-primary-foreground/80 text-lg mb-8 max-w-md mx-auto">
-                Commencez gratuitement et transformez votre façon de gérer vos projets.
+              <p className="text-primary-foreground/80 text-lg mb-8 max-w-md mx-auto">Donnez vie à vos envies gratuitement et transformez votre façon de gérer vos projets.
+
               </p>
               <Link
                 to="/onboarding"
