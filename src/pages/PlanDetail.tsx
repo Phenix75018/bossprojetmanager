@@ -37,7 +37,7 @@ type ViewMode = "list" | "kanban" | "calendar";
 
 export default function PlanDetail() {
   const { id } = useParams<{ id: string }>();
-  const { fetchProjectWithDetails, updateTaskStatus, updateTask, updateProjectCompletion } = useProjectsDB();
+  const { fetchProjectWithDetails, updateTaskStatus, updateTask, deleteTask, deleteSubtask, updateProjectCompletion } = useProjectsDB();
   const [project, setProject] = useState<ProjectWithDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
@@ -142,6 +142,49 @@ export default function PlanDetail() {
         })),
       };
     });
+  };
+
+  const handleDeleteTask = async (taskId: string): Promise<boolean> => {
+    const ok = await deleteTask(taskId);
+    if (ok) {
+      setProject((prev) => {
+        if (!prev) return prev;
+        const updated = {
+          ...prev,
+          phases: prev.phases.map((phase) => ({
+            ...phase,
+            tasks: phase.tasks.filter((t) => t.id !== taskId),
+          })),
+        };
+        const all = updated.phases.flatMap((p) => p.tasks);
+        const done = all.filter((t) => t.status === "done").length;
+        const newPercent = all.length > 0 ? Math.round((done / all.length) * 100) : 0;
+        updated.completion_percent = newPercent;
+        updateProjectCompletion(prev.id, newPercent);
+        return updated;
+      });
+    }
+    return ok;
+  };
+
+  const handleDeleteSubtask = async (subtaskId: string): Promise<boolean> => {
+    const ok = await deleteSubtask(subtaskId);
+    if (ok) {
+      setProject((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          phases: prev.phases.map((phase) => ({
+            ...phase,
+            tasks: phase.tasks.map((t) => ({
+              ...t,
+              subtasks: t.subtasks.filter((st: any) => st.id !== subtaskId),
+            })),
+          })),
+        };
+      });
+    }
+    return ok;
   };
 
   // Kanban
@@ -332,6 +375,8 @@ export default function PlanDetail() {
         open={!!editingTask}
         onClose={() => setEditingTask(null)}
         onSave={handleSaveTask}
+        onDeleteTask={handleDeleteTask}
+        onDeleteSubtask={handleDeleteSubtask}
       />
     </div>
   );

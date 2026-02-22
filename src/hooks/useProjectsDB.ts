@@ -266,6 +266,33 @@ export function useProjectsDB() {
     []
   );
 
+  const deleteTask = useCallback(
+    async (taskId: string) => {
+      // Subtasks are cascade-deleted via FK
+      const { error } = await supabase.from("tasks").delete().eq("id", taskId);
+      if (error) {
+        toast.error("Erreur lors de la suppression de la tâche");
+        return false;
+      }
+      toast.success("Tâche supprimée");
+      return true;
+    },
+    []
+  );
+
+  const deleteSubtask = useCallback(
+    async (subtaskId: string) => {
+      const { error } = await supabase.from("subtasks").delete().eq("id", subtaskId);
+      if (error) {
+        toast.error("Erreur lors de la suppression de la sous-tâche");
+        return false;
+      }
+      toast.success("Sous-tâche supprimée");
+      return true;
+    },
+    []
+  );
+
   return {
     projects,
     loading,
@@ -274,6 +301,8 @@ export function useProjectsDB() {
     createProjectFromAI,
     updateTaskStatus,
     updateTask,
+    deleteTask,
+    deleteSubtask,
     deleteProject,
     updateProjectCompletion,
   };
