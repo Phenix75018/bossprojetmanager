@@ -13,6 +13,10 @@ import {
   Loader2,
   Clock,
   RefreshCw,
+  Users,
+  AlertTriangle,
+  Shield,
+  Star,
 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import { useProjectsDB } from "@/hooks/useProjectsDB";
@@ -37,9 +41,18 @@ interface PhaseDraft {
   tasks: TaskDraft[];
 }
 
+interface TeamRecommendation {
+  role: string;
+  description: string;
+  importance: "nécessaire" | "fortement recommandé" | "recommandé";
+  skills: string[];
+  estimated_monthly_cost: string;
+}
+
 interface PlanDraft {
   title: string;
   phases: PhaseDraft[];
+  team_recommendations?: TeamRecommendation[];
 }
 
 const priorityConfig: Record<string, { label: string; class: string }> = {
@@ -53,9 +66,10 @@ export default function ValidatePlan() {
   const navigate = useNavigate();
   const { createProjectFromAI } = useProjectsDB();
 
-  const { plan: initialPlan, description, status, availability } = (location.state || {}) as {
+  const { plan: initialPlan, description, projectType, status, availability } = (location.state || {}) as {
     plan: PlanDraft;
     description: string;
+    projectType: string;
     status: string;
     availability: any;
   };
@@ -72,7 +86,7 @@ export default function ValidatePlan() {
     setRegenerating(true);
     try {
       const { data: fnData, error: fnError } = await supabase.functions.invoke("generate-plan", {
-        body: { description, status, availability },
+        body: { description, projectType, status, availability },
       });
       if (fnError) throw fnError;
       if (!fnData?.plan) throw new Error("Plan non généré");
@@ -227,7 +241,13 @@ export default function ValidatePlan() {
       const projectId = await createProjectFromAI(plan, description, status, availability);
       if (projectId) {
         toast.success("Plan d'action validé et sauvegardé !");
-        navigate(`/plan/${projectId}`);
+        navigate(`/plan/${projectId}`, {
+          state: {
+            team_recommendations: plan.team_recommendations,
+            projectType,
+            projectDescription: description,
+          },
+        });
       } else {
         throw new Error("Erreur lors de la sauvegarde");
       }
@@ -433,6 +453,57 @@ export default function ValidatePlan() {
             );
           })}
         </div>
+
+        {/* Team Recommendations */}
+        {plan.team_recommendations && plan.team_recommendations.length > 0 && (
+          <div className="glass-card rounded-2xl p-6 mb-8">
+            <div className="flex items-center gap-3 mb-4">
+              <Users className="w-5 h-5 text-primary" />
+              <h3 className="font-display font-bold text-lg">Équipe recommandée</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              Profils à recruter pour la réalisation de votre projet professionnel.
+            </p>
+            <div className="space-y-3">
+              {plan.team_recommendations.map((rec, i) => {
+                const importanceConfig = {
+                  "nécessaire": { icon: AlertTriangle, class: "text-destructive bg-destructive/10 border-destructive/30", label: "Nécessaire" },
+                  "fortement recommandé": { icon: Shield, class: "text-amber-600 bg-amber-50 border-amber-300 dark:text-amber-400 dark:bg-amber-950 dark:border-amber-800", label: "Fortement recommandé" },
+                  "recommandé": { icon: Star, class: "text-primary bg-primary/10 border-primary/30", label: "Recommandé" },
+                };
+                const cfg = importanceConfig[rec.importance] || importanceConfig["recommandé"];
+                const ImportanceIcon = cfg.icon;
+
+                return (
+                  <div key={i} className="rounded-xl border border-border bg-background/50 p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <h4 className="font-medium text-sm">{rec.role}</h4>
+                        <p className="text-xs text-muted-foreground mt-0.5">{rec.description}</p>
+                      </div>
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold border ${cfg.class}`}>
+                        <ImportanceIcon className="w-3 h-3" />
+                        {cfg.label}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {rec.skills.map((skill, si) => (
+                        <span key={si} className="px-2 py-0.5 rounded-md bg-muted text-[10px] font-medium text-muted-foreground">
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                    {rec.estimated_monthly_cost && (
+                      <p className="text-[11px] text-muted-foreground mt-2">
+                        💰 Coût estimé : {rec.estimated_monthly_cost}/mois
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex items-center justify-between">

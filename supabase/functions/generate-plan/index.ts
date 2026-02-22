@@ -9,9 +9,35 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { description, status, statusDetails } = await req.json();
+    const { description, projectType, status, statusDetails } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+
+    const isProfessional = projectType === "professional";
+
+    const recruitmentBlock = isProfessional
+      ? `
+IMPORTANT - Pour les projets professionnels, tu dois AUSSI inclure une section "team_recommendations" dans le JSON.
+Cette section liste les profils à recruter pour le projet.
+
+Format de "team_recommendations":
+"team_recommendations": [
+  {
+    "role": "Développeur Backend Senior",
+    "description": "Expert en architecture serveur et APIs REST/GraphQL",
+    "importance": "nécessaire",
+    "skills": ["Node.js", "PostgreSQL", "Architecture microservices"],
+    "estimated_monthly_cost": "4000-6000€"
+  }
+]
+
+Niveaux d'importance:
+- "nécessaire": Le projet ne peut pas aboutir sans ce profil
+- "fortement recommandé": Le projet peut avancer mais avec des risques significatifs sans ce profil
+- "recommandé": Ce profil améliorerait la qualité et la vitesse du projet
+
+Inclus 2-6 profils selon la complexité du projet.`
+      : "";
 
     const systemPrompt = `Tu es un expert en gestion de projet. L'utilisateur te décrit son projet et tu dois générer un plan d'action structuré.
 
@@ -36,8 +62,10 @@ Le format JSON doit être exactement:
         }
       ]
     }
-  ]
+  ]${isProfessional ? `,
+  "team_recommendations": []` : ""}
 }
+${recruitmentBlock}
 
 Règles:
 - Génère 3-5 phases
@@ -46,9 +74,11 @@ Règles:
 - Priorités: P0 (critique), P1 (haute), P2 (normale)
 - Durées réalistes en heures
 - Adapte le plan au niveau d'avancement du projet
-- Les noms de phases doivent être numérotés (Phase 1, Phase 2, etc.)`;
+- Les noms de phases doivent être numérotés (Phase 1, Phase 2, etc.)
+- Type de projet: ${isProfessional ? "PROFESSIONNEL - inclure les recommandations d'équipe" : "PERSONNEL - pas de recommandations d'équipe"}`;
 
     const userPrompt = `Projet: ${description}
+Type: ${isProfessional ? "Professionnel" : "Personnel"}
 État d'avancement: ${status}${statusDetails ? `\nDétails: ${statusDetails}` : ""}`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -92,7 +122,6 @@ Règles:
     // Parse the JSON from the AI response
     let plan;
     try {
-      // Try to extract JSON from potential markdown code blocks
       const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
       const jsonStr = jsonMatch ? jsonMatch[1].trim() : content.trim();
       plan = JSON.parse(jsonStr);

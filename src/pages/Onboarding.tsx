@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 type ProjectStatus = "idea" | "planning" | "in-progress" | "halfway" | "finalizing";
+type ProjectType = "personal" | "professional";
 
 const steps = ["Décris ton projet", "État d'avancement", "Tes disponibilités"];
 
@@ -23,6 +24,7 @@ const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dima
 
 interface OnboardingData {
   description: string;
+  projectType: ProjectType;
   status: ProjectStatus;
   statusDetails: string;
   availability: {
@@ -37,6 +39,7 @@ export default function Onboarding() {
   const [step, setStep] = useState(0);
   const [data, setData] = useState<OnboardingData>({
     description: "",
+    projectType: "personal",
     status: "idea",
     statusDetails: "",
     availability: {
@@ -70,6 +73,7 @@ export default function Onboarding() {
       const { data: fnData, error: fnError } = await supabase.functions.invoke("generate-plan", {
         body: {
           description: data.description,
+          projectType: data.projectType,
           status: data.status,
           statusDetails: data.statusDetails,
         },
@@ -84,6 +88,7 @@ export default function Onboarding() {
         state: {
           plan: fnData.plan,
           description: data.description,
+          projectType: data.projectType,
           status: data.status,
           availability: data.availability,
         },
@@ -188,6 +193,34 @@ export default function Onboarding() {
                 <p className="text-muted-foreground mb-6">
                   Sois le plus précis possible pour que l'IA puisse générer un plan adapté.
                 </p>
+
+                {/* Project type */}
+                <div className="mb-6">
+                  <label className="text-sm font-medium mb-3 block">Type de projet</label>
+                  <div className="flex gap-3">
+                    {([
+                      { value: "personal" as ProjectType, label: "Personnel", emoji: "🏠", desc: "Projet individuel, hobby, side project" },
+                      { value: "professional" as ProjectType, label: "Professionnel", emoji: "🏢", desc: "Entreprise, startup, projet d'équipe" },
+                    ]).map((opt) => (
+                      <button
+                        key={opt.value}
+                        onClick={() => setData({ ...data, projectType: opt.value })}
+                        className={`flex-1 flex items-center gap-3 p-4 rounded-xl border text-left transition-all ${
+                          data.projectType === opt.value
+                            ? "border-primary bg-primary/5 shadow-sm"
+                            : "border-border hover:border-primary/30"
+                        }`}
+                      >
+                        <span className="text-2xl">{opt.emoji}</span>
+                        <div>
+                          <span className="font-medium block">{opt.label}</span>
+                          <span className="text-xs text-muted-foreground">{opt.desc}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <textarea
                   value={data.description}
                   onChange={(e) => setData({ ...data, description: e.target.value })}
