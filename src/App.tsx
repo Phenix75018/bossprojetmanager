@@ -12,6 +12,7 @@ import ValidatePlan from "./pages/ValidatePlan";
 import Dashboard from "./pages/Dashboard";
 import PlanDetail from "./pages/PlanDetail";
 import Integrations from "./pages/Integrations";
+import CalendarPage from "./pages/CalendarPage";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
@@ -59,6 +60,14 @@ const AppRoutes = () => (
         element={
           <ProtectedRoute>
             <PlanDetail />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/calendar"
+        element={
+          <ProtectedRoute>
+            <CalendarPage />
           </ProtectedRoute>
         }
       />
