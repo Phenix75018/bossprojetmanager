@@ -40,8 +40,8 @@ interface DaySchedule {
 }
 
 const priorityConfig: Record<string, { label: string; class: string }> = {
-  P0: { label: "Critique", class: "bg-orange-500/15 border-orange-500/30 text-orange-600" },
-  P1: { label: "Haute", class: "bg-rose-500/15 border-rose-500/30 text-rose-600" },
+  P0: { label: "Critique", class: "bg-amber-700/15 border-amber-700/30 text-amber-800" },
+  P1: { label: "Haute", class: "bg-red-800/15 border-red-800/30 text-red-800" },
   P2: { label: "Normale", class: "bg-primary/15 border-primary/30 text-primary" },
 };
 
@@ -319,7 +319,7 @@ export default function CalendarView({ project, onCycleStatus }: CalendarViewPro
                       <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
                         <div
                           className={`h-full rounded-full transition-all duration-300 ${
-                            load.percent >= 100 ? "bg-emerald-500" : load.percent >= 70 ? "bg-amber-500" : "bg-primary"
+                            load.percent >= 100 ? "bg-teal-600" : load.percent >= 70 ? "bg-amber-600" : "bg-primary"
                           }`}
                           style={{ width: `${load.percent}%` }}
                         />
@@ -426,7 +426,7 @@ export default function CalendarView({ project, onCycleStatus }: CalendarViewPro
                         <div className="w-full h-1 bg-muted rounded-full overflow-hidden">
                           <div
                             className={`h-full rounded-full transition-all duration-300 ${
-                              load.percent >= 100 ? "bg-emerald-500" : load.percent >= 70 ? "bg-amber-500" : "bg-primary"
+                              load.percent >= 100 ? "bg-teal-600" : load.percent >= 70 ? "bg-amber-600" : "bg-primary"
                             }`}
                             style={{ width: `${load.percent}%` }}
                           />

@@ -150,11 +150,11 @@
   }
 
   .priority-critical {
-    @apply bg-orange-500/10 text-orange-700 border-orange-500/20;
+    @apply bg-amber-700/10 text-amber-800 border-amber-700/20;
   }
 
   .priority-high {
-    @apply bg-rose-500/10 text-rose-700 border-rose-500/20;
+    @apply bg-red-800/10 text-red-800 border-red-800/20;
   }
 
   .priority-medium {
@@ -162,7 +162,7 @@
   }
 
   .priority-low {
-    @apply bg-emerald-500/10 text-emerald-700 border-emerald-500/20;
+    @apply bg-teal-700/10 text-teal-800 border-teal-700/20;
   }
 
   .status-badge {

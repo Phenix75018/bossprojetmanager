@@ -30,7 +30,7 @@ const priorityConfig: Record<string, { label: string; class: string }> = {
 const statusConfig: Record<TaskStatus, { label: string; icon: typeof Circle; class: string }> = {
   todo: { label: "À faire", icon: Circle, class: "text-muted-foreground" },
   "in-progress": { label: "En cours", icon: Clock, class: "text-primary" },
-  done: { label: "Terminé", icon: CheckCircle2, class: "text-emerald-500" },
+  done: { label: "Terminé", icon: CheckCircle2, class: "text-teal-700" },
 };
 
 type ViewMode = "list" | "kanban" | "calendar";
@@ -297,7 +297,7 @@ export default function PlanDetail() {
                                       <div className="p-4 pl-12 space-y-2">
                                         {task.subtasks.map((st) => (
                                           <div key={st.id} className="flex items-center gap-3 text-sm">
-                                            <div className={`w-4 h-4 rounded-full border-2 ${st.status === "done" ? "bg-emerald-500 border-emerald-500" : "border-muted-foreground/30"}`} />
+                                            <div className={`w-4 h-4 rounded-full border-2 ${st.status === "done" ? "bg-teal-600 border-teal-600" : "border-muted-foreground/30"}`} />
                                             <span className={st.status === "done" ? "line-through text-muted-foreground" : ""}>{st.title}</span>
                                             <span className="ml-auto text-xs font-mono text-muted-foreground">{st.duration_hours}h</span>
                                           </div>
@@ -325,7 +325,7 @@ export default function PlanDetail() {
             {kanbanColumns.map((col) => (
               <div key={col.status} className="space-y-3">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className={`w-2.5 h-2.5 rounded-full ${col.status === "todo" ? "bg-muted-foreground" : col.status === "in-progress" ? "bg-primary" : "bg-emerald-500"}`} />
+                  <div className={`w-2.5 h-2.5 rounded-full ${col.status === "todo" ? "bg-muted-foreground" : col.status === "in-progress" ? "bg-primary" : "bg-teal-600"}`} />
                   <h3 className="font-display font-bold text-sm">{col.label}</h3>
                   <span className="text-xs text-muted-foreground font-mono ml-auto">{col.tasks.length}</span>
                 </div>
