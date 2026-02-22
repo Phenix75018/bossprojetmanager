@@ -114,6 +114,8 @@ export type Database = {
           id: string
           remind_12h: boolean
           remind_5min: boolean
+          reminder_1_minutes: number
+          reminder_2_minutes: number
           updated_at: string
           user_id: string
         }
@@ -123,6 +125,8 @@ export type Database = {
           id?: string
           remind_12h?: boolean
           remind_5min?: boolean
+          reminder_1_minutes?: number
+          reminder_2_minutes?: number
           updated_at?: string
           user_id: string
         }
@@ -132,6 +136,8 @@ export type Database = {
           id?: string
           remind_12h?: boolean
           remind_5min?: boolean
+          reminder_1_minutes?: number
+          reminder_2_minutes?: number
           updated_at?: string
           user_id?: string
         }

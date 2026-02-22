@@ -11,7 +11,7 @@ import {
   Bell,
   BellOff,
 } from "lucide-react";
-import { useNotifications } from "@/hooks/useNotifications";
+import { useNotifications, REMINDER_OPTIONS } from "@/hooks/useNotifications";
 import Navbar from "@/components/layout/Navbar";
 import { useCalendarIntegrations } from "@/hooks/useCalendarIntegrations";
 import { Switch } from "@/components/ui/switch";
@@ -134,7 +134,7 @@ function CalendarIcon({ cal }: { cal: (typeof CALENDARS)[0] }) {
 export default function Integrations() {
   const { integrations, loading, toggleIntegration, getICSUrl } =
     useCalendarIntegrations();
-  const { prefs: notifPrefs, loading: notifLoading, toggleEnabled: toggleNotifications, permissionState } =
+  const { prefs: notifPrefs, loading: notifLoading, toggleEnabled: toggleNotifications, updateReminder1, updateReminder2, permissionState } =
     useNotifications();
   const [selectedCal, setSelectedCal] = useState<
     (typeof CALENDARS)[0] | null
@@ -213,11 +213,11 @@ export default function Integrations() {
                     Notifications de rappel
                   </h2>
                   <p className="text-sm text-muted-foreground">
-                    Recevez un rappel 12h et 5 min avant chaque tâche planifiée
+                    Recevez des rappels par email et navigateur avant chaque tâche
                   </p>
                   {permissionState === "denied" && (
                     <p className="text-xs text-destructive mt-1">
-                      Les notifications sont bloquées dans votre navigateur. Autorisez-les dans les paramètres.
+                      Les notifications navigateur sont bloquées. Autorisez-les dans les paramètres.
                     </p>
                   )}
                 </div>
@@ -235,6 +235,35 @@ export default function Integrations() {
                 />
               </div>
             </div>
+
+            {notifPrefs.enabled && (
+              <div className="mt-5 pt-5 border-t border-border grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">1er rappel</label>
+                  <select
+                    value={notifPrefs.reminder_1_minutes}
+                    onChange={(e) => updateReminder1(Number(e.target.value))}
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  >
+                    {REMINDER_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label} avant</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">2e rappel</label>
+                  <select
+                    value={notifPrefs.reminder_2_minutes}
+                    onChange={(e) => updateReminder2(Number(e.target.value))}
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  >
+                    {REMINDER_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label} avant</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* External calendars */}

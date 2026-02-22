@@ -19,19 +19,11 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const now = new Date();
-    
-    // Window for 12h reminder: events starting between 11h55m and 12h05m from now
-    const h12Start = new Date(now.getTime() + 11 * 60 * 60 * 1000 + 55 * 60 * 1000);
-    const h12End = new Date(now.getTime() + 12 * 60 * 60 * 1000 + 5 * 60 * 1000);
 
-    // Window for 5min reminder: events starting between 4m and 6m from now
-    const m5Start = new Date(now.getTime() + 4 * 60 * 1000);
-    const m5End = new Date(now.getTime() + 6 * 60 * 1000);
-
-    // Fetch users with notifications enabled
+    // Fetch users with notifications enabled + their custom delays
     const { data: enabledUsers } = await supabase
       .from("notification_preferences")
-      .select("user_id")
+      .select("user_id, reminder_1_minutes, reminder_2_minutes")
       .eq("enabled", true);
 
     if (!enabledUsers || enabledUsers.length === 0) {
@@ -40,101 +32,87 @@ Deno.serve(async (req) => {
       });
     }
 
-    const userIds = enabledUsers.map((u: any) => u.user_id);
     let totalSent = 0;
 
-    for (const userId of userIds) {
+    for (const userPref of enabledUsers) {
+      const userId = userPref.user_id;
+      const r1Min = userPref.reminder_1_minutes ?? 720;
+      const r2Min = userPref.reminder_2_minutes ?? 5;
+
       // Get user email
       const { data: userData } = await supabase.auth.admin.getUserById(userId);
       if (!userData?.user?.email) continue;
       const userEmail = userData.user.email;
 
-      // Check 12h events
-      const { data: events12h } = await supabase
+      // Check events for reminder 1
+      const r1Start = new Date(now.getTime() + (r1Min - 1) * 60 * 1000);
+      const r1End = new Date(now.getTime() + (r1Min + 1) * 60 * 1000);
+
+      const { data: eventsR1 } = await supabase
         .from("calendar_events")
         .select("id, title, start_time, description")
         .eq("user_id", userId)
-        .gte("start_time", h12Start.toISOString())
-        .lte("start_time", h12End.toISOString());
+        .gte("start_time", r1Start.toISOString())
+        .lte("start_time", r1End.toISOString());
 
-      // Check 5min events
-      const { data: events5min } = await supabase
+      // Check events for reminder 2
+      const r2Start = new Date(now.getTime() + (r2Min - 1) * 60 * 1000);
+      const r2End = new Date(now.getTime() + (r2Min + 1) * 60 * 1000);
+
+      const { data: eventsR2 } = await supabase
         .from("calendar_events")
         .select("id, title, start_time, description")
         .eq("user_id", userId)
-        .gte("start_time", m5Start.toISOString())
-        .lte("start_time", m5End.toISOString());
+        .gte("start_time", r2Start.toISOString())
+        .lte("start_time", r2End.toISOString());
 
-      // Send 12h reminders
-      for (const event of (events12h || [])) {
-        // Check if already sent
+      const r1Label = formatDelay(r1Min);
+      const r2Label = formatDelay(r2Min);
+
+      // Send reminder 1
+      for (const event of (eventsR1 || [])) {
         const { data: existing } = await supabase
           .from("sent_notifications")
           .select("id")
           .eq("user_id", userId)
           .eq("event_id", event.id)
-          .eq("reminder_type", "12h")
+          .eq("reminder_type", "reminder_1")
           .maybeSingle();
-
         if (existing) continue;
 
         const startDate = new Date(event.start_time);
-        const formattedDate = startDate.toLocaleDateString("fr-FR", {
-          weekday: "long", day: "numeric", month: "long",
-        });
-        const formattedTime = startDate.toLocaleTimeString("fr-FR", {
-          hour: "2-digit", minute: "2-digit",
-        });
+        const formattedDate = startDate.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+        const formattedTime = startDate.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
 
-        await sendEmail(RESEND_API_KEY, userEmail, 
-          `⏰ Rappel : "${event.title}" dans 12 heures`,
-          `<div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:20px;">
-            <h2 style="color:#7c2d12;">⏰ Rappel - 12h avant</h2>
-            <p>Votre tâche <strong>"${event.title}"</strong> est prévue pour :</p>
-            <p style="font-size:18px;font-weight:bold;color:#9a3412;">${formattedDate} à ${formattedTime}</p>
-            ${event.description ? `<p style="color:#666;">${event.description}</p>` : ""}
-            <hr style="border:none;border-top:1px solid #eee;margin:20px 0;">
-            <p style="color:#999;font-size:12px;">Boss Project Manager</p>
-          </div>`
+        await sendEmail(RESEND_API_KEY, userEmail,
+          `⏰ Rappel : "${event.title}" dans ${r1Label}`,
+          buildEmailHtml(`⏰ Rappel - ${r1Label} avant`, event.title, `${formattedDate} à ${formattedTime}`, event.description)
         );
 
-        await supabase.from("sent_notifications").insert({
-          user_id: userId, event_id: event.id, reminder_type: "12h",
-        });
+        await supabase.from("sent_notifications").insert({ user_id: userId, event_id: event.id, reminder_type: "reminder_1" });
         totalSent++;
       }
 
-      // Send 5min reminders
-      for (const event of (events5min || [])) {
+      // Send reminder 2
+      for (const event of (eventsR2 || [])) {
         const { data: existing } = await supabase
           .from("sent_notifications")
           .select("id")
           .eq("user_id", userId)
           .eq("event_id", event.id)
-          .eq("reminder_type", "5min")
+          .eq("reminder_type", "reminder_2")
           .maybeSingle();
-
         if (existing) continue;
 
         const startDate = new Date(event.start_time);
-        const formattedTime = startDate.toLocaleTimeString("fr-FR", {
-          hour: "2-digit", minute: "2-digit",
-        });
+        const formattedTime = startDate.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
 
         await sendEmail(RESEND_API_KEY, userEmail,
-          `🔔 "${event.title}" commence dans 5 minutes !`,
-          `<div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:20px;">
-            <h2 style="color:#dc2626;">🔔 C'est bientôt l'heure !</h2>
-            <p>Votre tâche <strong>"${event.title}"</strong> commence dans <strong>5 minutes</strong> (à ${formattedTime}).</p>
-            ${event.description ? `<p style="color:#666;">${event.description}</p>` : ""}
-            <hr style="border:none;border-top:1px solid #eee;margin:20px 0;">
-            <p style="color:#999;font-size:12px;">Boss Project Manager</p>
-          </div>`
+          `🔔 "${event.title}" dans ${r2Label} !`,
+          buildEmailHtml(`🔔 C'est bientôt l'heure !`, event.title, `à ${formattedTime} (dans ${r2Label})`, event.description)
         );
 
-        await supabase.from("sent_notifications").insert({
-          user_id: userId, event_id: event.id, reminder_type: "5min",
-        });
+        await supabase.from("sent_notifications").insert({ user_id: userId, event_id: event.id, reminder_type: "reminder_2" });
         totalSent++;
       }
     }
@@ -151,6 +129,23 @@ Deno.serve(async (req) => {
   }
 });
 
+function formatDelay(minutes: number): string {
+  if (minutes >= 1440) return `${Math.round(minutes / 1440)}j`;
+  if (minutes >= 60) return `${Math.round(minutes / 60)}h`;
+  return `${minutes} min`;
+}
+
+function buildEmailHtml(heading: string, title: string, when: string, description: string | null): string {
+  return `<div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:20px;">
+    <h2 style="color:#7c2d12;">${heading}</h2>
+    <p>Votre tâche <strong>"${title}"</strong> est prévue :</p>
+    <p style="font-size:18px;font-weight:bold;color:#9a3412;">${when}</p>
+    ${description ? `<p style="color:#666;">${description}</p>` : ""}
+    <hr style="border:none;border-top:1px solid #eee;margin:20px 0;">
+    <p style="color:#999;font-size:12px;">Boss Project Manager</p>
+  </div>`;
+}
+
 async function sendEmail(apiKey: string, to: string, subject: string, html: string) {
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -165,7 +160,6 @@ async function sendEmail(apiKey: string, to: string, subject: string, html: stri
       html,
     }),
   });
-
   if (!res.ok) {
     const body = await res.text();
     throw new Error(`Resend API error [${res.status}]: ${body}`);
