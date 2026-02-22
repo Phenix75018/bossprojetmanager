@@ -1,11 +1,12 @@
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { FolderKanban, CalendarDays, Zap, LogOut, User } from "lucide-react";
+import { FolderKanban, CalendarDays, Zap, LogOut, User, Link2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 const navItems = [
   { to: "/", label: "Accueil", icon: Zap },
   { to: "/dashboard", label: "Projets", icon: FolderKanban },
+  { to: "/integrations", label: "Intégrations", icon: Link2 },
 ];
 
 export default function Navbar() {

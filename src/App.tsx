@@ -10,6 +10,7 @@ import Onboarding from "./pages/Onboarding";
 import ValidatePlan from "./pages/ValidatePlan";
 import Dashboard from "./pages/Dashboard";
 import PlanDetail from "./pages/PlanDetail";
+import Integrations from "./pages/Integrations";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -55,6 +56,14 @@ const AppRoutes = () => (
         element={
           <ProtectedRoute>
             <PlanDetail />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/integrations"
+        element={
+          <ProtectedRoute>
+            <Integrations />
           </ProtectedRoute>
         }
       />
