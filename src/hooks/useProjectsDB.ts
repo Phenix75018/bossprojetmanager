@@ -255,6 +255,17 @@ export function useProjectsDB() {
     []
   );
 
+  const updateTask = useCallback(
+    async (taskId: string, updates: { title: string; description: string | null; priority: string; duration_hours: number }) => {
+      const { error } = await supabase
+        .from("tasks")
+        .update(updates)
+        .eq("id", taskId);
+      if (error) toast.error("Erreur lors de la mise à jour de la tâche");
+    },
+    []
+  );
+
   return {
     projects,
     loading,
@@ -262,6 +273,7 @@ export function useProjectsDB() {
     fetchProjectWithDetails,
     createProjectFromAI,
     updateTaskStatus,
+    updateTask,
     deleteProject,
     updateProjectCompletion,
   };

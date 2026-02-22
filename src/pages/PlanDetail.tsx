@@ -12,10 +12,12 @@ import {
   CalendarDays,
   ArrowLeft,
   Loader2,
+  Pencil,
 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
-import { useProjectsDB, ProjectWithDetails } from "@/hooks/useProjectsDB";
+import { useProjectsDB, ProjectWithDetails, TaskRow } from "@/hooks/useProjectsDB";
 import CalendarView from "@/components/CalendarView";
+import TaskEditModal from "@/components/TaskEditModal";
 
 type TaskStatus = "todo" | "in-progress" | "done";
 
@@ -35,12 +37,13 @@ type ViewMode = "list" | "kanban" | "calendar";
 
 export default function PlanDetail() {
   const { id } = useParams<{ id: string }>();
-  const { fetchProjectWithDetails, updateTaskStatus, updateProjectCompletion } = useProjectsDB();
+  const { fetchProjectWithDetails, updateTaskStatus, updateTask, updateProjectCompletion } = useProjectsDB();
   const [project, setProject] = useState<ProjectWithDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set());
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
+  const [editingTask, setEditingTask] = useState<(TaskRow & { subtasks: any[] }) | null>(null);
 
   const loadProject = useCallback(async () => {
     if (!id) return;
@@ -124,6 +127,20 @@ export default function PlanDetail() {
       updated.completion_percent = newPercent;
       updateProjectCompletion(prev.id, newPercent);
       return updated;
+    });
+  };
+
+  const handleSaveTask = async (taskId: string, updates: { title: string; description: string | null; priority: string; duration_hours: number }) => {
+    await updateTask(taskId, updates);
+    setProject((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        phases: prev.phases.map((phase) => ({
+          ...phase,
+          tasks: phase.tasks.map((t) => (t.id === taskId ? { ...t, ...updates } : t)),
+        })),
+      };
     });
   };
 
@@ -221,6 +238,9 @@ export default function PlanDetail() {
                                   </button>
                                   <span className={`status-badge border ${pCfg.class}`}>{task.priority}</span>
                                   <span className="text-xs font-mono text-muted-foreground">{task.duration_hours}h</span>
+                                  <button onClick={() => setEditingTask(task)} className="p-1 rounded-lg hover:bg-muted transition-colors" title="Modifier">
+                                    <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
+                                  </button>
                                   {task.subtasks.length > 0 && (
                                     <button onClick={() => toggleTask(task.id)}>
                                       {taskExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
@@ -270,10 +290,19 @@ export default function PlanDetail() {
                   {col.tasks.map((task) => {
                     const pCfg = priorityConfig[task.priority] || priorityConfig.P1;
                     return (
-                      <motion.div key={task.id} layout className="glass-card-hover rounded-xl p-4 cursor-pointer" onClick={() => cycleStatus(task.id, task.status)}>
+                      <motion.div key={task.id} layout className="glass-card-hover rounded-xl p-4 cursor-pointer group" onClick={() => cycleStatus(task.id, task.status)}>
                         <div className="flex items-start justify-between mb-2">
                           <span className="font-medium text-sm leading-tight">{task.title}</span>
-                          <span className={`status-badge border text-[10px] ${pCfg.class}`}>{task.priority}</span>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setEditingTask(task); }}
+                              className="p-1 rounded-lg hover:bg-muted transition-colors opacity-0 group-hover:opacity-100"
+                              title="Modifier"
+                            >
+                              <Pencil className="w-3 h-3 text-muted-foreground" />
+                            </button>
+                            <span className={`status-badge border text-[10px] ${pCfg.class}`}>{task.priority}</span>
+                          </div>
                         </div>
                         {task.description && <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{task.description}</p>}
                         <div className="flex items-center justify-between">
@@ -297,6 +326,13 @@ export default function PlanDetail() {
           <CalendarView project={project} onCycleStatus={cycleStatus} />
         )}
       </div>
+
+      <TaskEditModal
+        task={editingTask}
+        open={!!editingTask}
+        onClose={() => setEditingTask(null)}
+        onSave={handleSaveTask}
+      />
     </div>
   );
 }
