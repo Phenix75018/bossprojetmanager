@@ -13,8 +13,8 @@ interface TaskEditModalProps {
 }
 
 const priorities = [
-  { value: "P0", label: "P0 — Critique", class: "border-orange-500/40 bg-orange-500/10 text-orange-600" },
-  { value: "P1", label: "P1 — Haute", class: "border-rose-500/40 bg-rose-500/10 text-rose-600" },
+  { value: "P0", label: "P0 — Critique", class: "border-amber-700/40 bg-amber-700/10 text-amber-800" },
+  { value: "P1", label: "P1 — Haute", class: "border-red-800/40 bg-red-800/10 text-red-800" },
   { value: "P2", label: "P2 — Normale", class: "border-primary/40 bg-primary/10 text-primary" },
 ];
 
@@ -158,7 +158,7 @@ export default function TaskEditModal({ task, open, onClose, onSave, onDeleteTas
                 <div className="space-y-1.5">
                   {localSubtasks.map((st) => (
                     <div key={st.id} className="flex items-center gap-2 rounded-xl border border-border bg-background/50 px-3 py-2">
-                      <div className={`w-3 h-3 rounded-full border-2 flex-shrink-0 ${st.status === "done" ? "bg-emerald-500 border-emerald-500" : "border-muted-foreground/30"}`} />
+                      <div className={`w-3 h-3 rounded-full border-2 flex-shrink-0 ${st.status === "done" ? "bg-teal-600 border-teal-600" : "border-muted-foreground/30"}`} />
                       <span className={`text-sm flex-1 truncate ${st.status === "done" ? "line-through text-muted-foreground" : ""}`}>
                         {st.title}
                       </span>
