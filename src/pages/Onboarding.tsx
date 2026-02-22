@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, ArrowRight, Check, Sparkles } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import { useAuth } from "@/hooks/useAuth";
-import { useProjectsDB } from "@/hooks/useProjectsDB";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -50,7 +49,6 @@ export default function Onboarding() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationStatus, setGenerationStatus] = useState("Analyse du projet...");
   const { user } = useAuth();
-  const { createProjectFromAI } = useProjectsDB();
   const navigate = useNavigate();
 
   const canNext =
@@ -80,21 +78,16 @@ export default function Onboarding() {
       if (fnError) throw new Error(fnError.message);
       if (fnData?.error) throw new Error(fnData.error);
 
-      setGenerationStatus("Création du plan d'action...");
+      setGenerationStatus("Plan généré ! Redirection...");
 
-      const projectId = await createProjectFromAI(
-        fnData.plan,
-        data.description,
-        data.status,
-        data.availability
-      );
-
-      if (projectId) {
-        setGenerationStatus("Terminé !");
-        setTimeout(() => navigate(`/plan/${projectId}`), 500);
-      } else {
-        throw new Error("Erreur lors de la sauvegarde");
-      }
+      navigate("/validate-plan", {
+        state: {
+          plan: fnData.plan,
+          description: data.description,
+          status: data.status,
+          availability: data.availability,
+        },
+      });
     } catch (error: any) {
       console.error("Generation error:", error);
       toast.error(error.message || "Erreur lors de la génération du plan");
