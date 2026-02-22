@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
+  const [isForgot, setIsForgot] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -18,7 +19,14 @@ export default function Auth() {
     setLoading(true);
 
     try {
-      if (isLogin) {
+      if (isForgot) {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
+        if (error) throw error;
+        toast.success("Email de réinitialisation envoyé ! Vérifiez votre boîte.");
+        setIsForgot(false);
+      } else if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast.success("Connexion réussie !");
@@ -50,10 +58,14 @@ export default function Auth() {
             <Zap className="w-6 h-6 text-primary-foreground" />
           </div>
           <h1 className="text-2xl font-display font-black">
-            {isLogin ? "Bon retour !" : "Créer un compte"}
+            {isForgot ? "Mot de passe oublié" : isLogin ? "Bon retour !" : "Créer un compte"}
           </h1>
           <p className="text-muted-foreground mt-1 text-sm">
-            {isLogin ? "Connectez-vous pour continuer" : "Rejoignez Boss PM gratuitement"}
+            {isForgot
+              ? "Entrez votre email pour recevoir un lien de réinitialisation"
+              : isLogin
+              ? "Connectez-vous pour continuer"
+              : "Rejoignez Boss PM gratuitement"}
           </p>
         </div>
 
@@ -73,28 +85,39 @@ export default function Auth() {
             </div>
           </div>
 
-          <div>
-            <label className="text-sm font-medium mb-2 block">Mot de passe</label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
-                type={showPassword ? "text" : "password"}
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-xl border border-input bg-background pl-10 pr-10 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-                placeholder="••••••••"
-                minLength={6}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
+          {!isForgot && (
+            <div>
+              <label className="text-sm font-medium mb-2 block">Mot de passe</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full rounded-xl border border-input bg-background pl-10 pr-10 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  placeholder="••••••••"
+                  minLength={6}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {isLogin && (
+                <button
+                  type="button"
+                  onClick={() => setIsForgot(true)}
+                  className="text-xs text-primary hover:underline mt-2"
+                >
+                  Mot de passe oublié ?
+                </button>
+              )}
             </div>
-          </div>
+          )}
 
           <button
             type="submit"
@@ -105,7 +128,7 @@ export default function Auth() {
               <span className="animate-pulse-soft">Chargement...</span>
             ) : (
               <>
-                {isLogin ? "Se connecter" : "Créer mon compte"}
+                {isForgot ? "Envoyer le lien" : isLogin ? "Se connecter" : "Créer mon compte"}
                 <ArrowRight className="w-4 h-4" />
               </>
             )}
@@ -113,13 +136,24 @@ export default function Auth() {
         </form>
 
         <p className="text-center text-sm text-muted-foreground mt-6">
-          {isLogin ? "Pas encore de compte ?" : "Déjà un compte ?"}{" "}
-          <button
-            onClick={() => setIsLogin(!isLogin)}
-            className="text-primary font-semibold hover:underline"
-          >
-            {isLogin ? "S'inscrire" : "Se connecter"}
-          </button>
+          {isForgot ? (
+            <button
+              onClick={() => setIsForgot(false)}
+              className="text-primary font-semibold hover:underline"
+            >
+              Retour à la connexion
+            </button>
+          ) : (
+            <>
+              {isLogin ? "Pas encore de compte ?" : "Déjà un compte ?"}{" "}
+              <button
+                onClick={() => setIsLogin(!isLogin)}
+                className="text-primary font-semibold hover:underline"
+              >
+                {isLogin ? "S'inscrire" : "Se connecter"}
+              </button>
+            </>
+          )}
         </p>
       </motion.div>
     </div>
