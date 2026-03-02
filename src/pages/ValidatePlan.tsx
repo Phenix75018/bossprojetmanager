@@ -240,14 +240,25 @@ export default function ValidatePlan() {
     try {
       const projectId = await createProjectFromAI(plan, description, status, availability);
       if (projectId) {
+        // Save project_type
+        await supabase.from("projects").update({ project_type: projectType || "personal" }).eq("id", projectId);
+
+        // Save team recommendations to DB
+        if (plan.team_recommendations && plan.team_recommendations.length > 0) {
+          const recsToInsert = plan.team_recommendations.map((rec, i) => ({
+            project_id: projectId,
+            role: rec.role,
+            description: rec.description,
+            importance: rec.importance,
+            skills: rec.skills,
+            estimated_monthly_cost: rec.estimated_monthly_cost || null,
+            sort_order: i,
+          }));
+          await supabase.from("team_recommendations").insert(recsToInsert);
+        }
+
         toast.success("Plan d'action validé et sauvegardé !");
-        navigate(`/plan/${projectId}`, {
-          state: {
-            team_recommendations: plan.team_recommendations,
-            projectType,
-            projectDescription: description,
-          },
-        });
+        navigate(`/plan/${projectId}`);
       } else {
         throw new Error("Erreur lors de la sauvegarde");
       }

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useParams, Link, useLocation } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronDown,
@@ -74,7 +74,6 @@ interface AlternativeResult {
 
 export default function PlanDetail() {
   const { id } = useParams<{ id: string }>();
-  const location = useLocation();
   const { fetchProjectWithDetails, updateTaskStatus, updateTask, deleteTask, deleteSubtask, updateProjectCompletion } = useProjectsDB();
   const [project, setProject] = useState<ProjectWithDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -83,19 +82,14 @@ export default function PlanDetail() {
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
   const [editingTask, setEditingTask] = useState<(TaskRow & { subtasks: any[] }) | null>(null);
 
-  // Team recommendations from validation
-  const locationState = location.state as {
-    team_recommendations?: TeamRecommendation[];
-    projectType?: string;
-    projectDescription?: string;
-  } | null;
-  const [teamRecommendations] = useState<TeamRecommendation[]>(locationState?.team_recommendations || []);
-  const [projectType] = useState(locationState?.projectType || "personal");
-  const [projectDescription] = useState(locationState?.projectDescription || "");
+  // Team recommendations from DB
+  const [teamRecommendations, setTeamRecommendations] = useState<(TeamRecommendation & { id: string })[]>([]);
+  const [projectType, setProjectType] = useState("personal");
   
   // Alternatives exploration
   const [exploringRole, setExploringRole] = useState<string | null>(null);
   const [alternativesResult, setAlternativesResult] = useState<AlternativeResult | null>(null);
+  const [savedAlternatives, setSavedAlternatives] = useState<Record<string, AlternativeResult>>({});
   const [loadingAlternatives, setLoadingAlternatives] = useState(false);
 
   const loadProject = useCallback(async () => {
@@ -106,6 +100,57 @@ export default function PlanDetail() {
     // Auto-expand first phase
     if (data && data.phases.length > 0) {
       setExpandedPhases(new Set([data.phases[0].id]));
+    }
+
+    // Load project type
+    if (data) {
+      const { data: projData } = await supabase
+        .from("projects")
+        .select("project_type")
+        .eq("id", id)
+        .single();
+      if (projData?.project_type) setProjectType(projData.project_type);
+    }
+
+    // Load team recommendations from DB
+    const { data: recs } = await supabase
+      .from("team_recommendations")
+      .select("*")
+      .eq("project_id", id)
+      .order("sort_order");
+    if (recs && recs.length > 0) {
+      setTeamRecommendations(recs as any);
+
+      // Load saved alternatives for each recommendation
+      const recIds = recs.map((r: any) => r.id);
+      const { data: alts } = await supabase
+        .from("recommendation_alternatives")
+        .select("*")
+        .in("recommendation_id", recIds);
+      if (alts && alts.length > 0) {
+        const grouped: Record<string, AlternativeResult> = {};
+        for (const rec of recs) {
+          const recAlts = alts.filter((a: any) => a.recommendation_id === rec.id);
+          if (recAlts.length > 0) {
+            grouped[rec.id] = {
+              has_alternatives: true,
+              summary: "Alternatives sauvegardées",
+              alternatives: recAlts.map((a: any) => ({
+                type: a.type,
+                title: a.title,
+                description: a.description,
+                duration: a.duration,
+                estimated_cost: a.estimated_cost,
+                pros: a.pros || [],
+                cons: a.cons || [],
+                feasibility: a.feasibility,
+              })),
+              no_alternative_reason: null,
+            };
+          }
+        }
+        setSavedAlternatives(grouped);
+      }
     }
   }, [id, fetchProjectWithDetails]);
 
@@ -240,7 +285,14 @@ export default function PlanDetail() {
     return ok;
   };
 
-  const handleExploreAlternatives = async (rec: TeamRecommendation) => {
+  const handleExploreAlternatives = async (rec: TeamRecommendation & { id: string }) => {
+    // Check if we have saved alternatives
+    if (savedAlternatives[rec.id]) {
+      setExploringRole(rec.role);
+      setAlternativesResult(savedAlternatives[rec.id]);
+      return;
+    }
+
     setExploringRole(rec.role);
     setLoadingAlternatives(true);
     setAlternativesResult(null);
@@ -251,11 +303,28 @@ export default function PlanDetail() {
           description: rec.description,
           skills: rec.skills,
           importance: rec.importance,
-          projectDescription: projectDescription || project?.description || "",
+          projectDescription: project?.description || "",
         },
       });
       if (error) throw error;
       setAlternativesResult(data);
+
+      // Save alternatives to DB
+      if (data?.has_alternatives && data.alternatives?.length > 0) {
+        const altsToInsert = data.alternatives.map((alt: any) => ({
+          recommendation_id: rec.id,
+          type: alt.type,
+          title: alt.title,
+          description: alt.description || "",
+          duration: alt.duration || null,
+          estimated_cost: alt.estimated_cost || null,
+          pros: alt.pros || [],
+          cons: alt.cons || [],
+          feasibility: alt.feasibility || "moyenne",
+        }));
+        await supabase.from("recommendation_alternatives").insert(altsToInsert);
+        setSavedAlternatives((prev) => ({ ...prev, [rec.id]: data }));
+      }
     } catch (err: any) {
       toast.error(err.message || "Erreur lors de la recherche d'alternatives");
       setExploringRole(null);
