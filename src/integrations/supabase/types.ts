@@ -184,6 +184,7 @@ export type Database = {
           description: string
           hours_per_week: number
           id: string
+          project_type: string
           status: string
           time_slots: string | null
           title: string
@@ -198,6 +199,7 @@ export type Database = {
           description: string
           hours_per_week?: number
           id?: string
+          project_type?: string
           status?: string
           time_slots?: string | null
           title: string
@@ -212,6 +214,7 @@ export type Database = {
           description?: string
           hours_per_week?: number
           id?: string
+          project_type?: string
           status?: string
           time_slots?: string | null
           title?: string
@@ -219,6 +222,59 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      recommendation_alternatives: {
+        Row: {
+          chosen: boolean
+          cons: string[]
+          created_at: string
+          description: string
+          duration: string | null
+          estimated_cost: string | null
+          feasibility: string
+          id: string
+          pros: string[]
+          recommendation_id: string
+          title: string
+          type: string
+        }
+        Insert: {
+          chosen?: boolean
+          cons?: string[]
+          created_at?: string
+          description?: string
+          duration?: string | null
+          estimated_cost?: string | null
+          feasibility?: string
+          id?: string
+          pros?: string[]
+          recommendation_id: string
+          title: string
+          type: string
+        }
+        Update: {
+          chosen?: boolean
+          cons?: string[]
+          created_at?: string
+          description?: string
+          duration?: string | null
+          estimated_cost?: string | null
+          feasibility?: string
+          id?: string
+          pros?: string[]
+          recommendation_id?: string
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recommendation_alternatives_recommendation_id_fkey"
+            columns: ["recommendation_id"]
+            isOneToOne: false
+            referencedRelation: "team_recommendations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sent_notifications: {
         Row: {
@@ -345,6 +401,50 @@ export type Database = {
             columns: ["phase_id"]
             isOneToOne: false
             referencedRelation: "phases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_recommendations: {
+        Row: {
+          created_at: string
+          description: string
+          estimated_monthly_cost: string | null
+          id: string
+          importance: string
+          project_id: string
+          role: string
+          skills: string[]
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          estimated_monthly_cost?: string | null
+          id?: string
+          importance?: string
+          project_id: string
+          role: string
+          skills?: string[]
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          estimated_monthly_cost?: string | null
+          id?: string
+          importance?: string
+          project_id?: string
+          role?: string
+          skills?: string[]
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_recommendations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
