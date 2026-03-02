@@ -31,6 +31,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import CalendarView from "@/components/CalendarView";
 import TaskEditModal from "@/components/TaskEditModal";
+import TaskExplainModal from "@/components/TaskExplainModal";
 
 type TaskStatus = "todo" | "in-progress" | "done";
 
@@ -91,6 +92,15 @@ export default function PlanDetail() {
   const [alternativesResult, setAlternativesResult] = useState<AlternativeResult | null>(null);
   const [savedAlternatives, setSavedAlternatives] = useState<Record<string, AlternativeResult>>({});
   const [loadingAlternatives, setLoadingAlternatives] = useState(false);
+
+  // Task explanation modal
+  const [explainTarget, setExplainTarget] = useState<{
+    title: string;
+    description?: string | null;
+    subtasks?: { title: string; duration_hours: number }[];
+    phaseName: string;
+    isSubtask: boolean;
+  } | null>(null);
 
   const loadProject = useCallback(async () => {
     if (!id) return;
@@ -434,6 +444,19 @@ export default function PlanDetail() {
                                       {task.title}
                                     </span>
                                   </button>
+                                  <button
+                                    onClick={() => setExplainTarget({
+                                      title: task.title,
+                                      description: task.description,
+                                      subtasks: task.subtasks.map((st: any) => ({ title: st.title, duration_hours: st.duration_hours })),
+                                      phaseName: phase.name,
+                                      isSubtask: false,
+                                    })}
+                                    className="p-1 rounded-lg hover:bg-primary/10 transition-colors"
+                                    title="Comment réaliser cette tâche"
+                                  >
+                                    <BookOpen className="w-3.5 h-3.5 text-muted-foreground hover:text-primary" />
+                                  </button>
                                   <span className={`status-badge border ${pCfg.class}`}>{task.priority}</span>
                                   <span className="text-xs font-mono text-muted-foreground">{task.duration_hours}h</span>
                                   <button onClick={() => setEditingTask(task)} className="p-1 rounded-lg hover:bg-muted transition-colors" title="Modifier">
@@ -451,9 +474,18 @@ export default function PlanDetail() {
                                     <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="border-t border-border overflow-hidden">
                                       <div className="p-4 pl-12 space-y-2">
                                         {task.subtasks.map((st) => (
-                                          <div key={st.id} className="flex items-center gap-3 text-sm">
+                                          <div key={st.id} className="flex items-center gap-3 text-sm group/subtask">
                                             <div className={`w-4 h-4 rounded-full border-2 ${st.status === "done" ? "bg-teal-600 border-teal-600" : "border-muted-foreground/30"}`} />
-                                            <span className={st.status === "done" ? "line-through text-muted-foreground" : ""}>{st.title}</span>
+                                            <button
+                                              onClick={() => setExplainTarget({
+                                                title: st.title,
+                                                phaseName: phase.name,
+                                                isSubtask: true,
+                                              })}
+                                              className={`text-left flex-1 hover:text-primary transition-colors ${st.status === "done" ? "line-through text-muted-foreground" : ""}`}
+                                            >
+                                              {st.title}
+                                            </button>
                                             <span className="ml-auto text-xs font-mono text-muted-foreground">{st.duration_hours}h</span>
                                           </div>
                                         ))}
@@ -492,6 +524,23 @@ export default function PlanDetail() {
                         <div className="flex items-start justify-between mb-2">
                           <span className="font-medium text-sm leading-tight">{task.title}</span>
                           <div className="flex items-center gap-1">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const taskPhase = project.phases.find(p => p.tasks.some(t => t.id === task.id));
+                                setExplainTarget({
+                                  title: task.title,
+                                  description: task.description,
+                                  subtasks: task.subtasks.map((st: any) => ({ title: st.title, duration_hours: st.duration_hours })),
+                                  phaseName: taskPhase?.name || "",
+                                  isSubtask: false,
+                                });
+                              }}
+                              className="p-1 rounded-lg hover:bg-primary/10 transition-colors opacity-0 group-hover:opacity-100"
+                              title="Comment réaliser cette tâche"
+                            >
+                              <BookOpen className="w-3 h-3 text-muted-foreground" />
+                            </button>
                             <button
                               onClick={(e) => { e.stopPropagation(); setEditingTask(task); }}
                               className="p-1 rounded-lg hover:bg-muted transition-colors opacity-0 group-hover:opacity-100"
@@ -680,6 +729,17 @@ export default function PlanDetail() {
         onSave={handleSaveTask}
         onDeleteTask={handleDeleteTask}
         onDeleteSubtask={handleDeleteSubtask}
+      />
+
+      <TaskExplainModal
+        open={!!explainTarget}
+        onClose={() => setExplainTarget(null)}
+        taskTitle={explainTarget?.title || ""}
+        taskDescription={explainTarget?.description}
+        subtasks={explainTarget?.subtasks}
+        projectDescription={project?.description || ""}
+        phaseName={explainTarget?.phaseName || ""}
+        isSubtask={explainTarget?.isSubtask || false}
       />
     </div>
   );
