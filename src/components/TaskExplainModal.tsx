@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Sparkles, Loader2, RefreshCw, BookOpen } from "lucide-react";
 import ReactMarkdown from "react-markdown";
@@ -14,6 +14,8 @@ interface TaskExplainModalProps {
   projectDescription: string;
   phaseName: string;
   isSubtask?: boolean;
+  taskId?: string | null;
+  subtaskId?: string | null;
 }
 
 export default function TaskExplainModal({
@@ -25,10 +27,43 @@ export default function TaskExplainModal({
   projectDescription,
   phaseName,
   isSubtask = false,
+  taskId,
+  subtaskId,
 }: TaskExplainModalProps) {
   const [explanation, setExplanation] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [hasGenerated, setHasGenerated] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const [savedId, setSavedId] = useState<string | null>(null);
+
+  // Load saved explanation from DB
+  useEffect(() => {
+    if (!open || hasLoaded) return;
+    const loadSaved = async () => {
+      const entityId = isSubtask ? subtaskId : taskId;
+      if (!entityId) { setHasLoaded(true); return; }
+
+      let query = supabase.from("task_explanations").select("id, explanation");
+      if (isSubtask) {
+        query = query.eq("subtask_id", entityId).is("task_id", null);
+      } else {
+        query = query.eq("task_id", entityId).is("subtask_id", null);
+      }
+      const { data } = await query.order("created_at", { ascending: false }).limit(1);
+      if (data && data.length > 0) {
+        setExplanation(data[0].explanation);
+        setSavedId(data[0].id);
+      }
+      setHasLoaded(true);
+    };
+    loadSaved();
+  }, [open, hasLoaded, taskId, subtaskId, isSubtask]);
+
+  // Auto-generate if no saved explanation found after load
+  useEffect(() => {
+    if (open && hasLoaded && !explanation && !loading) {
+      generate();
+    }
+  }, [open, hasLoaded, explanation]);
 
   const generate = async () => {
     setLoading(true);
@@ -49,7 +84,8 @@ export default function TaskExplainModal({
         return;
       }
       setExplanation(data.explanation);
-      setHasGenerated(true);
+      // Save to DB
+      await saveExplanation(data.explanation);
     } catch (err: any) {
       toast.error(err.message || "Erreur lors de la génération");
     } finally {
@@ -57,14 +93,33 @@ export default function TaskExplainModal({
     }
   };
 
-  // Auto-generate on first open
-  if (open && !hasGenerated && !loading) {
-    generate();
-  }
+  const saveExplanation = async (text: string) => {
+    const entityId = isSubtask ? subtaskId : taskId;
+    if (!entityId) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    if (savedId) {
+      await supabase.from("task_explanations").update({ explanation: text }).eq("id", savedId);
+    } else {
+      const insertData: any = {
+        explanation: text,
+        user_id: user.id,
+      };
+      if (isSubtask) {
+        insertData.subtask_id = entityId;
+      } else {
+        insertData.task_id = entityId;
+      }
+      const { data } = await supabase.from("task_explanations").insert(insertData).select("id").single();
+      if (data) setSavedId(data.id);
+    }
+  };
 
   const handleClose = () => {
     setExplanation(null);
-    setHasGenerated(false);
+    setHasLoaded(false);
+    setSavedId(null);
     onClose();
   };
 
@@ -132,6 +187,11 @@ export default function TaskExplainModal({
                       L'IA prépare un guide détaillé pour cette {isSubtask ? "sous-tâche" : "tâche"}
                     </p>
                   </div>
+                </div>
+              ) : !hasLoaded ? (
+                <div className="flex flex-col items-center justify-center py-16 gap-4">
+                  <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">Chargement…</p>
                 </div>
               ) : explanation ? (
                 <div className="relative">
