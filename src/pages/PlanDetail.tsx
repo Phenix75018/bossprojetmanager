@@ -100,6 +100,8 @@ export default function PlanDetail() {
     subtasks?: { title: string; duration_hours: number }[];
     phaseName: string;
     isSubtask: boolean;
+    taskId?: string;
+    subtaskId?: string;
   } | null>(null);
 
   const loadProject = useCallback(async () => {
@@ -451,6 +453,7 @@ export default function PlanDetail() {
                                       subtasks: task.subtasks.map((st: any) => ({ title: st.title, duration_hours: st.duration_hours })),
                                       phaseName: phase.name,
                                       isSubtask: false,
+                                      taskId: task.id,
                                     })}
                                     className="p-1 rounded-lg hover:bg-primary/10 transition-colors"
                                     title="Comment réaliser cette tâche"
@@ -481,6 +484,7 @@ export default function PlanDetail() {
                                                 title: st.title,
                                                 phaseName: phase.name,
                                                 isSubtask: true,
+                                                subtaskId: st.id,
                                               })}
                                               className={`text-left flex-1 hover:text-primary transition-colors ${st.status === "done" ? "line-through text-muted-foreground" : ""}`}
                                             >
@@ -534,6 +538,7 @@ export default function PlanDetail() {
                                   subtasks: task.subtasks.map((st: any) => ({ title: st.title, duration_hours: st.duration_hours })),
                                   phaseName: taskPhase?.name || "",
                                   isSubtask: false,
+                                  taskId: task.id,
                                 });
                               }}
                               className="p-1 rounded-lg hover:bg-primary/10 transition-colors opacity-0 group-hover:opacity-100"
@@ -740,6 +745,8 @@ export default function PlanDetail() {
         projectDescription={project?.description || ""}
         phaseName={explainTarget?.phaseName || ""}
         isSubtask={explainTarget?.isSubtask || false}
+        taskId={explainTarget?.taskId}
+        subtaskId={explainTarget?.subtaskId}
       />
     </div>
   );
