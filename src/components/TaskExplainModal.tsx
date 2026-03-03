@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Sparkles, Loader2, RefreshCw, BookOpen } from "lucide-react";
+import { X, Sparkles, Loader2, RefreshCw, BookOpen, Download } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import { exportTaskExplanationPDF } from "@/lib/pdfExport";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -168,6 +169,16 @@ export default function TaskExplainModal({
                   )}
                   Autre suggestion
                 </button>
+                {explanation && (
+                  <button
+                    onClick={() => exportTaskExplanationPDF(taskTitle, explanation, isSubtask, phaseName)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border hover:border-primary/30 hover:text-primary transition-all"
+                    title="Exporter en PDF"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    PDF
+                  </button>
+                )}
                 <button onClick={handleClose} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
                   <X className="w-4 h-4 text-muted-foreground" />
                 </button>
