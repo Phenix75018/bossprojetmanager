@@ -24,6 +24,7 @@ import {
   Wrench,
   UserCheck,
   Bot,
+  Download,
 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import { useProjectsDB, ProjectWithDetails, TaskRow } from "@/hooks/useProjectsDB";
@@ -32,6 +33,7 @@ import { toast } from "sonner";
 import CalendarView from "@/components/CalendarView";
 import TaskEditModal from "@/components/TaskEditModal";
 import TaskExplainModal from "@/components/TaskExplainModal";
+import { exportFullPlanPDF } from "@/lib/pdfExport";
 
 type TaskStatus = "todo" | "in-progress" | "done";
 
@@ -297,6 +299,64 @@ export default function PlanDetail() {
     return ok;
   };
 
+  const handleExportPDF = async () => {
+    if (!project) return;
+    toast.info("Génération du PDF en cours…");
+    try {
+      // Load all saved explanations
+      const allTaskIds = project.phases.flatMap(p => p.tasks.map(t => t.id));
+      const allSubtaskIds = project.phases.flatMap(p => p.tasks.flatMap(t => t.subtasks.map((st: any) => st.id)));
+      const explanations: Record<string, string> = {};
+
+      if (allTaskIds.length > 0) {
+        const { data: taskExpl } = await supabase.from("task_explanations").select("task_id, explanation").in("task_id", allTaskIds);
+        taskExpl?.forEach(e => { if (e.task_id) explanations[e.task_id] = e.explanation; });
+      }
+      if (allSubtaskIds.length > 0) {
+        const { data: stExpl } = await supabase.from("task_explanations").select("subtask_id, explanation").in("subtask_id", allSubtaskIds);
+        stExpl?.forEach(e => { if (e.subtask_id) explanations[e.subtask_id] = e.explanation; });
+      }
+
+      // Load alternatives by recommendation
+      const alternativesByRec: Record<string, any[]> = {};
+      for (const rec of teamRecommendations) {
+        const { data: alts } = await supabase.from("recommendation_alternatives").select("*").eq("recommendation_id", rec.id);
+        if (alts && alts.length > 0) alternativesByRec[rec.id] = alts;
+      }
+
+      const allTasks = project.phases.flatMap(p => p.tasks);
+      const doneTasks = allTasks.filter(t => t.status === "done").length;
+      const percent = allTasks.length > 0 ? Math.round((doneTasks / allTasks.length) * 100) : 0;
+
+      await exportFullPlanPDF({
+        title: project.title,
+        description: project.description,
+        phases: project.phases.map(p => ({
+          name: p.name,
+          tasks: p.tasks.map(t => ({
+            id: t.id,
+            title: t.title,
+            description: t.description,
+            priority: t.priority,
+            status: t.status,
+            duration_hours: t.duration_hours,
+            optional: t.optional,
+            subtasks: t.subtasks.map((st: any) => ({ id: st.id, title: st.title, status: st.status, duration_hours: st.duration_hours })),
+          })),
+        })),
+        percent,
+        totalTasks: allTasks.length,
+        doneTasks,
+        recommendations: teamRecommendations,
+        alternativesByRec,
+        explanations,
+      });
+      toast.success("PDF exporté avec succès !");
+    } catch (err: any) {
+      toast.error("Erreur lors de l'export PDF");
+    }
+  };
+
   const handleExploreAlternatives = async (rec: TeamRecommendation & { id: string }) => {
     // Check if we have saved alternatives
     if (savedAlternatives[rec.id]) {
@@ -384,6 +444,13 @@ export default function PlanDetail() {
             <div className="w-32 h-2 bg-muted rounded-full mt-2 overflow-hidden">
               <div className="h-full gradient-bg rounded-full transition-all duration-500" style={{ width: `${percent}%` }} />
             </div>
+            <button
+              onClick={handleExportPDF}
+              className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-lg text-xs font-medium border border-border hover:border-primary/30 hover:text-primary transition-all"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Exporter PDF
+            </button>
           </div>
         </div>
 
