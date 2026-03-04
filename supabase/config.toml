@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.share-plan-email]
 verify_jwt = false
+
+[functions.get-shared-calendar]
+verify_jwt = false

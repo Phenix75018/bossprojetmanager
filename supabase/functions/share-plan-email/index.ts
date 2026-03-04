@@ -28,14 +28,16 @@ Deno.serve(async (req) => {
     const { email, projectId, shareUrl, projectTitle, senderName } = await req.json();
     if (!email || !shareUrl || !projectTitle) throw new Error("Paramètres manquants");
 
-    // Verify project ownership
-    const { data: project } = await supabase
-      .from("projects")
-      .select("id, user_id")
-      .eq("id", projectId)
-      .eq("user_id", user.id)
-      .single();
-    if (!project) throw new Error("Projet introuvable");
+    // Verify project ownership if projectId is provided
+    if (projectId) {
+      const { data: project } = await supabase
+        .from("projects")
+        .select("id, user_id")
+        .eq("id", projectId)
+        .eq("user_id", user.id)
+        .single();
+      if (!project) throw new Error("Projet introuvable");
+    }
 
     const displayName = senderName || user.email;
 
