@@ -107,6 +107,27 @@ export type Database = {
         }
         Relationships: []
       }
+      calendar_shares: {
+        Row: {
+          created_at: string
+          id: string
+          share_token: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          share_token?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          share_token?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notification_preferences: {
         Row: {
           created_at: string
