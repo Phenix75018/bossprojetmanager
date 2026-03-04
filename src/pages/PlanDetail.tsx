@@ -25,6 +25,7 @@ import {
   UserCheck,
   Bot,
   Download,
+  Share2,
 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import { useProjectsDB, ProjectWithDetails, TaskRow } from "@/hooks/useProjectsDB";
@@ -33,6 +34,7 @@ import { toast } from "sonner";
 import CalendarView from "@/components/CalendarView";
 import TaskEditModal from "@/components/TaskEditModal";
 import TaskExplainModal from "@/components/TaskExplainModal";
+import SharePlanModal from "@/components/SharePlanModal";
 import { exportFullPlanPDF } from "@/lib/pdfExport";
 
 type TaskStatus = "todo" | "in-progress" | "done";
@@ -96,6 +98,10 @@ export default function PlanDetail() {
   const [loadingAlternatives, setLoadingAlternatives] = useState(false);
 
   // Task explanation modal
+  // Share modal
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareToken, setShareToken] = useState<string | null>(null);
+
   const [explainTarget, setExplainTarget] = useState<{
     title: string;
     description?: string | null;
@@ -116,14 +122,15 @@ export default function PlanDetail() {
       setExpandedPhases(new Set([data.phases[0].id]));
     }
 
-    // Load project type
+    // Load project type + share_token
     if (data) {
       const { data: projData } = await supabase
         .from("projects")
-        .select("project_type")
+        .select("project_type, share_token")
         .eq("id", id)
         .single();
       if (projData?.project_type) setProjectType(projData.project_type);
+      if ((projData as any)?.share_token) setShareToken((projData as any).share_token);
     }
 
     // Load team recommendations from DB
@@ -444,13 +451,22 @@ export default function PlanDetail() {
             <div className="w-32 h-2 bg-muted rounded-full mt-2 overflow-hidden">
               <div className="h-full gradient-bg rounded-full transition-all duration-500" style={{ width: `${percent}%` }} />
             </div>
-            <button
-              onClick={handleExportPDF}
-              className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-lg text-xs font-medium border border-border hover:border-primary/30 hover:text-primary transition-all"
-            >
-              <Download className="w-3.5 h-3.5" />
-              Exporter PDF
-            </button>
+            <div className="flex items-center gap-2 mt-3">
+              <button
+                onClick={() => setShowShareModal(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border hover:border-primary/30 hover:text-primary transition-all"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                Partager
+              </button>
+              <button
+                onClick={handleExportPDF}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border hover:border-primary/30 hover:text-primary transition-all"
+              >
+                <Download className="w-3.5 h-3.5" />
+                PDF
+              </button>
+            </div>
           </div>
         </div>
 
