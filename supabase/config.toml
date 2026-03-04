@@ -11,3 +11,9 @@ verify_jwt = false
 
 [functions.explain-task]
 verify_jwt = false
+
+[functions.get-shared-plan]
+verify_jwt = false
+
+[functions.share-plan-email]
+verify_jwt = false
