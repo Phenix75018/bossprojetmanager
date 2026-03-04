@@ -185,6 +185,7 @@ export type Database = {
           hours_per_week: number
           id: string
           project_type: string
+          share_token: string | null
           status: string
           time_slots: string | null
           title: string
@@ -200,6 +201,7 @@ export type Database = {
           hours_per_week?: number
           id?: string
           project_type?: string
+          share_token?: string | null
           status?: string
           time_slots?: string | null
           title: string
@@ -215,6 +217,7 @@ export type Database = {
           hours_per_week?: number
           id?: string
           project_type?: string
+          share_token?: string | null
           status?: string
           time_slots?: string | null
           title?: string
