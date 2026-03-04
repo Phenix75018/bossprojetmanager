@@ -12,6 +12,7 @@ import ValidatePlan from "./pages/ValidatePlan";
 import Dashboard from "./pages/Dashboard";
 import PlanDetail from "./pages/PlanDetail";
 import SharedPlan from "./pages/SharedPlan";
+import SharedCalendar from "./pages/SharedCalendar";
 import Integrations from "./pages/Integrations";
 import CalendarPage from "./pages/CalendarPage";
 import ResetPassword from "./pages/ResetPassword";
@@ -33,6 +34,7 @@ const AppRoutes = () => (
       <Route path="/auth" element={<Auth />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/share/:token" element={<SharedPlan />} />
+      <Route path="/calendar/share/:token" element={<SharedCalendar />} />
       <Route
         path="/onboarding"
         element={

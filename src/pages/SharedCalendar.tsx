@@ -167,7 +167,8 @@ export default function SharedCalendar() {
     // Use first project's config for time slots and days
     const mainProject = data.projects[0];
     const ts = parseTimeSlots(mainProject.time_slots);
-    const availDays = new Set((mainProject.days_per_week || ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]).map((d: string) => DAY_MAP[d] ?? -1).filter((d: number) => d >= 0));
+    const daysArr: string[] = mainProject.days_per_week || ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"];
+    const availDays = new Set<number>(daysArr.map((d: string) => DAY_MAP[d] ?? -1).filter((d: number) => d >= 0));
 
     // Build phase map
     const phaseMap: Record<string, string> = {};
