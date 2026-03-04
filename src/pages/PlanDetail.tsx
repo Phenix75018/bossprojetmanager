@@ -831,6 +831,15 @@ export default function PlanDetail() {
         taskId={explainTarget?.taskId}
         subtaskId={explainTarget?.subtaskId}
       />
+
+      <SharePlanModal
+        open={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        projectId={project.id}
+        projectTitle={project.title}
+        shareToken={shareToken}
+        onTokenGenerated={(t) => setShareToken(t || null)}
+      />
     </div>
   );
 }
