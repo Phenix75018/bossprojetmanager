@@ -1,15 +1,17 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { Loader2, ArrowLeft, Share2 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import { useProjectsDB, ProjectWithDetails } from "@/hooks/useProjectsDB";
 import CalendarView from "@/components/CalendarView";
+import ShareCalendarModal from "@/components/ShareCalendarModal";
 
 export default function CalendarPage() {
   const { projects, loading: projectsLoading, fetchProjectWithDetails, updateTaskStatus, updateProjectCompletion } = useProjectsDB();
   const [allProjects, setAllProjects] = useState<ProjectWithDetails[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string | "all">("all");
   const [loading, setLoading] = useState(true);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const loadAllDetails = useCallback(async () => {
     if (projects.length === 0) {
@@ -109,7 +111,14 @@ export default function CalendarPage() {
             </p>
           </div>
 
-          <select
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowShareModal(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border hover:border-primary/30 hover:text-primary transition-all"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              Partager
+            </button>
             value={selectedProjectId}
             onChange={(e) => setSelectedProjectId(e.target.value)}
             className="rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
