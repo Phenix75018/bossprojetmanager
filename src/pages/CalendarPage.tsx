@@ -132,6 +132,7 @@ export default function CalendarPage() {
               ))}
             </select>
           </div>
+        </div>
 
         {mergedProject ? (
           <CalendarView
@@ -144,6 +145,11 @@ export default function CalendarPage() {
           </div>
         )}
       </div>
+
+      <ShareCalendarModal
+        open={showShareModal}
+        onClose={() => setShowShareModal(false)}
+      />
     </div>
   );
 }
