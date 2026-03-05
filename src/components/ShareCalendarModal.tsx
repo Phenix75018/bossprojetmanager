@@ -2,10 +2,12 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Copy, Check, Mail, Link2, Loader2 } from "lucide-react";
+import { Copy, Check, Mail, Link2, Loader2, Lock } from "lucide-react";
 
 interface ShareCalendarModalProps {
   open: boolean;
@@ -20,19 +22,27 @@ export default function ShareCalendarModal({ open, onClose }: ShareCalendarModal
   const [email, setEmail] = useState("");
   const [sendingEmail, setSendingEmail] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const [passwordEnabled, setPasswordEnabled] = useState(false);
+  const [password, setPassword] = useState("");
+  const [savingPassword, setSavingPassword] = useState(false);
 
   const shareUrl = shareToken ? `${window.location.origin}/calendar/share/${shareToken}` : null;
 
-  // Load existing share on open
   const loadShare = async () => {
     if (initialized || !user) return;
     setInitialized(true);
     const { data } = await supabase
       .from("calendar_shares" as any)
-      .select("share_token")
+      .select("share_token, share_password")
       .eq("user_id", user.id)
       .maybeSingle();
-    if (data) setShareToken((data as any).share_token);
+    if (data) {
+      setShareToken((data as any).share_token);
+      if ((data as any).share_password) {
+        setPasswordEnabled(true);
+        setPassword((data as any).share_password);
+      }
+    }
   };
 
   if (open && !initialized) loadShare();
@@ -42,9 +52,13 @@ export default function ShareCalendarModal({ open, onClose }: ShareCalendarModal
     setLoading(true);
     try {
       const token = crypto.randomUUID();
+      const upsertData: any = { user_id: user.id, share_token: token };
+      if (passwordEnabled && password) {
+        upsertData.share_password = password;
+      }
       const { error } = await supabase
         .from("calendar_shares" as any)
-        .upsert({ user_id: user.id, share_token: token } as any, { onConflict: "user_id" });
+        .upsert(upsertData, { onConflict: "user_id" });
       if (error) throw error;
       setShareToken(token);
       toast.success("Lien de partage créé !");
@@ -52,6 +66,23 @@ export default function ShareCalendarModal({ open, onClose }: ShareCalendarModal
       toast.error("Erreur lors de la création du lien");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSavePassword = async () => {
+    if (!user) return;
+    setSavingPassword(true);
+    try {
+      const { error } = await supabase
+        .from("calendar_shares" as any)
+        .update({ share_password: passwordEnabled ? password || null : null } as any)
+        .eq("user_id", user.id);
+      if (error) throw error;
+      toast.success(passwordEnabled && password ? "Mot de passe activé" : "Mot de passe désactivé");
+    } catch {
+      toast.error("Erreur");
+    } finally {
+      setSavingPassword(false);
     }
   };
 
@@ -72,6 +103,8 @@ export default function ShareCalendarModal({ open, onClose }: ShareCalendarModal
         .eq("user_id", user.id);
       if (error) throw error;
       setShareToken(null);
+      setPasswordEnabled(false);
+      setPassword("");
       toast.success("Lien de partage désactivé");
     } catch {
       toast.error("Erreur");
@@ -120,8 +153,24 @@ export default function ShareCalendarModal({ open, onClose }: ShareCalendarModal
         </DialogHeader>
 
         <div className="space-y-5 pt-2">
+          {/* Password toggle before generating */}
+          {!shareToken && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="cal-password-toggle" className="flex items-center gap-2 text-sm cursor-pointer">
+                  <Lock className="w-4 h-4 text-muted-foreground" />
+                  Protéger par mot de passe
+                </Label>
+                <Switch id="cal-password-toggle" checked={passwordEnabled} onCheckedChange={setPasswordEnabled} />
+              </div>
+              {passwordEnabled && (
+                <Input type="text" placeholder="Mot de passe" value={password} onChange={(e) => setPassword(e.target.value)} />
+              )}
+            </div>
+          )}
+
           {!shareToken ? (
-            <Button onClick={handleGenerateLink} disabled={loading} className="w-full gradient-bg">
+            <Button onClick={handleGenerateLink} disabled={loading || (passwordEnabled && !password)} className="w-full gradient-bg">
               {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Link2 className="w-4 h-4 mr-2" />}
               Générer un lien de partage
             </Button>
@@ -134,6 +183,26 @@ export default function ShareCalendarModal({ open, onClose }: ShareCalendarModal
                 </Button>
               </div>
 
+              {/* Password section */}
+              <div className="border-t border-border pt-3">
+                <div className="flex items-center justify-between mb-2">
+                  <Label htmlFor="cal-password-toggle-active" className="flex items-center gap-2 text-sm cursor-pointer">
+                    <Lock className="w-4 h-4 text-muted-foreground" />
+                    Protéger par mot de passe
+                  </Label>
+                  <Switch id="cal-password-toggle-active" checked={passwordEnabled} onCheckedChange={(v) => { setPasswordEnabled(v); if (!v) { setPassword(""); handleSavePassword(); } }} />
+                </div>
+                {passwordEnabled && (
+                  <div className="flex gap-2">
+                    <Input type="text" placeholder="Mot de passe" value={password} onChange={(e) => setPassword(e.target.value)} />
+                    <Button variant="outline" onClick={handleSavePassword} disabled={savingPassword || !password}>
+                      {savingPassword ? <Loader2 className="w-4 h-4 animate-spin" /> : "Enregistrer"}
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* Email section */}
               <div className="border-t border-border pt-3">
                 <p className="text-sm font-medium mb-2 flex items-center gap-1.5">
                   <Mail className="w-4 h-4 text-primary" />

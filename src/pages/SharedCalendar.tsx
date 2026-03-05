@@ -144,19 +144,40 @@ export default function SharedCalendar() {
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<CalendarMode>("week");
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [needsPassword, setNeedsPassword] = useState(false);
+  const [passwordInput, setPasswordInput] = useState("");
+  const [passwordError, setPasswordError] = useState(false);
 
-  useEffect(() => {
+  const fetchCalendar = (pwd?: string) => {
     if (!token) return;
+    setLoading(true);
     const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-    fetch(`https://${projectId}.supabase.co/functions/v1/get-shared-calendar?token=${token}`)
+    const params = new URLSearchParams({ token });
+    if (pwd) params.set("password", pwd);
+    fetch(`https://${projectId}.supabase.co/functions/v1/get-shared-calendar?${params}`)
       .then((res) => res.json())
       .then((d) => {
-        if (d.error) setError(d.error);
-        else setData(d);
+        if (d.needs_password) {
+          setNeedsPassword(true);
+          if (pwd) setPasswordError(true);
+        } else if (d.error) {
+          setError(d.error);
+        } else {
+          setData(d);
+          setNeedsPassword(false);
+        }
         setLoading(false);
       })
       .catch(() => { setError("Impossible de charger le calendrier"); setLoading(false); });
-  }, [token]);
+  };
+
+  useEffect(() => { fetchCalendar(); }, [token]);
+
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError(false);
+    fetchCalendar(passwordInput);
+  };
 
   // Build schedule from data
   const { schedule, timeSlots, availableDayNums, hours } = useMemo(() => {
@@ -212,6 +233,34 @@ export default function SharedCalendar() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (needsPassword) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="glass-card rounded-2xl p-8 max-w-sm w-full mx-4 text-center">
+          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+            <Clock className="w-6 h-6 text-primary" />
+          </div>
+          <h1 className="text-xl font-display font-bold mb-2">Calendrier protégé</h1>
+          <p className="text-sm text-muted-foreground mb-6">Ce calendrier est protégé par un mot de passe.</p>
+          <form onSubmit={handlePasswordSubmit} className="space-y-3">
+            <input
+              type="password"
+              placeholder="Mot de passe"
+              value={passwordInput}
+              onChange={(e) => { setPasswordInput(e.target.value); setPasswordError(false); }}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              autoFocus
+            />
+            {passwordError && <p className="text-xs text-destructive">Mot de passe incorrect</p>}
+            <button type="submit" disabled={!passwordInput} className="w-full gradient-bg text-primary-foreground rounded-lg py-2.5 text-sm font-semibold disabled:opacity-50">
+              Accéder au calendrier
+            </button>
+          </form>
+        </div>
       </div>
     );
   }
