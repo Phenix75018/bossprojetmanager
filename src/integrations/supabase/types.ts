@@ -111,18 +111,21 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          share_password: string | null
           share_token: string
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
+          share_password?: string | null
           share_token?: string
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
+          share_password?: string | null
           share_token?: string
           user_id?: string
         }
@@ -206,6 +209,7 @@ export type Database = {
           hours_per_week: number
           id: string
           project_type: string
+          share_password: string | null
           share_token: string | null
           status: string
           time_slots: string | null
@@ -222,6 +226,7 @@ export type Database = {
           hours_per_week?: number
           id?: string
           project_type?: string
+          share_password?: string | null
           share_token?: string | null
           status?: string
           time_slots?: string | null
@@ -238,6 +243,7 @@ export type Database = {
           hours_per_week?: number
           id?: string
           project_type?: string
+          share_password?: string | null
           share_token?: string | null
           status?: string
           time_slots?: string | null
