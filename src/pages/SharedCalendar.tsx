@@ -144,19 +144,40 @@ export default function SharedCalendar() {
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<CalendarMode>("week");
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [needsPassword, setNeedsPassword] = useState(false);
+  const [passwordInput, setPasswordInput] = useState("");
+  const [passwordError, setPasswordError] = useState(false);
 
-  useEffect(() => {
+  const fetchCalendar = (pwd?: string) => {
     if (!token) return;
+    setLoading(true);
     const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-    fetch(`https://${projectId}.supabase.co/functions/v1/get-shared-calendar?token=${token}`)
+    const params = new URLSearchParams({ token });
+    if (pwd) params.set("password", pwd);
+    fetch(`https://${projectId}.supabase.co/functions/v1/get-shared-calendar?${params}`)
       .then((res) => res.json())
       .then((d) => {
-        if (d.error) setError(d.error);
-        else setData(d);
+        if (d.needs_password) {
+          setNeedsPassword(true);
+          if (pwd) setPasswordError(true);
+        } else if (d.error) {
+          setError(d.error);
+        } else {
+          setData(d);
+          setNeedsPassword(false);
+        }
         setLoading(false);
       })
       .catch(() => { setError("Impossible de charger le calendrier"); setLoading(false); });
-  }, [token]);
+  };
+
+  useEffect(() => { fetchCalendar(); }, [token]);
+
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError(false);
+    fetchCalendar(passwordInput);
+  };
 
   // Build schedule from data
   const { schedule, timeSlots, availableDayNums, hours } = useMemo(() => {
