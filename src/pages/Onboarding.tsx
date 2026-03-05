@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, ArrowRight, Check, Sparkles } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
@@ -146,7 +146,11 @@ export default function Onboarding() {
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="container pt-28 pb-12 max-w-2xl">
-        {/* Progress */}
+        <Link to="/dashboard" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6">
+          <ArrowLeft className="w-4 h-4" />
+          Retour aux projets
+        </Link>
+
         <div className="flex items-center gap-2 mb-10">
           {steps.map((s, i) => (
             <div key={s} className="flex items-center gap-2 flex-1">

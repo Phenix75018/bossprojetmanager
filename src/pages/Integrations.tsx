@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
+  ArrowLeft,
   Calendar,
   Check,
   Copy,
@@ -163,6 +165,10 @@ export default function Integrations() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
+          <Link to="/dashboard" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4">
+            <ArrowLeft className="w-4 h-4" />
+            Retour aux projets
+          </Link>
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-xl gradient-bg flex items-center justify-center">
               <Link2 className="w-5 h-5 text-primary-foreground" />

@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Plus, Calendar, BarChart3, Trash2, FolderOpen, Loader2 } from "lucide-react";
+import { Plus, Calendar, BarChart3, Trash2, FolderOpen, Loader2, ArrowLeft } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import { useProjectsDB } from "@/hooks/useProjectsDB";
 
@@ -13,6 +13,10 @@ export default function Dashboard() {
       <div className="container pt-24 pb-12">
         <div className="flex items-center justify-between mb-8">
           <div>
+            <Link to="/" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-2">
+              <ArrowLeft className="w-4 h-4" />
+              Retour à l'accueil
+            </Link>
             <h1 className="text-3xl font-display font-black">Mes projets</h1>
             <p className="text-muted-foreground mt-1">
               {projects.length} projet{projects.length > 1 ? "s" : ""} actif{projects.length > 1 ? "s" : ""}
