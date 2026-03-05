@@ -265,7 +265,7 @@ export default function SharedCalendar() {
     );
   }
 
-
+  if (error || !data) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
