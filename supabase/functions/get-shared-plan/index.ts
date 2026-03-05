@@ -13,6 +13,8 @@ Deno.serve(async (req) => {
   try {
     const url = new URL(req.url);
     const token = url.searchParams.get("token");
+    const password = url.searchParams.get("password") || null;
+
     if (!token) {
       return new Response(JSON.stringify({ error: "Token manquant" }), {
         status: 400,
@@ -27,7 +29,7 @@ Deno.serve(async (req) => {
     // Get project by share_token
     const { data: project, error: projErr } = await supabase
       .from("projects")
-      .select("id, title, description, completion_percent, project_type, deadline, status")
+      .select("id, title, description, completion_percent, project_type, deadline, status, share_password")
       .eq("share_token", token)
       .single();
 
@@ -37,6 +39,19 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Check password
+    if (project.share_password) {
+      if (!password || password !== project.share_password) {
+        return new Response(JSON.stringify({ error: "password_required", needs_password: true }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
+    // Remove password from response
+    const { share_password: _, ...projectData } = project;
 
     // Get phases
     const { data: phases } = await supabase
@@ -110,7 +125,7 @@ Deno.serve(async (req) => {
 
     return new Response(
       JSON.stringify({
-        project,
+        project: projectData,
         phases: structuredPhases,
         explanations,
         recommendations: recommendations || [],

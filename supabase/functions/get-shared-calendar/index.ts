@@ -13,6 +13,8 @@ Deno.serve(async (req) => {
   try {
     const url = new URL(req.url);
     const token = url.searchParams.get("token");
+    const password = url.searchParams.get("password") || null;
+
     if (!token) {
       return new Response(JSON.stringify({ error: "Token manquant" }), {
         status: 400,
@@ -27,7 +29,7 @@ Deno.serve(async (req) => {
     // Find the share by token
     const { data: share, error: shareErr } = await supabase
       .from("calendar_shares")
-      .select("user_id")
+      .select("user_id, share_password")
       .eq("share_token", token)
       .single();
 
@@ -36,6 +38,16 @@ Deno.serve(async (req) => {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Check password
+    if (share.share_password) {
+      if (!password || password !== share.share_password) {
+        return new Response(JSON.stringify({ error: "password_required", needs_password: true }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     const userId = share.user_id;
