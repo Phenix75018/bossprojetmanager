@@ -204,8 +204,10 @@ interface CalendarViewProps {
 export default function CalendarView({ project, onCycleStatus }: CalendarViewProps) {
   const [mode, setMode] = useState<CalendarMode>("week");
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [scheduleStartDate, setScheduleStartDate] = useState<Date>(new Date());
+  const [showReschedule, setShowReschedule] = useState(false);
 
-  const schedule = useMemo(() => dispatchTasks(project, new Date()), [project]);
+  const schedule = useMemo(() => dispatchTasks(project, scheduleStartDate), [project, scheduleStartDate]);
 
   const timeSlots = useMemo(() => parseTimeSlots(project.time_slots), [project.time_slots]);
   const hours = useMemo(() => {
