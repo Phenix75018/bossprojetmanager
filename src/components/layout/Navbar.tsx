@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { FolderKanban, CalendarDays, Zap, LogOut, User, Link2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const navItems = [
 { to: "/", label: "Accueil", icon: Zap },
@@ -56,6 +57,7 @@ export default function Navbar() {
         </nav>
 
         <div className="flex items-center gap-3">
+          <ThemeToggle />
           {user ?
           <>
               <Link
