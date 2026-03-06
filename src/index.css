@@ -15,7 +15,7 @@
     --popover: 30 25% 99%;
     --popover-foreground: 15 30% 12%;
 
-    --primary: 0 55% 30%;
+    --primary: 20 55% 40%;
     --primary-foreground: 30 30% 96%;
 
     --secondary: 25 20% 92%;
@@ -32,39 +32,39 @@
 
     --border: 25 15% 88%;
     --input: 25 15% 88%;
-    --ring: 0 55% 30%;
+    --ring: 20 55% 40%;
 
     --radius: 0.75rem;
 
     /* Priority colors */
     --priority-critical: 25 95% 53%;
     --priority-high: 0 60% 40%;
-    --priority-medium: 0 55% 30%;
+    --priority-medium: 20 55% 40%;
     --priority-low: 160 50% 38%;
 
     /* Status colors */
     --status-todo: 25 15% 65%;
-    --status-in-progress: 0 55% 30%;
+    --status-in-progress: 20 55% 40%;
     --status-done: 160 50% 38%;
 
     /* Glassmorphism */
     --glass-bg: 30 25% 99% / 0.75;
     --glass-border: 25 20% 85% / 0.4;
-    --glass-shadow: 0 55% 30% / 0.08;
+    --glass-shadow: 20 55% 40% / 0.08;
 
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(0 55% 30%), hsl(15 50% 35%));
+    --gradient-primary: linear-gradient(135deg, hsl(0 55% 32%), hsl(20 55% 40%), hsl(30 60% 50%));
     --gradient-hero: linear-gradient(135deg, hsl(0 55% 32%), hsl(20 55% 40%), hsl(30 60% 50%));
     --gradient-surface: linear-gradient(135deg, hsl(30 30% 96%), hsl(25 25% 93%));
 
     --sidebar-background: 30 25% 97%;
     --sidebar-foreground: 15 30% 12%;
-    --sidebar-primary: 0 55% 30%;
+    --sidebar-primary: 20 55% 40%;
     --sidebar-primary-foreground: 30 30% 96%;
     --sidebar-accent: 25 20% 92%;
     --sidebar-accent-foreground: 15 30% 12%;
     --sidebar-border: 25 15% 88%;
-    --sidebar-ring: 0 55% 30%;
+    --sidebar-ring: 20 55% 40%;
   }
 
   .dark {
@@ -184,8 +184,8 @@
 }
 
 @keyframes glow {
-  from { box-shadow: 0 0 20px hsl(0 55% 30% / 0.15); }
-  to { box-shadow: 0 0 40px hsl(0 55% 30% / 0.3); }
+  from { box-shadow: 0 0 20px hsl(20 55% 40% / 0.15); }
+  to { box-shadow: 0 0 40px hsl(20 55% 40% / 0.3); }
 }
 
 @keyframes shimmer {
