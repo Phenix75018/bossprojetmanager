@@ -174,7 +174,7 @@ export default function Landing() {
             viewport={{ once: true }}
             className="relative overflow-hidden rounded-3xl gradient-bg p-12 md:p-20 text-center">
 
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.1),transparent)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.1),transparent)] shadow-md" />
             <div className="relative z-10">
               <h2 className="text-3xl md:text-5xl font-display font-black text-primary-foreground mb-4">
                 Prêt à devenir un Boss ?
