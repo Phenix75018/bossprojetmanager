@@ -5,7 +5,12 @@ import {
   ChevronRight,
   Clock,
   CalendarDays,
+  RefreshCw,
 } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { ProjectWithDetails, TaskRow } from "@/hooks/useProjectsDB";
 import {
   addDays,
