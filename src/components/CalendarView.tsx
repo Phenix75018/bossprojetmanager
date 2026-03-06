@@ -5,7 +5,12 @@ import {
   ChevronRight,
   Clock,
   CalendarDays,
+  RefreshCw,
 } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { ProjectWithDetails, TaskRow } from "@/hooks/useProjectsDB";
 import {
   addDays,
@@ -199,8 +204,10 @@ interface CalendarViewProps {
 export default function CalendarView({ project, onCycleStatus }: CalendarViewProps) {
   const [mode, setMode] = useState<CalendarMode>("week");
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [scheduleStartDate, setScheduleStartDate] = useState<Date>(new Date());
+  const [showReschedule, setShowReschedule] = useState(false);
 
-  const schedule = useMemo(() => dispatchTasks(project, new Date()), [project]);
+  const schedule = useMemo(() => dispatchTasks(project, scheduleStartDate), [project, scheduleStartDate]);
 
   const timeSlots = useMemo(() => parseTimeSlots(project.time_slots), [project.time_slots]);
   const hours = useMemo(() => {
@@ -248,7 +255,7 @@ export default function CalendarView({ project, onCycleStatus }: CalendarViewPro
   return (
     <div className="space-y-4">
       {/* Controls */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-2">
           {(["week", "month"] as CalendarMode[]).map((m) => (
             <button
@@ -263,6 +270,36 @@ export default function CalendarView({ project, onCycleStatus }: CalendarViewPro
               {m === "week" ? "Semaine" : "Mois"}
             </button>
           ))}
+
+          <Popover open={showReschedule} onOpenChange={setShowReschedule}>
+            <PopoverTrigger asChild>
+              <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border hover:border-primary/30 hover:text-primary transition-all ml-2">
+                <RefreshCw className="w-3.5 h-3.5" />
+                Reprogrammer
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <div className="p-3 border-b border-border">
+                <p className="text-sm font-medium">Reprogrammer à partir de :</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Toutes les tâches seront recalculées depuis la date choisie.
+                </p>
+              </div>
+              <Calendar
+                mode="single"
+                selected={scheduleStartDate}
+                onSelect={(date) => {
+                  if (date) {
+                    setScheduleStartDate(date);
+                    setCurrentDate(date);
+                    setShowReschedule(false);
+                    toast.success(`Planning reprogrammé à partir du ${format(date, "d MMMM yyyy", { locale: fr })}`);
+                  }
+                }}
+                className="p-3 pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
         </div>
 
         <div className="flex items-center gap-3">
