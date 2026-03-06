@@ -106,8 +106,7 @@ export default function Landing() {
 
             {[
             { value: "10x", label: "Plus rapide" },
-            { value: "500+", label: "Projets gérés" },
-            { value: "98%", label: "Satisfaction" }].
+            { value: "500+", label: "Projets gérés" }].
             map((stat) =>
             <div key={stat.label}>
                 
