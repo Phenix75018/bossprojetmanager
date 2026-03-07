@@ -4,8 +4,28 @@
 @tailwind components;
 @tailwind utilities;
 
+@property --primary-h {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 20;
+}
+@property --primary-s {
+  syntax: '<percentage>';
+  inherits: true;
+  initial-value: 55%;
+}
+@property --primary-l {
+  syntax: '<percentage>';
+  inherits: true;
+  initial-value: 40%;
+}
+
 @layer base {
   :root {
+    --primary-h: 20;
+    --primary-s: 55%;
+    --primary-l: 40%;
+
     --background: 30 30% 96%;
     --foreground: 15 30% 12%;
 
@@ -15,7 +35,7 @@
     --popover: 30 25% 99%;
     --popover-foreground: 15 30% 12%;
 
-    --primary: 20 55% 40%;
+    --primary: var(--primary-h) var(--primary-s) var(--primary-l);
     --primary-foreground: 30 30% 96%;
 
     --secondary: 25 20% 92%;
@@ -32,42 +52,46 @@
 
     --border: 25 15% 88%;
     --input: 25 15% 88%;
-    --ring: 20 55% 40%;
+    --ring: var(--primary-h) var(--primary-s) var(--primary-l);
 
     --radius: 0.75rem;
 
     /* Priority colors */
     --priority-critical: 25 95% 53%;
     --priority-high: 0 60% 40%;
-    --priority-medium: 20 55% 40%;
+    --priority-medium: var(--primary-h) var(--primary-s) var(--primary-l);
     --priority-low: 160 50% 38%;
 
     /* Status colors */
     --status-todo: 25 15% 65%;
-    --status-in-progress: 20 55% 40%;
+    --status-in-progress: var(--primary-h) var(--primary-s) var(--primary-l);
     --status-done: 160 50% 38%;
 
     /* Glassmorphism */
     --glass-bg: 30 25% 99% / 0.75;
     --glass-border: 25 20% 85% / 0.4;
-    --glass-shadow: 20 55% 40% / 0.08;
+    --glass-shadow: var(--primary-h) var(--primary-s) var(--primary-l) / 0.08;
 
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(0 55% 32%), hsl(20 55% 40%), hsl(30 60% 50%));
-    --gradient-hero: linear-gradient(135deg, hsl(0 55% 32%), hsl(20 55% 40%), hsl(30 60% 50%));
+    /* Gradients - these use computed values */
+    --gradient-primary: linear-gradient(135deg, hsl(0 55% 32%), hsl(var(--primary-h) var(--primary-s) var(--primary-l)), hsl(30 60% 50%));
+    --gradient-hero: linear-gradient(135deg, hsl(0 55% 32%), hsl(var(--primary-h) var(--primary-s) var(--primary-l)), hsl(30 60% 50%));
     --gradient-surface: linear-gradient(135deg, hsl(30 30% 96%), hsl(25 25% 93%));
 
     --sidebar-background: 30 25% 97%;
     --sidebar-foreground: 15 30% 12%;
-    --sidebar-primary: 20 55% 40%;
+    --sidebar-primary: var(--primary-h) var(--primary-s) var(--primary-l);
     --sidebar-primary-foreground: 30 30% 96%;
     --sidebar-accent: 25 20% 92%;
     --sidebar-accent-foreground: 15 30% 12%;
     --sidebar-border: 25 15% 88%;
-    --sidebar-ring: 20 55% 40%;
+    --sidebar-ring: var(--primary-h) var(--primary-s) var(--primary-l);
   }
 
   .dark {
+    --primary-h: 22;
+    --primary-s: 55%;
+    --primary-l: 55%;
+
     --background: 15 20% 7%;
     --foreground: 30 15% 90%;
 
@@ -77,7 +101,7 @@
     --popover: 15 18% 10%;
     --popover-foreground: 30 15% 90%;
 
-    --primary: 22 55% 55%;
+    --primary: var(--primary-h) var(--primary-s) var(--primary-l);
     --primary-foreground: 15 20% 7%;
 
     --secondary: 15 12% 15%;
@@ -94,23 +118,23 @@
 
     --border: 15 12% 18%;
     --input: 15 12% 18%;
-    --ring: 22 55% 55%;
+    --ring: var(--primary-h) var(--primary-s) var(--primary-l);
 
     --glass-bg: 15 18% 10% / 0.8;
     --glass-border: 15 12% 22% / 0.5;
-    --glass-shadow: 22 55% 55% / 0.15;
+    --glass-shadow: var(--primary-h) var(--primary-s) var(--primary-l) / 0.15;
 
-    --gradient-primary: linear-gradient(135deg, hsl(0 50% 40%), hsl(20 55% 50%), hsl(30 60% 58%));
-    --gradient-hero: linear-gradient(135deg, hsl(0 50% 40%), hsl(20 55% 50%), hsl(30 60% 58%));
+    --gradient-primary: linear-gradient(135deg, hsl(0 50% 40%), hsl(var(--primary-h) var(--primary-s) var(--primary-l)), hsl(30 60% 58%));
+    --gradient-hero: linear-gradient(135deg, hsl(0 50% 40%), hsl(var(--primary-h) var(--primary-s) var(--primary-l)), hsl(30 60% 58%));
 
     --sidebar-background: 15 20% 7%;
     --sidebar-foreground: 30 15% 90%;
-    --sidebar-primary: 22 55% 55%;
+    --sidebar-primary: var(--primary-h) var(--primary-s) var(--primary-l);
     --sidebar-primary-foreground: 15 20% 7%;
     --sidebar-accent: 15 12% 15%;
     --sidebar-accent-foreground: 30 15% 90%;
     --sidebar-border: 15 12% 18%;
-    --sidebar-ring: 22 55% 55%;
+    --sidebar-ring: var(--primary-h) var(--primary-s) var(--primary-l);
   }
 }
 
@@ -138,18 +162,18 @@
   }
 
   .gradient-text {
-    background: var(--gradient-hero);
+    background: linear-gradient(135deg, hsl(0 55% 32%), hsl(var(--primary-h) var(--primary-s) var(--primary-l)), hsl(30 60% 50%));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
   .gradient-bg {
-    background: var(--gradient-primary);
+    background: linear-gradient(135deg, hsl(0 55% 32%), hsl(var(--primary-h) var(--primary-s) var(--primary-l)), hsl(30 60% 50%));
   }
 
   .gradient-hero-bg {
-    background: var(--gradient-hero);
+    background: linear-gradient(135deg, hsl(0 55% 32%), hsl(var(--primary-h) var(--primary-s) var(--primary-l)), hsl(30 60% 50%));
   }
 
   .priority-critical {
@@ -187,8 +211,8 @@
 }
 
 @keyframes glow {
-  from { box-shadow: 0 0 20px hsl(20 55% 40% / 0.15); }
-  to { box-shadow: 0 0 40px hsl(20 55% 40% / 0.3); }
+  from { box-shadow: 0 0 20px hsl(var(--primary-h) var(--primary-s) var(--primary-l) / 0.15); }
+  to { box-shadow: 0 0 40px hsl(var(--primary-h) var(--primary-s) var(--primary-l) / 0.3); }
 }
 
 @keyframes shimmer {
@@ -198,4 +222,31 @@
 
 .animate-shimmer {
   animation: shimmer 2s infinite;
+}
+
+/* Dynamic color animation for primary elements */
+@keyframes color-shift {
+  0%   { --primary-h: 20; --primary-s: 55%; --primary-l: 40%; }
+  20%  { --primary-h: 0;  --primary-s: 50%; --primary-l: 34%; }
+  40%  { --primary-h: 30; --primary-s: 65%; --primary-l: 45%; }
+  60%  { --primary-h: 350; --primary-s: 50%; --primary-l: 36%; }
+  80%  { --primary-h: 15; --primary-s: 60%; --primary-l: 42%; }
+  100% { --primary-h: 20; --primary-s: 55%; --primary-l: 40%; }
+}
+
+@keyframes color-shift-dark {
+  0%   { --primary-h: 22; --primary-s: 55%; --primary-l: 55%; }
+  20%  { --primary-h: 0;  --primary-s: 50%; --primary-l: 48%; }
+  40%  { --primary-h: 35; --primary-s: 65%; --primary-l: 58%; }
+  60%  { --primary-h: 350; --primary-s: 50%; --primary-l: 50%; }
+  80%  { --primary-h: 15; --primary-s: 60%; --primary-l: 56%; }
+  100% { --primary-h: 22; --primary-s: 55%; --primary-l: 55%; }
+}
+
+:root:not(.dark) {
+  animation: color-shift 10s ease-in-out infinite;
+}
+
+.dark {
+  animation: color-shift-dark 10s ease-in-out infinite;
 }
