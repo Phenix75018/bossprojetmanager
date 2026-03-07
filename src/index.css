@@ -4,8 +4,28 @@
 @tailwind components;
 @tailwind utilities;
 
+@property --primary-h {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 20;
+}
+@property --primary-s {
+  syntax: '<percentage>';
+  inherits: true;
+  initial-value: 55%;
+}
+@property --primary-l {
+  syntax: '<percentage>';
+  inherits: true;
+  initial-value: 40%;
+}
+
 @layer base {
   :root {
+    --primary-h: 20;
+    --primary-s: 55%;
+    --primary-l: 40%;
+
     --background: 30 30% 96%;
     --foreground: 15 30% 12%;
 
@@ -15,7 +35,7 @@
     --popover: 30 25% 99%;
     --popover-foreground: 15 30% 12%;
 
-    --primary: 20 55% 40%;
+    --primary: var(--primary-h) var(--primary-s) var(--primary-l);
     --primary-foreground: 30 30% 96%;
 
     --secondary: 25 20% 92%;
@@ -32,39 +52,39 @@
 
     --border: 25 15% 88%;
     --input: 25 15% 88%;
-    --ring: 20 55% 40%;
+    --ring: var(--primary-h) var(--primary-s) var(--primary-l);
 
     --radius: 0.75rem;
 
     /* Priority colors */
     --priority-critical: 25 95% 53%;
     --priority-high: 0 60% 40%;
-    --priority-medium: 20 55% 40%;
+    --priority-medium: var(--primary-h) var(--primary-s) var(--primary-l);
     --priority-low: 160 50% 38%;
 
     /* Status colors */
     --status-todo: 25 15% 65%;
-    --status-in-progress: 20 55% 40%;
+    --status-in-progress: var(--primary-h) var(--primary-s) var(--primary-l);
     --status-done: 160 50% 38%;
 
     /* Glassmorphism */
     --glass-bg: 30 25% 99% / 0.75;
     --glass-border: 25 20% 85% / 0.4;
-    --glass-shadow: 20 55% 40% / 0.08;
+    --glass-shadow: var(--primary-h) var(--primary-s) var(--primary-l) / 0.08;
 
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(0 55% 32%), hsl(20 55% 40%), hsl(30 60% 50%));
-    --gradient-hero: linear-gradient(135deg, hsl(0 55% 32%), hsl(20 55% 40%), hsl(30 60% 50%));
+    /* Gradients - these use computed values */
+    --gradient-primary: linear-gradient(135deg, hsl(0 55% 32%), hsl(var(--primary-h) var(--primary-s) var(--primary-l)), hsl(30 60% 50%));
+    --gradient-hero: linear-gradient(135deg, hsl(0 55% 32%), hsl(var(--primary-h) var(--primary-s) var(--primary-l)), hsl(30 60% 50%));
     --gradient-surface: linear-gradient(135deg, hsl(30 30% 96%), hsl(25 25% 93%));
 
     --sidebar-background: 30 25% 97%;
     --sidebar-foreground: 15 30% 12%;
-    --sidebar-primary: 20 55% 40%;
+    --sidebar-primary: var(--primary-h) var(--primary-s) var(--primary-l);
     --sidebar-primary-foreground: 30 30% 96%;
     --sidebar-accent: 25 20% 92%;
     --sidebar-accent-foreground: 15 30% 12%;
     --sidebar-border: 25 15% 88%;
-    --sidebar-ring: 20 55% 40%;
+    --sidebar-ring: var(--primary-h) var(--primary-s) var(--primary-l);
   }
 
   .dark {
