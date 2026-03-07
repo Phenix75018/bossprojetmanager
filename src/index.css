@@ -211,8 +211,8 @@
 }
 
 @keyframes glow {
-  from { box-shadow: 0 0 20px hsl(20 55% 40% / 0.15); }
-  to { box-shadow: 0 0 40px hsl(20 55% 40% / 0.3); }
+  from { box-shadow: 0 0 20px hsl(var(--primary-h) var(--primary-s) var(--primary-l) / 0.15); }
+  to { box-shadow: 0 0 40px hsl(var(--primary-h) var(--primary-s) var(--primary-l) / 0.3); }
 }
 
 @keyframes shimmer {
@@ -227,24 +227,26 @@
 /* Dynamic color animation for primary elements */
 @keyframes color-shift {
   0%   { --primary-h: 20; --primary-s: 55%; --primary-l: 40%; }
-  25%  { --primary-h: 0;  --primary-s: 55%; --primary-l: 35%; }
-  50%  { --primary-h: 30; --primary-s: 65%; --primary-l: 45%; }
-  75%  { --primary-h: 10; --primary-s: 60%; --primary-l: 38%; }
+  20%  { --primary-h: 0;  --primary-s: 50%; --primary-l: 34%; }
+  40%  { --primary-h: 30; --primary-s: 65%; --primary-l: 45%; }
+  60%  { --primary-h: 350; --primary-s: 50%; --primary-l: 36%; }
+  80%  { --primary-h: 15; --primary-s: 60%; --primary-l: 42%; }
   100% { --primary-h: 20; --primary-s: 55%; --primary-l: 40%; }
 }
 
 @keyframes color-shift-dark {
   0%   { --primary-h: 22; --primary-s: 55%; --primary-l: 55%; }
-  25%  { --primary-h: 5;  --primary-s: 55%; --primary-l: 50%; }
-  50%  { --primary-h: 35; --primary-s: 65%; --primary-l: 58%; }
-  75%  { --primary-h: 12; --primary-s: 60%; --primary-l: 52%; }
+  20%  { --primary-h: 0;  --primary-s: 50%; --primary-l: 48%; }
+  40%  { --primary-h: 35; --primary-s: 65%; --primary-l: 58%; }
+  60%  { --primary-h: 350; --primary-s: 50%; --primary-l: 50%; }
+  80%  { --primary-h: 15; --primary-s: 60%; --primary-l: 56%; }
   100% { --primary-h: 22; --primary-s: 55%; --primary-l: 55%; }
 }
 
-:root {
-  animation: color-shift 8s ease-in-out infinite;
+:root:not(.dark) {
+  animation: color-shift 10s ease-in-out infinite;
 }
 
 .dark {
-  animation: color-shift-dark 8s ease-in-out infinite;
+  animation: color-shift-dark 10s ease-in-out infinite;
 }
