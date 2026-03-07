@@ -250,3 +250,9 @@
 .dark {
   animation: color-shift-dark 10s ease-in-out infinite;
 }
+
+/* Disable color animation when toggled off */
+html.no-color-shift,
+html.no-color-shift .dark {
+  animation: none !important;
+}
