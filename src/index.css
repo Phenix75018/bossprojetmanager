@@ -199,3 +199,28 @@
 .animate-shimmer {
   animation: shimmer 2s infinite;
 }
+
+/* Dynamic color animation for primary elements */
+@keyframes color-shift {
+  0%   { --primary-h: 20; --primary-s: 55%; --primary-l: 40%; }
+  25%  { --primary-h: 0;  --primary-s: 55%; --primary-l: 35%; }
+  50%  { --primary-h: 30; --primary-s: 65%; --primary-l: 45%; }
+  75%  { --primary-h: 10; --primary-s: 60%; --primary-l: 38%; }
+  100% { --primary-h: 20; --primary-s: 55%; --primary-l: 40%; }
+}
+
+@keyframes color-shift-dark {
+  0%   { --primary-h: 22; --primary-s: 55%; --primary-l: 55%; }
+  25%  { --primary-h: 5;  --primary-s: 55%; --primary-l: 50%; }
+  50%  { --primary-h: 35; --primary-s: 65%; --primary-l: 58%; }
+  75%  { --primary-h: 12; --primary-s: 60%; --primary-l: 52%; }
+  100% { --primary-h: 22; --primary-s: 55%; --primary-l: 55%; }
+}
+
+:root {
+  animation: color-shift 8s ease-in-out infinite;
+}
+
+.dark {
+  animation: color-shift-dark 8s ease-in-out infinite;
+}
