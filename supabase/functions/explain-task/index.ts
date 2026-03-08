@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,11 +10,57 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { taskTitle, taskDescription, subtasks, projectDescription, phaseName, isSubtask } = await req.json();
+    // Auth validation
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Non autorisé" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: "Non autorisé" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const body = await req.json();
+    const { taskTitle, taskDescription, subtasks, projectDescription, phaseName, isSubtask } = body;
+
+    // Input validation
+    if (!taskTitle || typeof taskTitle !== "string" || taskTitle.length > 500) {
+      return new Response(JSON.stringify({ error: "Titre de tâche invalide" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (taskDescription && (typeof taskDescription !== "string" || taskDescription.length > 2000)) {
+      return new Response(JSON.stringify({ error: "Description trop longue" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (!projectDescription || typeof projectDescription !== "string" || projectDescription.length > 5000) {
+      return new Response(JSON.stringify({ error: "Description du projet invalide" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (!phaseName || typeof phaseName !== "string" || phaseName.length > 200) {
+      return new Response(JSON.stringify({ error: "Nom de phase invalide" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const subtasksList = (subtasks || []).map((s: any) => `- ${s.title} (${s.duration_hours}h)`).join("\n");
+    const subtasksList = (subtasks || []).slice(0, 20).map((s: any) => `- ${String(s.title || "").substring(0, 200)} (${Number(s.duration_hours) || 0}h)`).join("\n");
 
     const prompt = isSubtask
       ? `Tu es un coach de projet expert. Explique en détail comment réaliser cette sous-tâche.
@@ -57,27 +104,21 @@ Réponds en français, de manière claire et structurée en utilisant du markdow
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "user", content: prompt },
-        ],
+        messages: [{ role: "user", content: prompt }],
       }),
     });
 
     if (!response.ok) {
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Trop de requêtes, veuillez réessayer dans quelques instants." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       if (response.status === 402) {
         return new Response(JSON.stringify({ error: "Crédits insuffisants. Veuillez recharger votre compte." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const text = await response.text();
-      console.error("AI error:", response.status, text);
       throw new Error("Erreur du service IA");
     }
 
@@ -89,9 +130,8 @@ Réponds en français, de manière claire et structurée en utilisant du markdow
     });
   } catch (e) {
     console.error("explain-task error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Erreur inconnue" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    return new Response(JSON.stringify({ error: "Une erreur est survenue" }), {
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
