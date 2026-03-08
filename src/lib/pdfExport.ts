@@ -1,4 +1,29 @@
-import html2pdf from "html2pdf.js";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+
+async function renderToPdf(container: HTMLElement, filename: string) {
+  const canvas = await html2canvas(container, { scale: 2, useCORS: true });
+  const imgData = canvas.toDataURL("image/png");
+  const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+  const pageWidth = pdf.internal.pageSize.getWidth() - 20;
+  const pageHeight = pdf.internal.pageSize.getHeight() - 20;
+  const imgWidth = pageWidth;
+  const imgHeight = (canvas.height * imgWidth) / canvas.width;
+  let heightLeft = imgHeight;
+  let position = 10;
+
+  pdf.addImage(imgData, "PNG", 10, position, imgWidth, imgHeight);
+  heightLeft -= pageHeight;
+
+  while (heightLeft > 0) {
+    position = heightLeft - imgHeight + 10;
+    pdf.addPage();
+    pdf.addImage(imgData, "PNG", 10, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+  }
+
+  pdf.save(filename);
+}
 
 const PDF_STYLES = `
   <style>
@@ -211,13 +236,8 @@ export async function exportFullPlanPDF(options: ExportPlanOptions) {
   document.body.appendChild(container);
 
   try {
-    await html2pdf().set({
-      margin: [10, 10, 10, 10],
-      filename: `${title.replace(/[^a-zA-Z0-9àâéèêëïîôùûüÿçæœ ]/g, "").trim()}_plan-action.pdf`,
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-      pagebreak: { mode: ["css", "legacy"] },
-    }).from(container).save();
+    const filename = `${title.replace(/[^a-zA-Z0-9àâéèêëïîôùûüÿçæœ ]/g, "").trim()}_plan-action.pdf`;
+    await renderToPdf(container, filename);
   } finally {
     document.body.removeChild(container);
   }
@@ -243,12 +263,8 @@ export async function exportTaskExplanationPDF(
   document.body.appendChild(container);
 
   try {
-    await html2pdf().set({
-      margin: [10, 10, 10, 10],
-      filename: `guide_${taskTitle.replace(/[^a-zA-Z0-9àâéèêëïîôùûüÿçæœ ]/g, "").substring(0, 40).trim()}.pdf`,
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-    }).from(container).save();
+    const filename = `guide_${taskTitle.replace(/[^a-zA-Z0-9àâéèêëïîôùûüÿçæœ ]/g, "").substring(0, 40).trim()}.pdf`;
+    await renderToPdf(container, filename);
   } finally {
     document.body.removeChild(container);
   }
