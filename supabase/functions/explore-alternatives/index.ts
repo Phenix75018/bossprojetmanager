@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,9 +10,52 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { role, description, skills, importance, projectDescription } = await req.json();
+    // Auth validation
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Non autorisé" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: "Non autorisé" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const body = await req.json();
+    const { role, description, skills, importance, projectDescription } = body;
+
+    // Input validation
+    if (!role || typeof role !== "string" || role.length > 200) {
+      return new Response(JSON.stringify({ error: "Rôle invalide" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (!description || typeof description !== "string" || description.length > 2000) {
+      return new Response(JSON.stringify({ error: "Description invalide" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (!projectDescription || typeof projectDescription !== "string" || projectDescription.length > 5000) {
+      return new Response(JSON.stringify({ error: "Description du projet invalide" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+
+    const sanitizedSkills = (skills || []).slice(0, 20).map((s: any) => String(s).substring(0, 100));
 
     const systemPrompt = `Tu es un expert en développement professionnel et alternatives au recrutement. 
 L'utilisateur a un projet professionnel et cherche des alternatives au recrutement d'un profil spécifique.
@@ -49,8 +93,8 @@ Propose 2-4 alternatives quand c'est possible.`;
 
 Profil à remplacer: ${role}
 Description du rôle: ${description}
-Compétences requises: ${(skills || []).join(", ")}
-Niveau d'importance: ${importance}
+Compétences requises: ${sanitizedSkills.join(", ")}
+Niveau d'importance: ${importance || "recommandé"}
 
 Propose des alternatives au recrutement de ce profil.`;
 
@@ -70,9 +114,7 @@ Propose des alternatives au recrutement de ce profil.`;
     });
 
     if (!response.ok) {
-      const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
-      throw new Error(`AI gateway error: ${response.status}`);
+      throw new Error("Erreur du service IA");
     }
 
     const data = await response.json();
@@ -85,7 +127,6 @@ Propose des alternatives au recrutement de ce profil.`;
       const jsonStr = jsonMatch ? jsonMatch[1].trim() : content.trim();
       result = JSON.parse(jsonStr);
     } catch {
-      console.error("Failed to parse AI response:", content);
       throw new Error("Failed to parse AI response as JSON");
     }
 
@@ -95,7 +136,7 @@ Propose des alternatives au recrutement de ce profil.`;
   } catch (e) {
     console.error("explore-alternatives error:", e);
     return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
+      JSON.stringify({ error: "Une erreur est survenue" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

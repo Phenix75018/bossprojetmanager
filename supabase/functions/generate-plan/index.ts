@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,7 +10,48 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { description, projectType, status, statusDetails } = await req.json();
+    // Auth validation
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Non autorisé" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: "Non autorisé" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const body = await req.json();
+    const { description, projectType, status, statusDetails } = body;
+
+    // Input validation
+    if (!description || typeof description !== "string" || description.length > 10000) {
+      return new Response(JSON.stringify({ error: "Description invalide (max 10000 caractères)" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (projectType && !["personal", "professional"].includes(projectType)) {
+      return new Response(JSON.stringify({ error: "Type de projet invalide" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (statusDetails && (typeof statusDetails !== "string" || statusDetails.length > 5000)) {
+      return new Response(JSON.stringify({ error: "Détails de statut trop longs" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
@@ -79,7 +121,7 @@ Règles:
 
     const userPrompt = `Projet: ${description}
 Type: ${isProfessional ? "Professionnel" : "Personnel"}
-État d'avancement: ${status}${statusDetails ? `\nDétails: ${statusDetails}` : ""}`;
+État d'avancement: ${status || "nouveau"}${statusDetails ? `\nDétails: ${statusDetails}` : ""}`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -99,34 +141,27 @@ Type: ${isProfessional ? "Professionnel" : "Personnel"}
     if (!response.ok) {
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Trop de requêtes, veuillez réessayer dans un moment." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       if (response.status === 402) {
         return new Response(JSON.stringify({ error: "Crédits IA insuffisants." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
-      throw new Error(`AI gateway error: ${response.status}`);
+      throw new Error("Erreur du service IA");
     }
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content;
-
     if (!content) throw new Error("No content in AI response");
 
-    // Parse the JSON from the AI response
     let plan;
     try {
       const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
       const jsonStr = jsonMatch ? jsonMatch[1].trim() : content.trim();
       plan = JSON.parse(jsonStr);
-    } catch (parseError) {
-      console.error("Failed to parse AI response:", content);
+    } catch {
       throw new Error("Failed to parse AI response as JSON");
     }
 
@@ -136,7 +171,7 @@ Type: ${isProfessional ? "Professionnel" : "Personnel"}
   } catch (e) {
     console.error("generate-plan error:", e);
     return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
+      JSON.stringify({ error: "Une erreur est survenue" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
