@@ -49,7 +49,11 @@ Deno.serve(async (req) => {
       if (!project) throw new Error("Projet introuvable");
     }
 
-    const displayName = senderName || user.email;
+    // Sanitize for HTML output
+    const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    const displayName = esc(senderName || user.email || "Utilisateur");
+    const safeTitle = esc(projectTitle);
+    const safeUrl = encodeURI(shareUrl);
 
     const html = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 560px; margin: 0 auto; padding: 32px 20px;">
