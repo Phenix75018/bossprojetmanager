@@ -26,7 +26,17 @@ Deno.serve(async (req) => {
     if (authErr || !user) throw new Error("Non autorisé");
 
     const { email, projectId, shareUrl, projectTitle, senderName } = await req.json();
-    if (!email || !shareUrl || !projectTitle) throw new Error("Paramètres manquants");
+    
+    // Input validation
+    if (!email || typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      throw new Error("Email invalide");
+    }
+    if (!shareUrl || typeof shareUrl !== "string" || shareUrl.length > 2000) {
+      throw new Error("URL de partage invalide");
+    }
+    if (!projectTitle || typeof projectTitle !== "string" || projectTitle.length > 200) {
+      throw new Error("Titre de projet invalide");
+    }
 
     // Verify project ownership if projectId is provided
     if (projectId) {
