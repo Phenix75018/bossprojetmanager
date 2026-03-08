@@ -15,8 +15,15 @@ Deno.serve(async (req) => {
     const token = url.searchParams.get("token");
     const password = url.searchParams.get("password") || null;
 
-    if (!token) {
-      return new Response(JSON.stringify({ error: "Token manquant" }), {
+    // Input validation
+    if (!token || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(token)) {
+      return new Response(JSON.stringify({ error: "Token invalide" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (password && (typeof password !== "string" || password.length > 100)) {
+      return new Response(JSON.stringify({ error: "Mot de passe invalide" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

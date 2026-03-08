@@ -135,15 +135,23 @@ function formatDelay(minutes: number): string {
   return `${minutes} min`;
 }
 
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
 function buildEmailHtml(heading: string, title: string, when: string, description: string | null): string {
+  const safeTitle = escapeHtml(title);
+  const safeWhen = escapeHtml(when);
+  const safeDesc = description ? escapeHtml(description) : null;
   return `<div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:20px;">
     <h2 style="color:#7c2d12;">${heading}</h2>
-    <p>Votre tâche <strong>"${title}"</strong> est prévue :</p>
-    <p style="font-size:18px;font-weight:bold;color:#9a3412;">${when}</p>
-    ${description ? `<p style="color:#666;">${description}</p>` : ""}
+    <p>Votre tâche <strong>"${safeTitle}"</strong> est prévue :</p>
+    <p style="font-size:18px;font-weight:bold;color:#9a3412;">${safeWhen}</p>
+    ${safeDesc ? `<p style="color:#666;">${safeDesc}</p>` : ""}
     <hr style="border:none;border-top:1px solid #eee;margin:20px 0;">
     <p style="color:#999;font-size:12px;">Boss Project Manager</p>
   </div>`;
+}
 }
 
 async function sendEmail(apiKey: string, to: string, subject: string, html: string) {
