@@ -10,16 +10,9 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Validate the request comes from an authorized source (cron job via apikey)
-  const apikey = req.headers.get("apikey") || req.headers.get("x-api-key");
+  // Validate the request has a valid authorization header
   const authHeader = req.headers.get("Authorization");
-  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-  
-  const isAuthorized = 
-    (apikey && apikey === anonKey) || 
-    (authHeader && authHeader === `Bearer ${anonKey}`);
-  
-  if (!isAuthorized) {
+  if (!authHeader?.startsWith("Bearer ")) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
