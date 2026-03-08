@@ -168,7 +168,6 @@ function buildEmailHtml(heading: string, title: string, when: string, descriptio
     <p style="color:#999;font-size:12px;">Boss Project Manager</p>
   </div>`;
 }
-}
 
 async function sendEmail(apiKey: string, to: string, subject: string, html: string) {
   const res = await fetch("https://api.resend.com/emails", {
