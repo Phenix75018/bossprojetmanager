@@ -64,10 +64,10 @@ Deno.serve(async (req) => {
         <strong>${displayName}</strong> a partagé un plan d'action avec vous :
       </p>
       <div style="background: #fef7f0; border: 1px solid #fed7aa; border-radius: 12px; padding: 20px; margin: 24px 0;">
-        <h2 style="margin: 0 0 8px; color: #7c2d12; font-size: 20px;">${projectTitle}</h2>
+        <h2 style="margin: 0 0 8px; color: #7c2d12; font-size: 20px;">${safeTitle}</h2>
       </div>
       <div style="text-align: center; margin: 32px 0;">
-        <a href="${shareUrl}" style="display: inline-block; background: linear-gradient(135deg, #7c2d12, #9a3412); color: white; text-decoration: none; padding: 14px 32px; border-radius: 10px; font-weight: 600; font-size: 16px;">
+        <a href="${safeUrl}" style="display: inline-block; background: linear-gradient(135deg, #7c2d12, #9a3412); color: white; text-decoration: none; padding: 14px 32px; border-radius: 10px; font-weight: 600; font-size: 16px;">
           Voir le plan d'action
         </a>
       </div>
