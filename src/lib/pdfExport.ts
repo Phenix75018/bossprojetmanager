@@ -1,4 +1,5 @@
-import html2pdf from "html2pdf.js";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 const PDF_STYLES = `
   <style>
