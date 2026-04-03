@@ -17,6 +17,9 @@ import SharedCalendar from "./pages/SharedCalendar";
 import Integrations from "./pages/Integrations";
 import CalendarPage from "./pages/CalendarPage";
 import ResetPassword from "./pages/ResetPassword";
+import BusinessPlans from "./pages/BusinessPlans";
+import BusinessPlanDetail from "./pages/BusinessPlanDetail";
+import SharedBusinessPlan from "./pages/SharedBusinessPlan";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
