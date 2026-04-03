@@ -1,12 +1,13 @@
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { FolderKanban, CalendarDays, Zap, LogOut, User, Link2 } from "lucide-react";
+import { FolderKanban, CalendarDays, Zap, LogOut, User, Link2, FileText } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import ThemeToggle from "@/components/ThemeToggle";
 
 const navItems = [
 { to: "/", label: "Accueil", icon: Zap },
 { to: "/dashboard", label: "Projets", icon: FolderKanban },
+{ to: "/business-plans", label: "Business Plans", icon: FileText },
 { to: "/calendar", label: "Calendrier", icon: CalendarDays },
 { to: "/integrations", label: "Intégrations", icon: Link2 }];
 

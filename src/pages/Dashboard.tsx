@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Plus, Calendar, BarChart3, Trash2, FolderOpen, Loader2, ArrowLeft } from "lucide-react";
+import { Plus, Calendar, BarChart3, Trash2, FolderOpen, Loader2, ArrowLeft, FileText } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import { useProjectsDB } from "@/hooks/useProjectsDB";
 
@@ -22,13 +22,22 @@ export default function Dashboard() {
               {projects.length} projet{projects.length > 1 ? "s" : ""} actif{projects.length > 1 ? "s" : ""}
             </p>
           </div>
-          <Link
-            to="/onboarding"
-            className="flex items-center gap-2 gradient-bg text-primary-foreground px-5 py-2.5 rounded-xl text-sm font-bold hover:opacity-90 transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            Nouveau projet
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              to="/business-plans"
+              className="flex items-center gap-2 border border-primary/20 text-primary px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-primary/5 transition-all"
+            >
+              <FileText className="w-4 h-4" />
+              Business Plans
+            </Link>
+            <Link
+              to="/onboarding"
+              className="flex items-center gap-2 gradient-bg text-primary-foreground px-5 py-2.5 rounded-xl text-sm font-bold hover:opacity-90 transition-all"
+            >
+              <Plus className="w-4 h-4" />
+              Nouveau projet
+            </Link>
+          </div>
         </div>
 
         {loading ? (

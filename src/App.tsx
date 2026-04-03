@@ -17,6 +17,9 @@ import SharedCalendar from "./pages/SharedCalendar";
 import Integrations from "./pages/Integrations";
 import CalendarPage from "./pages/CalendarPage";
 import ResetPassword from "./pages/ResetPassword";
+import BusinessPlans from "./pages/BusinessPlans";
+import BusinessPlanDetail from "./pages/BusinessPlanDetail";
+import SharedBusinessPlan from "./pages/SharedBusinessPlan";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +39,7 @@ const AppRoutes = () => (
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/share/:token" element={<SharedPlan />} />
       <Route path="/calendar/share/:token" element={<SharedCalendar />} />
+      <Route path="/business-plan/share/:token" element={<SharedBusinessPlan />} />
       <Route
         path="/onboarding"
         element={
@@ -81,6 +85,22 @@ const AppRoutes = () => (
         element={
           <ProtectedRoute>
             <Integrations />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/business-plans"
+        element={
+          <ProtectedRoute>
+            <BusinessPlans />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/business-plan/:id"
+        element={
+          <ProtectedRoute>
+            <BusinessPlanDetail />
           </ProtectedRoute>
         }
       />

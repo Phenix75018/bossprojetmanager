@@ -14,6 +14,97 @@ export type Database = {
   }
   public: {
     Tables: {
+      business_plan_sections: {
+        Row: {
+          business_plan_id: string
+          content: string
+          created_at: string
+          generated: boolean
+          id: string
+          section_type: string
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          business_plan_id: string
+          content?: string
+          created_at?: string
+          generated?: boolean
+          id?: string
+          section_type: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          business_plan_id?: string
+          content?: string
+          created_at?: string
+          generated?: boolean
+          id?: string
+          section_type?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_plan_sections_business_plan_id_fkey"
+            columns: ["business_plan_id"]
+            isOneToOne: false
+            referencedRelation: "business_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      business_plans: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          project_id: string | null
+          share_password: string | null
+          share_token: string | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          id?: string
+          project_id?: string | null
+          share_password?: string | null
+          share_token?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          project_id?: string | null
+          share_password?: string | null
+          share_token?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_plans_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       calendar_events: {
         Row: {
           all_day: boolean
