@@ -29,6 +29,13 @@ export default function Dashboard() {
             <Plus className="w-4 h-4" />
             Nouveau projet
           </Link>
+          <Link
+            to="/business-plans"
+            className="flex items-center gap-2 border border-primary/20 text-primary px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-primary/5 transition-all"
+          >
+            <FileText className="w-4 h-4" />
+            Business Plans
+          </Link>
         </div>
 
         {loading ? (
