@@ -39,6 +39,7 @@ const AppRoutes = () => (
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/share/:token" element={<SharedPlan />} />
       <Route path="/calendar/share/:token" element={<SharedCalendar />} />
+      <Route path="/business-plan/share/:token" element={<SharedBusinessPlan />} />
       <Route
         path="/onboarding"
         element={
