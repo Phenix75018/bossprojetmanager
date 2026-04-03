@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Plus, Calendar, BarChart3, Trash2, FolderOpen, Loader2, ArrowLeft } from "lucide-react";
+import { Plus, Calendar, BarChart3, Trash2, FolderOpen, Loader2, ArrowLeft, FileText } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import { useProjectsDB } from "@/hooks/useProjectsDB";
 
