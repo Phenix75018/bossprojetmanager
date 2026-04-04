@@ -274,11 +274,24 @@ export async function exportTaskExplanationPDF(
 // Business Plan Professional PDF Export
 // ========================================
 
+interface BPChartData {
+  name: string;
+  value: number;
+  color?: string;
+}
+
+interface BPChart {
+  chart_type: "bar" | "pie";
+  title: string;
+  chart_data: BPChartData[];
+}
+
 interface BPSection {
   section_type: string;
   title: string;
   content: string;
   sort_order: number;
+  charts?: BPChart[];
 }
 
 interface BusinessPlanPDFOptions {
