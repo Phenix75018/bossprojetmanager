@@ -269,3 +269,330 @@ export async function exportTaskExplanationPDF(
     document.body.removeChild(container);
   }
 }
+
+// ========================================
+// Business Plan Professional PDF Export
+// ========================================
+
+interface BPSection {
+  section_type: string;
+  title: string;
+  content: string;
+  sort_order: number;
+}
+
+interface BusinessPlanPDFOptions {
+  title: string;
+  description: string;
+  sections: BPSection[];
+  status: string;
+}
+
+const BP_PDF_STYLES = `
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #1a1a1a; line-height: 1.6; }
+
+    /* Cover page */
+    .cover-page {
+      height: 1120px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 40%, #0f3460 100%);
+      color: white;
+      position: relative;
+      overflow: hidden;
+    }
+    .cover-page::before {
+      content: '';
+      position: absolute;
+      top: -60px;
+      right: -60px;
+      width: 300px;
+      height: 300px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.04);
+    }
+    .cover-page::after {
+      content: '';
+      position: absolute;
+      bottom: -100px;
+      left: -100px;
+      width: 400px;
+      height: 400px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.03);
+    }
+    .cover-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      padding: 8px 24px;
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 30px;
+      margin-bottom: 40px;
+      color: rgba(255,255,255,0.8);
+    }
+    .cover-title {
+      font-size: 42px;
+      font-weight: 800;
+      line-height: 1.15;
+      max-width: 600px;
+      margin-bottom: 20px;
+    }
+    .cover-desc {
+      font-size: 16px;
+      color: rgba(255,255,255,0.6);
+      max-width: 500px;
+      margin-bottom: 60px;
+      line-height: 1.7;
+    }
+    .cover-date {
+      font-size: 13px;
+      color: rgba(255,255,255,0.4);
+      position: absolute;
+      bottom: 50px;
+    }
+    .cover-line {
+      width: 60px;
+      height: 3px;
+      background: linear-gradient(90deg, #e2725b, #f4a261);
+      margin: 0 auto 40px;
+      border-radius: 2px;
+    }
+
+    /* TOC */
+    .toc-page { padding: 60px 50px; }
+    .toc-title {
+      font-size: 28px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      color: #1a1a2e;
+    }
+    .toc-underline {
+      width: 50px;
+      height: 3px;
+      background: linear-gradient(90deg, #e2725b, #f4a261);
+      margin-bottom: 40px;
+      border-radius: 2px;
+    }
+    .toc-item {
+      display: flex;
+      align-items: center;
+      padding: 16px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .toc-num {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #f0f4ff;
+      color: #0f3460;
+      font-size: 14px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 16px;
+      flex-shrink: 0;
+    }
+    .toc-label { font-size: 15px; font-weight: 600; color: #333; flex: 1; }
+    .toc-dots { flex: 1; border-bottom: 1px dotted #ccc; margin: 0 12px; min-width: 40px; }
+    .toc-page-num { font-size: 14px; font-weight: 600; color: #888; }
+
+    /* Section pages */
+    .section-page { padding: 50px; page-break-before: always; }
+    .section-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 30px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid #0f3460;
+    }
+    .section-number {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #0f3460, #1a1a2e);
+      color: white;
+      font-size: 18px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 16px;
+      flex-shrink: 0;
+    }
+    .section-title { font-size: 24px; font-weight: 800; color: #1a1a2e; }
+
+    /* Content styling */
+    .section-content { font-size: 13px; color: #333; line-height: 1.8; }
+    .section-content h1 { font-size: 20px; font-weight: 700; margin: 24px 0 10px; color: #1a1a2e; }
+    .section-content h2 { font-size: 17px; font-weight: 700; margin: 20px 0 8px; color: #0f3460; }
+    .section-content h3 { font-size: 15px; font-weight: 600; margin: 16px 0 6px; color: #333; }
+    .section-content h4 { font-size: 14px; font-weight: 600; margin: 12px 0 4px; color: #555; }
+    .section-content p { margin-bottom: 8px; }
+    .section-content ul, .section-content ol { padding-left: 22px; margin: 8px 0; }
+    .section-content li { margin-bottom: 4px; font-size: 13px; }
+    .section-content strong { font-weight: 700; color: #1a1a2e; }
+    .section-content em { font-style: italic; color: #555; }
+    .section-content table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 12px; }
+    .section-content th { background: #0f3460; color: white; padding: 10px 12px; text-align: left; font-weight: 600; }
+    .section-content td { padding: 8px 12px; border-bottom: 1px solid #e5e5e5; }
+    .section-content tr:nth-child(even) td { background: #f9fafb; }
+    .section-content blockquote { border-left: 3px solid #e2725b; padding: 8px 16px; margin: 12px 0; background: #fff8f5; color: #555; font-style: italic; }
+
+    /* Footer */
+    .page-footer {
+      position: relative;
+      margin-top: 40px;
+      padding-top: 16px;
+      border-top: 1px solid #e5e5e5;
+      font-size: 10px;
+      color: #aaa;
+      display: flex;
+      justify-content: space-between;
+    }
+  </style>
+`;
+
+function mdToHtmlRich(md: string): string {
+  let html = md
+    // Tables
+    .replace(/^\|(.+)\|$/gm, (match) => {
+      return match;
+    });
+
+  // Process tables
+  const tableRegex = /(\|[^\n]+\|\n)((?:\|[-:| ]+\|\n))((?:\|[^\n]+\|\n?)*)/g;
+  html = html.replace(tableRegex, (_match, headerRow, _separator, bodyRows) => {
+    const headers = headerRow.trim().split('|').filter((c: string) => c.trim());
+    const rows = bodyRows.trim().split('\n').filter((r: string) => r.trim());
+
+    let table = '<table><thead><tr>';
+    headers.forEach((h: string) => { table += `<th>${h.trim()}</th>`; });
+    table += '</tr></thead><tbody>';
+    rows.forEach((row: string) => {
+      const cells = row.split('|').filter((c: string) => c.trim());
+      table += '<tr>';
+      cells.forEach((c: string) => { table += `<td>${c.trim()}</td>`; });
+      table += '</tr>';
+    });
+    table += '</tbody></table>';
+    return table;
+  });
+
+  // Headings
+  html = html
+    .replace(/^#### (.+)$/gm, "<h4>$1</h4>")
+    .replace(/^### (.+)$/gm, "<h3>$1</h3>")
+    .replace(/^## (.+)$/gm, "<h2>$1</h2>")
+    .replace(/^# (.+)$/gm, "<h1>$1</h1>");
+
+  // Bold & italic
+  html = html
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>");
+
+  // Blockquotes
+  html = html.replace(/^> (.+)$/gm, "<blockquote>$1</blockquote>");
+
+  // Lists
+  html = html.replace(/^- (.+)$/gm, "<li>$1</li>");
+  html = html.replace(/^(\d+)\. (.+)$/gm, "<li>$2</li>");
+  html = html.replace(/(<li>.*?<\/li>\n?)+/g, (match) => `<ul>${match}</ul>`);
+
+  // Paragraphs
+  html = html.replace(/\n\n/g, "</p><p>");
+  html = `<p>${html}</p>`;
+  html = html.replace(/<p>\s*<(h[1-4]|table|ul|ol|blockquote)/g, "<$1");
+  html = html.replace(/<\/(h[1-4]|table|ul|ol|blockquote)>\s*<\/p>/g, "</$1>");
+  html = html.replace(/<p>\s*<\/p>/g, "");
+
+  return html;
+}
+
+export async function exportBusinessPlanPDF(options: BusinessPlanPDFOptions) {
+  const { title, description, sections, status } = options;
+  const date = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+
+  const statusLabels: Record<string, string> = {
+    draft: "Brouillon",
+    in_progress: "En cours de rédaction",
+    completed: "Finalisé",
+  };
+
+  const sectionIcons: Record<string, string> = {
+    executive_summary: "📋",
+    market_analysis: "📊",
+    business_strategy: "🎯",
+    financial_plan: "💰",
+    best_practices: "⭐",
+  };
+
+  // ---- Cover Page ----
+  let html = `
+    <div class="cover-page">
+      <div class="cover-badge">Business Plan</div>
+      <div class="cover-line"></div>
+      <div class="cover-title">${title}</div>
+      <div class="cover-desc">${description || "Plan d'affaires détaillé"}</div>
+      <div class="cover-date">${date} • ${statusLabels[status] || status}</div>
+    </div>
+  `;
+
+  // ---- Table of Contents ----
+  html += `
+    <div class="toc-page" style="page-break-before:always;">
+      <div class="toc-title">Sommaire</div>
+      <div class="toc-underline"></div>
+  `;
+  sections.forEach((sec, i) => {
+    html += `
+      <div class="toc-item">
+        <div class="toc-num">${i + 1}</div>
+        <div class="toc-label">${sectionIcons[sec.section_type] || "📄"} ${sec.title}</div>
+        <div class="toc-dots"></div>
+        <div class="toc-page-num">${i + 3}</div>
+      </div>
+    `;
+  });
+  html += `</div>`;
+
+  // ---- Section Pages ----
+  sections.forEach((sec, i) => {
+    html += `
+      <div class="section-page">
+        <div class="section-header">
+          <div class="section-number">${i + 1}</div>
+          <div class="section-title">${sec.title}</div>
+        </div>
+        <div class="section-content">
+          ${mdToHtmlRich(sec.content)}
+        </div>
+        <div class="page-footer">
+          <span>${title} — Business Plan</span>
+          <span>Page ${i + 3}</span>
+        </div>
+      </div>
+    `;
+  });
+
+  const container = document.createElement("div");
+  container.style.width = "794px"; // A4 width at 96dpi
+  container.innerHTML = BP_PDF_STYLES + html;
+  document.body.appendChild(container);
+
+  try {
+    const filename = `${title.replace(/[^a-zA-Z0-9àâéèêëïîôùûüÿçæœ ]/g, "").trim()}_business-plan.pdf`;
+    await renderToPdf(container, filename);
+  } finally {
+    document.body.removeChild(container);
+  }
+}
