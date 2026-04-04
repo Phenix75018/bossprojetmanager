@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import ShareBusinessPlanModal from "@/components/ShareBusinessPlanModal";
+import { exportBusinessPlanPDF } from "@/lib/pdfExport";
 
 const SECTION_TYPES = [
   { type: "executive_summary", title: "Résumé exécutif", icon: "📋" },
