@@ -307,6 +307,18 @@ export default function BusinessPlanDetail() {
                     <Button
                       variant="ghost"
                       size="sm"
+                      onClick={() => {
+                        setEditingChart(null);
+                        setShowChartEditor(true);
+                      }}
+                      className="gap-1"
+                    >
+                      <BarChart3 className="w-3 h-3" />
+                      Graphique
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => generateSingle(currentSection.section_type)}
                       disabled={!!generatingSection}
                       className="gap-1"
@@ -346,6 +358,28 @@ export default function BusinessPlanDetail() {
                     <ReactMarkdown>{currentSection.content}</ReactMarkdown>
                   </div>
                 )}
+
+                {/* Charts for this section */}
+                {(charts[currentSection.id] || []).map(chart => (
+                  <BPChartRenderer
+                    key={chart.id}
+                    id={chart.id}
+                    chartType={chart.chart_type as "bar" | "pie"}
+                    title={chart.title}
+                    data={chart.chart_data}
+                    editable
+                    onEdit={() => {
+                      setEditingChart({
+                        id: chart.id,
+                        chart_type: chart.chart_type as "bar" | "pie",
+                        title: chart.title,
+                        chart_data: chart.chart_data,
+                      });
+                      setShowChartEditor(true);
+                    }}
+                    onDelete={() => deleteChart(chart.id)}
+                  />
+                ))}
               </div>
             ) : activeSection ? (
               <div className="flex flex-col items-center justify-center h-full py-20">
