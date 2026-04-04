@@ -46,10 +46,16 @@ export default function BusinessPlanDetail() {
       .in("section_id", sectionIds)
       .order("sort_order");
     if (data) {
-      const grouped: Record<string, typeof data> = {};
+      const grouped: Record<string, { id: string; chart_type: string; title: string; chart_data: ChartDataPoint[]; sort_order: number }[]> = {};
       data.forEach((c: any) => {
         if (!grouped[c.section_id]) grouped[c.section_id] = [];
-        grouped[c.section_id].push(c);
+        grouped[c.section_id].push({
+          id: c.id,
+          chart_type: c.chart_type,
+          title: c.title,
+          chart_data: (c.chart_data || []) as ChartDataPoint[],
+          sort_order: c.sort_order,
+        });
       });
       setCharts(grouped);
     }
