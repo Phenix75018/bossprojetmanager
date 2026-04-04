@@ -410,6 +410,13 @@ export default function BusinessPlanDetail() {
           onClose={() => setShowShare(false)}
         />
       )}
+
+      <BPChartEditor
+        open={showChartEditor}
+        initial={editingChart}
+        onSave={saveChart}
+        onClose={() => { setShowChartEditor(false); setEditingChart(null); }}
+      />
     </div>
   );
 }
