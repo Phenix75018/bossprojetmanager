@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronDown,
@@ -24,9 +24,10 @@ import {
   Wrench,
   UserCheck,
   Bot,
-  Download,
-  Share2,
-} from "lucide-react";
+   Download,
+   Share2,
+   FileText,
+ } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import { useProjectsDB, ProjectWithDetails, TaskRow } from "@/hooks/useProjectsDB";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,6 +37,7 @@ import TaskEditModal from "@/components/TaskEditModal";
 import TaskExplainModal from "@/components/TaskExplainModal";
 import SharePlanModal from "@/components/SharePlanModal";
 import { exportFullPlanPDF } from "@/lib/pdfExport";
+import { useBusinessPlans } from "@/hooks/useBusinessPlans";
 
 type TaskStatus = "todo" | "in-progress" | "done";
 
@@ -79,7 +81,10 @@ interface AlternativeResult {
 
 export default function PlanDetail() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { fetchProjectWithDetails, updateTaskStatus, updateTask, deleteTask, deleteSubtask, updateProjectCompletion } = useProjectsDB();
+  const { plans, createPlan } = useBusinessPlans();
+  const [creatingBP, setCreatingBP] = useState(false);
   const [project, setProject] = useState<ProjectWithDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
@@ -466,6 +471,36 @@ export default function PlanDetail() {
                 <Download className="w-3.5 h-3.5" />
                 PDF
               </button>
+              {(() => {
+                const existingBP = plans.find(p => p.project_id === id);
+                if (existingBP) {
+                  return (
+                    <button
+                      onClick={() => navigate(`/business-plan/${existingBP.id}`)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border hover:border-primary/30 hover:text-primary transition-all"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      Business Plan
+                    </button>
+                  );
+                }
+                return (
+                  <button
+                    disabled={creatingBP}
+                    onClick={async () => {
+                      if (!project) return;
+                      setCreatingBP(true);
+                      const bpId = await createPlan(project.title, project.description, id);
+                      setCreatingBP(false);
+                      if (bpId) navigate(`/business-plan/${bpId}`);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border hover:border-primary/30 hover:text-primary transition-all disabled:opacity-50"
+                  >
+                    {creatingBP ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
+                    Business Plan
+                  </button>
+                );
+              })()}
             </div>
           </div>
         </div>
