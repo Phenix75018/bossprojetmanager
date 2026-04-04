@@ -81,7 +81,10 @@ interface AlternativeResult {
 
 export default function PlanDetail() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { fetchProjectWithDetails, updateTaskStatus, updateTask, deleteTask, deleteSubtask, updateProjectCompletion } = useProjectsDB();
+  const { plans, createPlan } = useBusinessPlans();
+  const [creatingBP, setCreatingBP] = useState(false);
   const [project, setProject] = useState<ProjectWithDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
