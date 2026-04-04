@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Loader2, Sparkles, Save, Share2, Download, ChevronDown, ChevronRight, PenLine, Eye, FileText } from "lucide-react";
+import { ArrowLeft, Loader2, Sparkles, Save, Share2, Download, ChevronDown, ChevronRight, PenLine, Eye, FileText, BarChart3, Plus } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import Navbar from "@/components/layout/Navbar";
 import { useBusinessPlans, BPSectionRow } from "@/hooks/useBusinessPlans";
@@ -11,6 +11,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import ShareBusinessPlanModal from "@/components/ShareBusinessPlanModal";
 import { exportBusinessPlanPDF } from "@/lib/pdfExport";
+import BPChartEditor, { ChartConfig, ChartDataPoint } from "@/components/BPChartEditor";
+import BPChartRenderer from "@/components/BPChartRenderer";
 
 const SECTION_TYPES = [
   { type: "executive_summary", title: "Résumé exécutif", icon: "📋" },
@@ -32,6 +34,32 @@ export default function BusinessPlanDetail() {
   const [editMode, setEditMode] = useState<Record<string, boolean>>({});
   const [editContent, setEditContent] = useState<Record<string, string>>({});
   const [showShare, setShowShare] = useState(false);
+  const [charts, setCharts] = useState<Record<string, { id: string; chart_type: string; title: string; chart_data: ChartDataPoint[]; sort_order: number }[]>>({});
+  const [showChartEditor, setShowChartEditor] = useState(false);
+  const [editingChart, setEditingChart] = useState<ChartConfig | null>(null);
+
+  const loadCharts = useCallback(async (sectionIds: string[]) => {
+    if (sectionIds.length === 0) return;
+    const { data } = await supabase
+      .from("business_plan_charts")
+      .select("*")
+      .in("section_id", sectionIds)
+      .order("sort_order");
+    if (data) {
+      const grouped: Record<string, { id: string; chart_type: string; title: string; chart_data: ChartDataPoint[]; sort_order: number }[]> = {};
+      data.forEach((c: any) => {
+        if (!grouped[c.section_id]) grouped[c.section_id] = [];
+        grouped[c.section_id].push({
+          id: c.id,
+          chart_type: c.chart_type,
+          title: c.title,
+          chart_data: (c.chart_data || []) as ChartDataPoint[],
+          sort_order: c.sort_order,
+        });
+      });
+      setCharts(grouped);
+    }
+  }, []);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -43,11 +71,44 @@ export default function BusinessPlanDetail() {
       if (data.sections.length > 0 && !activeSection) {
         setActiveSection(data.sections[0].section_type);
       }
+      await loadCharts(data.sections.map(s => s.id));
     }
     setLoading(false);
-  }, [id, fetchPlanWithSections, activeSection]);
+  }, [id, fetchPlanWithSections, activeSection, loadCharts]);
 
   useEffect(() => { load(); }, [id]);
+
+  const saveChart = async (config: ChartConfig) => {
+    const currentSec = sections.find(s => s.section_type === activeSection);
+    if (!currentSec) return;
+
+    if (config.id) {
+      await supabase.from("business_plan_charts").update({
+        chart_type: config.chart_type,
+        title: config.title,
+        chart_data: config.chart_data as any,
+      }).eq("id", config.id);
+    } else {
+      const currentCharts = charts[currentSec.id] || [];
+      await supabase.from("business_plan_charts").insert({
+        section_id: currentSec.id,
+        chart_type: config.chart_type,
+        title: config.title,
+        chart_data: config.chart_data as any,
+        sort_order: currentCharts.length,
+      });
+    }
+    setShowChartEditor(false);
+    setEditingChart(null);
+    await loadCharts(sections.map(s => s.id));
+    toast.success(config.id ? "Graphique mis à jour" : "Graphique ajouté");
+  };
+
+  const deleteChart = async (chartId: string) => {
+    await supabase.from("business_plan_charts").delete().eq("id", chartId);
+    await loadCharts(sections.map(s => s.id));
+    toast.success("Graphique supprimé");
+  };
 
   const generateFull = async () => {
     if (!plan) return;
@@ -121,6 +182,11 @@ export default function BusinessPlanDetail() {
           title: s.title,
           content: s.content,
           sort_order: s.sort_order,
+          charts: (charts[s.id] || []).map(c => ({
+            chart_type: c.chart_type as "bar" | "pie",
+            title: c.title,
+            chart_data: c.chart_data,
+          })),
         })),
         status: plan.status,
       });
@@ -246,6 +312,18 @@ export default function BusinessPlanDetail() {
                     <Button
                       variant="ghost"
                       size="sm"
+                      onClick={() => {
+                        setEditingChart(null);
+                        setShowChartEditor(true);
+                      }}
+                      className="gap-1"
+                    >
+                      <BarChart3 className="w-3 h-3" />
+                      Graphique
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => generateSingle(currentSection.section_type)}
                       disabled={!!generatingSection}
                       className="gap-1"
@@ -285,6 +363,28 @@ export default function BusinessPlanDetail() {
                     <ReactMarkdown>{currentSection.content}</ReactMarkdown>
                   </div>
                 )}
+
+                {/* Charts for this section */}
+                {(charts[currentSection.id] || []).map(chart => (
+                  <BPChartRenderer
+                    key={chart.id}
+                    id={chart.id}
+                    chartType={chart.chart_type as "bar" | "pie"}
+                    title={chart.title}
+                    data={chart.chart_data}
+                    editable
+                    onEdit={() => {
+                      setEditingChart({
+                        id: chart.id,
+                        chart_type: chart.chart_type as "bar" | "pie",
+                        title: chart.title,
+                        chart_data: chart.chart_data,
+                      });
+                      setShowChartEditor(true);
+                    }}
+                    onDelete={() => deleteChart(chart.id)}
+                  />
+                ))}
               </div>
             ) : activeSection ? (
               <div className="flex flex-col items-center justify-center h-full py-20">
@@ -315,6 +415,13 @@ export default function BusinessPlanDetail() {
           onClose={() => setShowShare(false)}
         />
       )}
+
+      <BPChartEditor
+        open={showChartEditor}
+        initial={editingChart}
+        onSave={saveChart}
+        onClose={() => { setShowChartEditor(false); setEditingChart(null); }}
+      />
     </div>
   );
 }

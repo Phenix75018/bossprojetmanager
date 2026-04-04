@@ -274,11 +274,24 @@ export async function exportTaskExplanationPDF(
 // Business Plan Professional PDF Export
 // ========================================
 
+interface BPChartData {
+  name: string;
+  value: number;
+  color?: string;
+}
+
+interface BPChart {
+  chart_type: "bar" | "pie";
+  title: string;
+  chart_data: BPChartData[];
+}
+
 interface BPSection {
   section_type: string;
   title: string;
   content: string;
   sort_order: number;
+  charts?: BPChart[];
 }
 
 interface BusinessPlanPDFOptions {
@@ -567,6 +580,45 @@ export async function exportBusinessPlanPDF(options: BusinessPlanPDFOptions) {
 
   // ---- Section Pages ----
   sections.forEach((sec, i) => {
+    let chartsHtml = "";
+    if (sec.charts && sec.charts.length > 0) {
+      for (const chart of sec.charts) {
+        const maxVal = Math.max(...chart.chart_data.map(d => d.value), 1);
+        chartsHtml += `<div style="margin:24px 0;padding:20px;border:1px solid #e5e5e5;border-radius:12px;background:#fafbfc;">`;
+        chartsHtml += `<div style="font-size:14px;font-weight:700;margin-bottom:16px;color:#1a1a2e;">${chart.title}</div>`;
+
+        if (chart.chart_type === "bar") {
+          for (const d of chart.chart_data) {
+            const pct = Math.round((d.value / maxVal) * 100);
+            chartsHtml += `<div style="display:flex;align-items:center;margin-bottom:8px;">`;
+            chartsHtml += `<div style="width:120px;font-size:11px;color:#555;flex-shrink:0;">${d.name}</div>`;
+            chartsHtml += `<div style="flex:1;height:22px;background:#eee;border-radius:6px;overflow:hidden;margin:0 10px;">`;
+            chartsHtml += `<div style="height:100%;width:${pct}%;background:${d.color || '#0f3460'};border-radius:6px;"></div>`;
+            chartsHtml += `</div>`;
+            chartsHtml += `<div style="width:60px;text-align:right;font-size:12px;font-weight:600;color:#333;">${d.value.toLocaleString("fr-FR")}</div>`;
+            chartsHtml += `</div>`;
+          }
+        } else {
+          // Pie chart as a styled table
+          const total = chart.chart_data.reduce((sum, d) => sum + d.value, 0) || 1;
+          chartsHtml += `<table style="width:100%;border-collapse:collapse;font-size:12px;">`;
+          chartsHtml += `<tr style="border-bottom:2px solid #0f3460;"><th style="text-align:left;padding:8px;color:#0f3460;">Catégorie</th><th style="text-align:right;padding:8px;color:#0f3460;">Valeur</th><th style="text-align:right;padding:8px;color:#0f3460;">%</th><th style="width:120px;padding:8px;"></th></tr>`;
+          for (const d of chart.chart_data) {
+            const pct = Math.round((d.value / total) * 100);
+            chartsHtml += `<tr style="border-bottom:1px solid #eee;">`;
+            chartsHtml += `<td style="padding:8px;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${d.color || '#0f3460'};margin-right:8px;vertical-align:middle;"></span>${d.name}</td>`;
+            chartsHtml += `<td style="padding:8px;text-align:right;font-weight:600;">${d.value.toLocaleString("fr-FR")}</td>`;
+            chartsHtml += `<td style="padding:8px;text-align:right;color:#666;">${pct}%</td>`;
+            chartsHtml += `<td style="padding:8px;"><div style="height:8px;background:#eee;border-radius:4px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:${d.color || '#0f3460'};border-radius:4px;"></div></div></td>`;
+            chartsHtml += `</tr>`;
+          }
+          chartsHtml += `<tr><td style="padding:8px;font-weight:700;">Total</td><td style="padding:8px;text-align:right;font-weight:700;">${total.toLocaleString("fr-FR")}</td><td style="padding:8px;text-align:right;font-weight:700;">100%</td><td></td></tr>`;
+          chartsHtml += `</table>`;
+        }
+        chartsHtml += `</div>`;
+      }
+    }
+
     html += `
       <div class="section-page">
         <div class="section-header">
@@ -575,6 +627,7 @@ export async function exportBusinessPlanPDF(options: BusinessPlanPDFOptions) {
         </div>
         <div class="section-content">
           ${mdToHtmlRich(sec.content)}
+          ${chartsHtml}
         </div>
         <div class="page-footer">
           <span>${title} — Business Plan</span>

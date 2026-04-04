@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      business_plan_charts: {
+        Row: {
+          chart_data: Json
+          chart_type: string
+          created_at: string
+          id: string
+          section_id: string
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          chart_data?: Json
+          chart_type?: string
+          created_at?: string
+          id?: string
+          section_id: string
+          sort_order?: number
+          title?: string
+        }
+        Update: {
+          chart_data?: Json
+          chart_type?: string
+          created_at?: string
+          id?: string
+          section_id?: string
+          sort_order?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_plan_charts_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "business_plan_sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_plan_sections: {
         Row: {
           business_plan_id: string
