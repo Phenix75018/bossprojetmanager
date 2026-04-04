@@ -113,31 +113,17 @@ export default function BusinessPlanDetail() {
 
   const exportPDF = async () => {
     try {
-      const { jsPDF } = await import("jspdf");
-      const doc = new jsPDF();
-      let y = 20;
-
-      doc.setFontSize(22);
-      doc.text(plan.title, 20, y);
-      y += 15;
-
-      for (const section of sections) {
-        if (y > 250) { doc.addPage(); y = 20; }
-        doc.setFontSize(16);
-        doc.text(section.title, 20, y);
-        y += 10;
-        doc.setFontSize(10);
-        const plainText = section.content.replace(/[#*_`>\-|]/g, "").replace(/\n{3,}/g, "\n\n");
-        const lines = doc.splitTextToSize(plainText, 170);
-        for (const line of lines) {
-          if (y > 280) { doc.addPage(); y = 20; }
-          doc.text(line, 20, y);
-          y += 5;
-        }
-        y += 10;
-      }
-
-      doc.save(`${plan.title} - Business Plan.pdf`);
+      await exportBusinessPlanPDF({
+        title: plan.title,
+        description: plan.description,
+        sections: sections.map(s => ({
+          section_type: s.section_type,
+          title: s.title,
+          content: s.content,
+          sort_order: s.sort_order,
+        })),
+        status: plan.status,
+      });
       toast.success("PDF exporté !");
     } catch {
       toast.error("Erreur lors de l'export PDF");
