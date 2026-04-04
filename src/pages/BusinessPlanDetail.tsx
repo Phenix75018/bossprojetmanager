@@ -38,6 +38,23 @@ export default function BusinessPlanDetail() {
   const [showChartEditor, setShowChartEditor] = useState(false);
   const [editingChart, setEditingChart] = useState<ChartConfig | null>(null);
 
+  const loadCharts = useCallback(async (sectionIds: string[]) => {
+    if (sectionIds.length === 0) return;
+    const { data } = await supabase
+      .from("business_plan_charts")
+      .select("*")
+      .in("section_id", sectionIds)
+      .order("sort_order");
+    if (data) {
+      const grouped: Record<string, typeof data> = {};
+      data.forEach((c: any) => {
+        if (!grouped[c.section_id]) grouped[c.section_id] = [];
+        grouped[c.section_id].push(c);
+      });
+      setCharts(grouped);
+    }
+  }, []);
+
   const load = useCallback(async () => {
     if (!id) return;
     setLoading(true);
@@ -48,11 +65,44 @@ export default function BusinessPlanDetail() {
       if (data.sections.length > 0 && !activeSection) {
         setActiveSection(data.sections[0].section_type);
       }
+      await loadCharts(data.sections.map(s => s.id));
     }
     setLoading(false);
-  }, [id, fetchPlanWithSections, activeSection]);
+  }, [id, fetchPlanWithSections, activeSection, loadCharts]);
 
   useEffect(() => { load(); }, [id]);
+
+  const saveChart = async (config: ChartConfig) => {
+    const currentSec = sections.find(s => s.section_type === activeSection);
+    if (!currentSec) return;
+
+    if (config.id) {
+      await supabase.from("business_plan_charts").update({
+        chart_type: config.chart_type,
+        title: config.title,
+        chart_data: config.chart_data as any,
+      }).eq("id", config.id);
+    } else {
+      const currentCharts = charts[currentSec.id] || [];
+      await supabase.from("business_plan_charts").insert({
+        section_id: currentSec.id,
+        chart_type: config.chart_type,
+        title: config.title,
+        chart_data: config.chart_data as any,
+        sort_order: currentCharts.length,
+      });
+    }
+    setShowChartEditor(false);
+    setEditingChart(null);
+    await loadCharts(sections.map(s => s.id));
+    toast.success(config.id ? "Graphique mis à jour" : "Graphique ajouté");
+  };
+
+  const deleteChart = async (chartId: string) => {
+    await supabase.from("business_plan_charts").delete().eq("id", chartId);
+    await loadCharts(sections.map(s => s.id));
+    toast.success("Graphique supprimé");
+  };
 
   const generateFull = async () => {
     if (!plan) return;
