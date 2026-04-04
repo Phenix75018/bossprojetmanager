@@ -471,6 +471,36 @@ export default function PlanDetail() {
                 <Download className="w-3.5 h-3.5" />
                 PDF
               </button>
+              {(() => {
+                const existingBP = plans.find(p => p.project_id === id);
+                if (existingBP) {
+                  return (
+                    <button
+                      onClick={() => navigate(`/business-plan/${existingBP.id}`)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border hover:border-primary/30 hover:text-primary transition-all"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      Business Plan
+                    </button>
+                  );
+                }
+                return (
+                  <button
+                    disabled={creatingBP}
+                    onClick={async () => {
+                      if (!project) return;
+                      setCreatingBP(true);
+                      const bpId = await createPlan(project.title, project.description, id);
+                      setCreatingBP(false);
+                      if (bpId) navigate(`/business-plan/${bpId}`);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border hover:border-primary/30 hover:text-primary transition-all disabled:opacity-50"
+                  >
+                    {creatingBP ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
+                    Business Plan
+                  </button>
+                );
+              })()}
             </div>
           </div>
         </div>
