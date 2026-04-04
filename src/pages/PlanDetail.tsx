@@ -24,9 +24,10 @@ import {
   Wrench,
   UserCheck,
   Bot,
-  Download,
-  Share2,
-} from "lucide-react";
+   Download,
+   Share2,
+   FileText,
+ } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import { useProjectsDB, ProjectWithDetails, TaskRow } from "@/hooks/useProjectsDB";
 import { supabase } from "@/integrations/supabase/client";
