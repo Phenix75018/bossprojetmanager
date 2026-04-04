@@ -182,6 +182,11 @@ export default function BusinessPlanDetail() {
           title: s.title,
           content: s.content,
           sort_order: s.sort_order,
+          charts: (charts[s.id] || []).map(c => ({
+            chart_type: c.chart_type as "bar" | "pie",
+            title: c.title,
+            chart_data: c.chart_data,
+          })),
         })),
         status: plan.status,
       });
