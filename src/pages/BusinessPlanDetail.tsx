@@ -111,6 +111,45 @@ export default function BusinessPlanDetail() {
     toast.success("Graphique supprimé");
   };
 
+  const autoGenerateCharts = async () => {
+    if (!plan || !currentSectionForCharts) return;
+    const section = currentSectionForCharts;
+    if (!section.content || section.content.length < 50) {
+      toast.error("Le contenu de la section est trop court pour générer des graphiques");
+      return;
+    }
+    setGeneratingCharts(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-bp-charts", {
+        body: {
+          sectionContent: section.content,
+          sectionType: section.section_type,
+          projectTitle: plan.title,
+        },
+      });
+      if (error) throw error;
+      if (data?.charts && Array.isArray(data.charts)) {
+        const existingCharts = charts[section.id] || [];
+        const startOrder = existingCharts.length;
+        for (let i = 0; i < data.charts.length; i++) {
+          const c = data.charts[i];
+          await supabase.from("business_plan_charts").insert({
+            section_id: section.id,
+            chart_type: c.chart_type,
+            title: c.title,
+            chart_data: c.chart_data as any,
+            sort_order: startOrder + i,
+          });
+        }
+        await loadCharts(sections.map(s => s.id));
+        toast.success(`${data.charts.length} graphique(s) généré(s) avec succès !`);
+      }
+    } catch (e: any) {
+      toast.error(e?.message || "Erreur lors de la génération des graphiques");
+    }
+    setGeneratingCharts(false);
+  };
+
   const generateFull = async () => {
     if (!plan) return;
     setGeneratingFull(true);
