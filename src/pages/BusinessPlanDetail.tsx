@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Loader2, Sparkles, Save, Share2, Download, ChevronDown, ChevronRight, PenLine, Eye, FileText, BarChart3, Plus } from "lucide-react";
+import { ArrowLeft, Loader2, Sparkles, Save, Share2, Download, ChevronDown, ChevronRight, PenLine, Eye, FileText, BarChart3, Plus, Wand2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import Navbar from "@/components/layout/Navbar";
 import { useBusinessPlans, BPSectionRow } from "@/hooks/useBusinessPlans";
