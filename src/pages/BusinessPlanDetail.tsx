@@ -37,6 +37,7 @@ export default function BusinessPlanDetail() {
   const [charts, setCharts] = useState<Record<string, { id: string; chart_type: string; title: string; chart_data: ChartDataPoint[]; sort_order: number }[]>>({});
   const [showChartEditor, setShowChartEditor] = useState(false);
   const [editingChart, setEditingChart] = useState<ChartConfig | null>(null);
+  const [generatingCharts, setGeneratingCharts] = useState(false);
 
   const loadCharts = useCallback(async (sectionIds: string[]) => {
     if (sectionIds.length === 0) return;
