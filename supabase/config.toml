@@ -23,3 +23,9 @@ verify_jwt = false
 
 [functions.generate-bp-charts]
 verify_jwt = false
+
+[functions.generate-business-model]
+verify_jwt = false
+
+[functions.get-shared-business-model]
+verify_jwt = false
