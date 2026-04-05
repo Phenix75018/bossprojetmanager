@@ -14,6 +14,100 @@ export type Database = {
   }
   public: {
     Tables: {
+      business_model_blocks: {
+        Row: {
+          block_type: string
+          business_model_id: string
+          content: string
+          created_at: string
+          generated: boolean
+          id: string
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          block_type: string
+          business_model_id: string
+          content?: string
+          created_at?: string
+          generated?: boolean
+          id?: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          block_type?: string
+          business_model_id?: string
+          content?: string
+          created_at?: string
+          generated?: boolean
+          id?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_model_blocks_business_model_id_fkey"
+            columns: ["business_model_id"]
+            isOneToOne: false
+            referencedRelation: "business_models"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      business_models: {
+        Row: {
+          created_at: string
+          description: string
+          framework: string
+          id: string
+          project_id: string | null
+          share_password: string | null
+          share_token: string | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          framework?: string
+          id?: string
+          project_id?: string | null
+          share_password?: string | null
+          share_token?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          framework?: string
+          id?: string
+          project_id?: string | null
+          share_password?: string | null
+          share_token?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_models_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_plan_charts: {
         Row: {
           chart_data: Json
