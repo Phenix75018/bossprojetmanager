@@ -20,6 +20,9 @@ import ResetPassword from "./pages/ResetPassword";
 import BusinessPlans from "./pages/BusinessPlans";
 import BusinessPlanDetail from "./pages/BusinessPlanDetail";
 import SharedBusinessPlan from "./pages/SharedBusinessPlan";
+import BusinessModels from "./pages/BusinessModels";
+import BusinessModelDetail from "./pages/BusinessModelDetail";
+import SharedBusinessModel from "./pages/SharedBusinessModel";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
