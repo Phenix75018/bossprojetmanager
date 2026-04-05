@@ -505,6 +505,37 @@ export default function PlanDetail() {
                   </button>
                 );
               })()}
+              {/* Business Model button */}
+              {(() => {
+                const existingBM = models.find(m => m.project_id === id);
+                if (existingBM) {
+                  return (
+                    <Link
+                      to={`/business-model/${existingBM.id}`}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-primary/30 text-primary hover:bg-primary/5 transition-all"
+                    >
+                      <LayoutGrid className="w-3.5 h-3.5" />
+                      Business Model
+                    </Link>
+                  );
+                }
+                return (
+                  <button
+                    disabled={creatingBM}
+                    onClick={async () => {
+                      if (!project) return;
+                      setCreatingBM(true);
+                      const bmId = await createModel(project.title, project.description, "bmc", id);
+                      setCreatingBM(false);
+                      if (bmId) navigate(`/business-model/${bmId}`);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border hover:border-primary/30 hover:text-primary transition-all disabled:opacity-50"
+                  >
+                    {creatingBM ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <LayoutGrid className="w-3.5 h-3.5" />}
+                    Business Model
+                  </button>
+                );
+              })()}
             </div>
           </div>
         </div>
