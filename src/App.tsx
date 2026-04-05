@@ -108,6 +108,22 @@ const AppRoutes = () => (
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/business-models"
+        element={
+          <ProtectedRoute>
+            <BusinessModels />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/business-model/:id"
+        element={
+          <ProtectedRoute>
+            <BusinessModelDetail />
+          </ProtectedRoute>
+        }
+      />
       <Route path="*" element={<NotFound />} />
     </Routes>
   </BrowserRouter>

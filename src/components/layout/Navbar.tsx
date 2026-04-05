@@ -8,6 +8,7 @@ const navItems = [
 { to: "/", label: "Accueil", icon: Zap },
 { to: "/dashboard", label: "Projets", icon: FolderKanban },
 { to: "/business-plans", label: "Business Plans", icon: FileText },
+{ to: "/business-models", label: "Business Models", icon: LayoutGrid },
 { to: "/calendar", label: "Calendrier", icon: CalendarDays },
 { to: "/integrations", label: "Intégrations", icon: Link2 }];
 
