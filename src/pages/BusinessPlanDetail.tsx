@@ -352,6 +352,16 @@ export default function BusinessPlanDetail() {
                     <Button
                       variant="ghost"
                       size="sm"
+                      onClick={autoGenerateCharts}
+                      disabled={generatingCharts}
+                      className="gap-1"
+                    >
+                      {generatingCharts ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                      Auto-graphiques
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => {
                         setEditingChart(null);
                         setShowChartEditor(true);
