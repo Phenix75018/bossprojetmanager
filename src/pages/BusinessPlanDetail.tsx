@@ -112,8 +112,8 @@ export default function BusinessPlanDetail() {
   };
 
   const autoGenerateCharts = async () => {
-    if (!plan || !currentSectionForCharts) return;
-    const section = currentSectionForCharts;
+    const section = sections.find(s => s.section_type === activeSection);
+    if (!plan || !section) return;
     if (!section.content || section.content.length < 50) {
       toast.error("Le contenu de la section est trop court pour générer des graphiques");
       return;
