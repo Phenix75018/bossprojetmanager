@@ -86,7 +86,9 @@ export default function PlanDetail() {
   const navigate = useNavigate();
   const { fetchProjectWithDetails, updateTaskStatus, updateTask, deleteTask, deleteSubtask, updateProjectCompletion } = useProjectsDB();
   const { plans, createPlan } = useBusinessPlans();
+  const { models, createModel } = useBusinessModels();
   const [creatingBP, setCreatingBP] = useState(false);
+  const [creatingBM, setCreatingBM] = useState(false);
   const [project, setProject] = useState<ProjectWithDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
