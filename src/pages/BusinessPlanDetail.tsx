@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Loader2, Sparkles, Save, Share2, Download, ChevronDown, ChevronRight, PenLine, Eye, FileText, BarChart3, Plus } from "lucide-react";
+import { ArrowLeft, Loader2, Sparkles, Save, Share2, Download, ChevronDown, ChevronRight, PenLine, Eye, FileText, BarChart3, Plus, Wand2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import Navbar from "@/components/layout/Navbar";
 import { useBusinessPlans, BPSectionRow } from "@/hooks/useBusinessPlans";
@@ -37,6 +37,7 @@ export default function BusinessPlanDetail() {
   const [charts, setCharts] = useState<Record<string, { id: string; chart_type: string; title: string; chart_data: ChartDataPoint[]; sort_order: number }[]>>({});
   const [showChartEditor, setShowChartEditor] = useState(false);
   const [editingChart, setEditingChart] = useState<ChartConfig | null>(null);
+  const [generatingCharts, setGeneratingCharts] = useState(false);
 
   const loadCharts = useCallback(async (sectionIds: string[]) => {
     if (sectionIds.length === 0) return;
@@ -108,6 +109,45 @@ export default function BusinessPlanDetail() {
     await supabase.from("business_plan_charts").delete().eq("id", chartId);
     await loadCharts(sections.map(s => s.id));
     toast.success("Graphique supprimé");
+  };
+
+  const autoGenerateCharts = async () => {
+    const section = sections.find(s => s.section_type === activeSection);
+    if (!plan || !section) return;
+    if (!section.content || section.content.length < 50) {
+      toast.error("Le contenu de la section est trop court pour générer des graphiques");
+      return;
+    }
+    setGeneratingCharts(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-bp-charts", {
+        body: {
+          sectionContent: section.content,
+          sectionType: section.section_type,
+          projectTitle: plan.title,
+        },
+      });
+      if (error) throw error;
+      if (data?.charts && Array.isArray(data.charts)) {
+        const existingCharts = charts[section.id] || [];
+        const startOrder = existingCharts.length;
+        for (let i = 0; i < data.charts.length; i++) {
+          const c = data.charts[i];
+          await supabase.from("business_plan_charts").insert({
+            section_id: section.id,
+            chart_type: c.chart_type,
+            title: c.title,
+            chart_data: c.chart_data as any,
+            sort_order: startOrder + i,
+          });
+        }
+        await loadCharts(sections.map(s => s.id));
+        toast.success(`${data.charts.length} graphique(s) généré(s) avec succès !`);
+      }
+    } catch (e: any) {
+      toast.error(e?.message || "Erreur lors de la génération des graphiques");
+    }
+    setGeneratingCharts(false);
   };
 
   const generateFull = async () => {
@@ -309,6 +349,16 @@ export default function BusinessPlanDetail() {
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-display font-bold">{currentSection.title}</h2>
                   <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={autoGenerateCharts}
+                      disabled={generatingCharts}
+                      className="gap-1"
+                    >
+                      {generatingCharts ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                      Auto-graphiques
+                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"

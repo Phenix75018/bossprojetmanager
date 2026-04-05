@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.get-shared-calendar]
 verify_jwt = false
+
+[functions.generate-bp-charts]
+verify_jwt = false
