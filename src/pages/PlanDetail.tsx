@@ -26,8 +26,9 @@ import {
   Bot,
    Download,
    Share2,
-   FileText,
- } from "lucide-react";
+    FileText,
+    LayoutGrid,
+  } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import { useProjectsDB, ProjectWithDetails, TaskRow } from "@/hooks/useProjectsDB";
 import { supabase } from "@/integrations/supabase/client";
