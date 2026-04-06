@@ -40,6 +40,7 @@ export default function BusinessPlanDetail() {
   const [showChartEditor, setShowChartEditor] = useState(false);
   const [editingChart, setEditingChart] = useState<ChartConfig | null>(null);
   const [generatingCharts, setGeneratingCharts] = useState(false);
+  const { versions, saveVersion, deleteVersion } = useDocumentVersions("business_plan", id);
 
   const loadCharts = useCallback(async (sectionIds: string[]) => {
     if (sectionIds.length === 0) return;
