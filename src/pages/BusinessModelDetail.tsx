@@ -10,6 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import ShareBusinessModelModal from "@/components/ShareBusinessModelModal";
+import { useDocumentVersions } from "@/hooks/useDocumentVersions";
+import VersionHistoryPanel from "@/components/VersionHistoryPanel";
 
 const BMC_BLOCKS = [
   { type: "key_partners", title: "Partenaires clés", icon: "🤝", color: "bg-blue-500/10 border-blue-500/30" },
