@@ -47,6 +47,7 @@ const AppRoutes = () => (
       <Route path="/calendar/share/:token" element={<SharedCalendar />} />
       <Route path="/business-plan/share/:token" element={<SharedBusinessPlan />} />
       <Route path="/business-model/share/:token" element={<SharedBusinessModel />} />
+      <Route path="/budget/share/:token" element={<SharedBudget />} />
       <Route
         path="/onboarding"
         element={
