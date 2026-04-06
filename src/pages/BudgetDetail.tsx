@@ -378,6 +378,7 @@ export default function BudgetDetail() {
             }
           }}
           onDeleteVersion={deleteVersion}
+          documentType="budget"
         />
       </div>
 

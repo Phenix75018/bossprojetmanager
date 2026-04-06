@@ -476,6 +476,7 @@ export default function BusinessPlanDetail() {
             }
           }}
           onDeleteVersion={deleteVersion}
+          documentType="business_plan"
         />
       </div>
 
