@@ -14,6 +14,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { exportBudgetPDF } from "@/lib/budgetPdfExport";
 import ShareBudgetModal from "@/components/ShareBudgetModal";
+import { useDocumentVersions } from "@/hooks/useDocumentVersions";
+import VersionHistoryPanel from "@/components/VersionHistoryPanel";
 
 const CATEGORIES = [
   { key: "revenue", label: "Revenus / Chiffre d'affaires", icon: TrendingUp, color: "text-emerald-600" },
