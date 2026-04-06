@@ -40,6 +40,7 @@ import SharePlanModal from "@/components/SharePlanModal";
 import { exportFullPlanPDF } from "@/lib/pdfExport";
 import { useBusinessPlans } from "@/hooks/useBusinessPlans";
 import { useBusinessModels } from "@/hooks/useBusinessModels";
+import { useBudgets } from "@/hooks/useBudgets";
 
 type TaskStatus = "todo" | "in-progress" | "done";
 
