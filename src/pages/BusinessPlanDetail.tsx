@@ -460,6 +460,25 @@ export default function BusinessPlanDetail() {
         </div>
       </div>
 
+      {/* Version history */}
+      <div className="container max-w-7xl px-4 lg:px-8 mb-8">
+        <VersionHistoryPanel
+          versions={versions}
+          loading={false}
+          onSaveVersion={async (label) => {
+            await saveVersion({ plan, sections: sections.map(s => ({ section_type: s.section_type, title: s.title, content: s.content, sort_order: s.sort_order })) }, label);
+          }}
+          onRestoreVersion={async (snapshot: any) => {
+            if (snapshot.sections && id) {
+              await upsertSections(id, snapshot.sections);
+              await load();
+              toast.success("Version restaurée !");
+            }
+          }}
+          onDeleteVersion={deleteVersion}
+        />
+      </div>
+
       {showShare && (
         <ShareBusinessPlanModal
           planId={plan.id}
