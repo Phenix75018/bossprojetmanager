@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { History, ChevronDown, ChevronRight, Trash2, RotateCcw, Save, Clock, Tag } from "lucide-react";
+import { History, ChevronDown, ChevronRight, Trash2, RotateCcw, Save, Clock, Tag, GitCompareArrows } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import type { DocumentVersion } from "@/hooks/useDocumentVersions";
+import VersionCompareDialog from "@/components/VersionCompareDialog";
 
 interface VersionHistoryPanelProps {
   versions: DocumentVersion[];
@@ -12,6 +13,7 @@ interface VersionHistoryPanelProps {
   onSaveVersion: (label?: string) => Promise<unknown>;
   onRestoreVersion: (snapshot: Record<string, unknown>) => void;
   onDeleteVersion: (versionId: string) => void;
+  documentType?: "business_plan" | "business_model" | "budget";
 }
 
 export default function VersionHistoryPanel({
@@ -20,12 +22,14 @@ export default function VersionHistoryPanel({
   onSaveVersion,
   onRestoreVersion,
   onDeleteVersion,
+  documentType = "business_plan",
 }: VersionHistoryPanelProps) {
   const [expanded, setExpanded] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [saveLabel, setSaveLabel] = useState("");
   const [saving, setSaving] = useState(false);
   const [confirmRestore, setConfirmRestore] = useState<DocumentVersion | null>(null);
+  const [showCompare, setShowCompare] = useState(false);
 
   const handleSave = async () => {
     setSaving(true);
@@ -33,10 +37,6 @@ export default function VersionHistoryPanel({
     setSaving(false);
     setShowSaveDialog(false);
     setSaveLabel("");
-  };
-
-  const handleRestore = (version: DocumentVersion) => {
-    setConfirmRestore(version);
   };
 
   const doRestore = () => {
@@ -59,15 +59,28 @@ export default function VersionHistoryPanel({
             <span className="font-display font-bold text-sm">Historique des versions</span>
             <span className="text-xs text-muted-foreground">({versions.length})</span>
           </div>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={e => { e.stopPropagation(); setShowSaveDialog(true); }}
-            className="gap-1 text-xs"
-          >
-            <Save className="w-3 h-3" />
-            Sauvegarder
-          </Button>
+          <div className="flex items-center gap-2">
+            {versions.length >= 2 && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={e => { e.stopPropagation(); setShowCompare(true); }}
+                className="gap-1 text-xs"
+              >
+                <GitCompareArrows className="w-3 h-3" />
+                Comparer
+              </Button>
+            )}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={e => { e.stopPropagation(); setShowSaveDialog(true); }}
+              className="gap-1 text-xs"
+            >
+              <Save className="w-3 h-3" />
+              Sauvegarder
+            </Button>
+          </div>
         </button>
 
         <AnimatePresence>
@@ -111,7 +124,7 @@ export default function VersionHistoryPanel({
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => handleRestore(v)}
+                          onClick={() => setConfirmRestore(v)}
                           className="gap-1 text-xs h-7"
                           title="Restaurer cette version"
                         >
@@ -173,6 +186,14 @@ export default function VersionHistoryPanel({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Compare dialog */}
+      <VersionCompareDialog
+        open={showCompare}
+        onOpenChange={setShowCompare}
+        versions={versions}
+        documentType={documentType}
+      />
     </>
   );
 }
