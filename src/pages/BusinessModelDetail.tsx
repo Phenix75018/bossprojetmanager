@@ -333,7 +333,7 @@ export default function BusinessModelDetail() {
           }}
           onRestoreVersion={async (snapshot: any) => {
             if (snapshot.blocks && id) {
-              await upsertBlocks(id, snapshot.model?.framework || model?.framework || "bmc", snapshot.blocks);
+              await upsertBlocks(id, snapshot.blocks);
               await load();
               toast.success("Version restaurée !");
             }
