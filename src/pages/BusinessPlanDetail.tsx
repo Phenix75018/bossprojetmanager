@@ -13,6 +13,8 @@ import ShareBusinessPlanModal from "@/components/ShareBusinessPlanModal";
 import { exportBusinessPlanPDF } from "@/lib/pdfExport";
 import BPChartEditor, { ChartConfig, ChartDataPoint } from "@/components/BPChartEditor";
 import BPChartRenderer from "@/components/BPChartRenderer";
+import { useDocumentVersions } from "@/hooks/useDocumentVersions";
+import VersionHistoryPanel from "@/components/VersionHistoryPanel";
 
 const SECTION_TYPES = [
   { type: "executive_summary", title: "Résumé exécutif", icon: "📋" },
@@ -38,6 +40,7 @@ export default function BusinessPlanDetail() {
   const [showChartEditor, setShowChartEditor] = useState(false);
   const [editingChart, setEditingChart] = useState<ChartConfig | null>(null);
   const [generatingCharts, setGeneratingCharts] = useState(false);
+  const { versions, saveVersion, deleteVersion } = useDocumentVersions("business_plan", id);
 
   const loadCharts = useCallback(async (sectionIds: string[]) => {
     if (sectionIds.length === 0) return;
@@ -455,6 +458,25 @@ export default function BusinessPlanDetail() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Version history */}
+      <div className="container max-w-7xl px-4 lg:px-8 mb-8">
+        <VersionHistoryPanel
+          versions={versions}
+          loading={false}
+          onSaveVersion={async (label) => {
+            await saveVersion({ plan, sections: sections.map(s => ({ section_type: s.section_type, title: s.title, content: s.content, sort_order: s.sort_order })) }, label);
+          }}
+          onRestoreVersion={async (snapshot: any) => {
+            if (snapshot.sections && id) {
+              await upsertSections(id, snapshot.sections);
+              await load();
+              toast.success("Version restaurée !");
+            }
+          }}
+          onDeleteVersion={deleteVersion}
+        />
       </div>
 
       {showShare && (

@@ -14,6 +14,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { exportBudgetPDF } from "@/lib/budgetPdfExport";
 import ShareBudgetModal from "@/components/ShareBudgetModal";
+import { useDocumentVersions } from "@/hooks/useDocumentVersions";
+import VersionHistoryPanel from "@/components/VersionHistoryPanel";
 
 const CATEGORIES = [
   { key: "revenue", label: "Revenus / Chiffre d'affaires", icon: TrendingUp, color: "text-emerald-600" },
@@ -40,6 +42,7 @@ export default function BudgetDetail() {
   const [showShare, setShowShare] = useState(false);
   const [editingCell, setEditingCell] = useState<{ lineId: string; month: number } | null>(null);
   const [editValue, setEditValue] = useState("");
+  const { versions, saveVersion, deleteVersion } = useDocumentVersions("budget", id);
 
   const loadData = useCallback(async () => {
     if (!id) return;
@@ -357,6 +360,25 @@ export default function BudgetDetail() {
             );
           })}
         </div>
+      </div>
+
+      {/* Version history */}
+      <div className="max-w-full px-4 lg:px-8 mb-8">
+        <VersionHistoryPanel
+          versions={versions}
+          loading={false}
+          onSaveVersion={async (label) => {
+            await saveVersion({ budget, lines: lines.map(l => ({ category: l.category, subcategory: l.subcategory, label: l.label, monthly_values: l.monthly_values, is_total: l.is_total, sort_order: l.sort_order })) }, label);
+          }}
+          onRestoreVersion={async (snapshot: any) => {
+            if (snapshot.lines && id) {
+              await upsertLines(id, snapshot.lines);
+              await loadData();
+              toast.success("Version restaurée !");
+            }
+          }}
+          onDeleteVersion={deleteVersion}
+        />
       </div>
 
       <ShareBudgetModal

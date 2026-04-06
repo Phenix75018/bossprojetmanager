@@ -451,6 +451,39 @@ export type Database = {
         }
         Relationships: []
       }
+      document_versions: {
+        Row: {
+          created_at: string
+          document_id: string
+          document_type: string
+          id: string
+          label: string
+          snapshot: Json
+          user_id: string
+          version_number: number
+        }
+        Insert: {
+          created_at?: string
+          document_id: string
+          document_type: string
+          id?: string
+          label?: string
+          snapshot?: Json
+          user_id: string
+          version_number?: number
+        }
+        Update: {
+          created_at?: string
+          document_id?: string
+          document_type?: string
+          id?: string
+          label?: string
+          snapshot?: Json
+          user_id?: string
+          version_number?: number
+        }
+        Relationships: []
+      }
       notification_preferences: {
         Row: {
           created_at: string

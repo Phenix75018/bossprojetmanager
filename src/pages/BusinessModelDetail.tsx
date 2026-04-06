@@ -10,6 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import ShareBusinessModelModal from "@/components/ShareBusinessModelModal";
+import { useDocumentVersions } from "@/hooks/useDocumentVersions";
+import VersionHistoryPanel from "@/components/VersionHistoryPanel";
 
 const BMC_BLOCKS = [
   { type: "key_partners", title: "Partenaires clés", icon: "🤝", color: "bg-blue-500/10 border-blue-500/30" },
@@ -74,6 +76,7 @@ export default function BusinessModelDetail() {
   const [editContent, setEditContent] = useState<Record<string, string>>({});
   const [showShare, setShowShare] = useState(false);
   const [selectedBlock, setSelectedBlock] = useState<string | null>(null);
+  const { versions, saveVersion, deleteVersion } = useDocumentVersions("business_model", id);
 
   const BLOCKS = model?.framework === "lean" ? LEAN_BLOCKS : BMC_BLOCKS;
 
@@ -318,6 +321,25 @@ export default function BusinessModelDetail() {
             );
           })}
         </div>
+      </div>
+
+      {/* Version history */}
+      <div className="container max-w-7xl px-4 lg:px-8 mb-8">
+        <VersionHistoryPanel
+          versions={versions}
+          loading={false}
+          onSaveVersion={async (label) => {
+            await saveVersion({ model, blocks: blocks.map(b => ({ block_type: b.block_type, title: b.title, content: b.content, sort_order: b.sort_order })) }, label);
+          }}
+          onRestoreVersion={async (snapshot: any) => {
+            if (snapshot.blocks && id) {
+              await upsertBlocks(id, snapshot.blocks);
+              await load();
+              toast.success("Version restaurée !");
+            }
+          }}
+          onDeleteVersion={deleteVersion}
+        />
       </div>
 
       {showShare && (
