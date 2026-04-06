@@ -76,6 +76,7 @@ export default function BusinessModelDetail() {
   const [editContent, setEditContent] = useState<Record<string, string>>({});
   const [showShare, setShowShare] = useState(false);
   const [selectedBlock, setSelectedBlock] = useState<string | null>(null);
+  const { versions, saveVersion, deleteVersion } = useDocumentVersions("business_model", id);
 
   const BLOCKS = model?.framework === "lean" ? LEAN_BLOCKS : BMC_BLOCKS;
 

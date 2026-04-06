@@ -42,6 +42,7 @@ export default function BudgetDetail() {
   const [showShare, setShowShare] = useState(false);
   const [editingCell, setEditingCell] = useState<{ lineId: string; month: number } | null>(null);
   const [editValue, setEditValue] = useState("");
+  const { versions, saveVersion, deleteVersion } = useDocumentVersions("budget", id);
 
   const loadData = useCallback(async () => {
     if (!id) return;
