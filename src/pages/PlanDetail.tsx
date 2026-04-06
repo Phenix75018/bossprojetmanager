@@ -28,6 +28,7 @@ import {
    Share2,
     FileText,
     LayoutGrid,
+    DollarSign,
   } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import { useProjectsDB, ProjectWithDetails, TaskRow } from "@/hooks/useProjectsDB";
