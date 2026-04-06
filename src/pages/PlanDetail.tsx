@@ -539,6 +539,37 @@ export default function PlanDetail() {
                   </button>
                 );
               })()}
+              {/* Budget button */}
+              {(() => {
+                const existingBudget = budgets.find(b => b.project_id === id);
+                if (existingBudget) {
+                  return (
+                    <Link
+                      to={`/budget/${existingBudget.id}`}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-primary/30 text-primary hover:bg-primary/5 transition-all"
+                    >
+                      <DollarSign className="w-3.5 h-3.5" />
+                      Budget
+                    </Link>
+                  );
+                }
+                return (
+                  <button
+                    disabled={creatingBudget}
+                    onClick={async () => {
+                      if (!project) return;
+                      setCreatingBudget(true);
+                      const bId = await createBudget(project.title, project.description, 12, id);
+                      setCreatingBudget(false);
+                      if (bId) navigate(`/budget/${bId}`);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border hover:border-primary/30 hover:text-primary transition-all disabled:opacity-50"
+                  >
+                    {creatingBudget ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <DollarSign className="w-3.5 h-3.5" />}
+                    Budget
+                  </button>
+                );
+              })()}
             </div>
           </div>
         </div>
