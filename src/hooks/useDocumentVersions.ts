@@ -41,16 +41,17 @@ export function useDocumentVersions(documentType: string, documentId: string | u
   const saveVersion = useCallback(async (snapshot: Record<string, unknown>, label?: string) => {
     if (!user || !documentId) return null;
     const nextNumber = versions.length > 0 ? versions[0].version_number + 1 : 1;
+    const insertData: Record<string, unknown> = {
+      user_id: user.id,
+      document_type: documentType,
+      document_id: documentId,
+      version_number: nextNumber,
+      label: label || `Version ${nextNumber}`,
+      snapshot,
+    };
     const { data, error } = await supabase
       .from("document_versions")
-      .insert({
-        user_id: user.id,
-        document_type: documentType,
-        document_id: documentId,
-        version_number: nextNumber,
-        label: label || `Version ${nextNumber}`,
-        snapshot,
-      })
+      .insert(insertData as any)
       .select()
       .single();
     if (error) {
