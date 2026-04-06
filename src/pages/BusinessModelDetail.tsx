@@ -339,6 +339,7 @@ export default function BusinessModelDetail() {
             }
           }}
           onDeleteVersion={deleteVersion}
+          documentType="business_model"
         />
       </div>
 
