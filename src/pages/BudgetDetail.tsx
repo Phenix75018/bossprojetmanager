@@ -362,6 +362,25 @@ export default function BudgetDetail() {
         </div>
       </div>
 
+      {/* Version history */}
+      <div className="max-w-full px-4 lg:px-8 mb-8">
+        <VersionHistoryPanel
+          versions={versions}
+          loading={false}
+          onSaveVersion={async (label) => {
+            await saveVersion({ budget, lines: lines.map(l => ({ category: l.category, subcategory: l.subcategory, label: l.label, monthly_values: l.monthly_values, is_total: l.is_total, sort_order: l.sort_order })) }, label);
+          }}
+          onRestoreVersion={async (snapshot: any) => {
+            if (snapshot.lines && id) {
+              await upsertLines(id, snapshot.lines);
+              await loadData();
+              toast.success("Version restaurée !");
+            }
+          }}
+          onDeleteVersion={deleteVersion}
+        />
+      </div>
+
       <ShareBudgetModal
         open={showShare}
         onOpenChange={setShowShare}
