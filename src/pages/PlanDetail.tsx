@@ -28,6 +28,7 @@ import {
    Share2,
     FileText,
     LayoutGrid,
+    DollarSign,
   } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import { useProjectsDB, ProjectWithDetails, TaskRow } from "@/hooks/useProjectsDB";
@@ -40,6 +41,7 @@ import SharePlanModal from "@/components/SharePlanModal";
 import { exportFullPlanPDF } from "@/lib/pdfExport";
 import { useBusinessPlans } from "@/hooks/useBusinessPlans";
 import { useBusinessModels } from "@/hooks/useBusinessModels";
+import { useBudgets } from "@/hooks/useBudgets";
 
 type TaskStatus = "todo" | "in-progress" | "done";
 
@@ -87,8 +89,10 @@ export default function PlanDetail() {
   const { fetchProjectWithDetails, updateTaskStatus, updateTask, deleteTask, deleteSubtask, updateProjectCompletion } = useProjectsDB();
   const { plans, createPlan } = useBusinessPlans();
   const { models, createModel } = useBusinessModels();
+  const { budgets, createBudget } = useBudgets();
   const [creatingBP, setCreatingBP] = useState(false);
   const [creatingBM, setCreatingBM] = useState(false);
+  const [creatingBudget, setCreatingBudget] = useState(false);
   const [project, setProject] = useState<ProjectWithDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
@@ -533,6 +537,37 @@ export default function PlanDetail() {
                   >
                     {creatingBM ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <LayoutGrid className="w-3.5 h-3.5" />}
                     Business Model
+                  </button>
+                );
+              })()}
+              {/* Budget button */}
+              {(() => {
+                const existingBudget = budgets.find(b => b.project_id === id);
+                if (existingBudget) {
+                  return (
+                    <Link
+                      to={`/budget/${existingBudget.id}`}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-primary/30 text-primary hover:bg-primary/5 transition-all"
+                    >
+                      <DollarSign className="w-3.5 h-3.5" />
+                      Budget
+                    </Link>
+                  );
+                }
+                return (
+                  <button
+                    disabled={creatingBudget}
+                    onClick={async () => {
+                      if (!project) return;
+                      setCreatingBudget(true);
+                      const bId = await createBudget(project.title, project.description, 12, id);
+                      setCreatingBudget(false);
+                      if (bId) navigate(`/budget/${bId}`);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border hover:border-primary/30 hover:text-primary transition-all disabled:opacity-50"
+                  >
+                    {creatingBudget ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <DollarSign className="w-3.5 h-3.5" />}
+                    Budget
                   </button>
                 );
               })()}

@@ -23,6 +23,9 @@ import SharedBusinessPlan from "./pages/SharedBusinessPlan";
 import BusinessModels from "./pages/BusinessModels";
 import BusinessModelDetail from "./pages/BusinessModelDetail";
 import SharedBusinessModel from "./pages/SharedBusinessModel";
+import Budgets from "./pages/Budgets";
+import BudgetDetail from "./pages/BudgetDetail";
+import SharedBudget from "./pages/SharedBudget";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,6 +47,7 @@ const AppRoutes = () => (
       <Route path="/calendar/share/:token" element={<SharedCalendar />} />
       <Route path="/business-plan/share/:token" element={<SharedBusinessPlan />} />
       <Route path="/business-model/share/:token" element={<SharedBusinessModel />} />
+      <Route path="/budget/share/:token" element={<SharedBudget />} />
       <Route
         path="/onboarding"
         element={
@@ -121,6 +125,22 @@ const AppRoutes = () => (
         element={
           <ProtectedRoute>
             <BusinessModelDetail />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/budgets"
+        element={
+          <ProtectedRoute>
+            <Budgets />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/budget/:id"
+        element={
+          <ProtectedRoute>
+            <BudgetDetail />
           </ProtectedRoute>
         }
       />

@@ -14,6 +14,103 @@ export type Database = {
   }
   public: {
     Tables: {
+      budget_lines: {
+        Row: {
+          budget_id: string
+          category: string
+          created_at: string
+          id: string
+          is_total: boolean
+          label: string
+          monthly_values: Json
+          sort_order: number
+          subcategory: string
+          updated_at: string
+        }
+        Insert: {
+          budget_id: string
+          category: string
+          created_at?: string
+          id?: string
+          is_total?: boolean
+          label: string
+          monthly_values?: Json
+          sort_order?: number
+          subcategory?: string
+          updated_at?: string
+        }
+        Update: {
+          budget_id?: string
+          category?: string
+          created_at?: string
+          id?: string
+          is_total?: boolean
+          label?: string
+          monthly_values?: Json
+          sort_order?: number
+          subcategory?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budget_lines_budget_id_fkey"
+            columns: ["budget_id"]
+            isOneToOne: false
+            referencedRelation: "budgets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      budgets: {
+        Row: {
+          created_at: string
+          description: string
+          horizon_months: number
+          id: string
+          project_id: string | null
+          share_password: string | null
+          share_token: string | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          horizon_months?: number
+          id?: string
+          project_id?: string | null
+          share_password?: string | null
+          share_token?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          horizon_months?: number
+          id?: string
+          project_id?: string | null
+          share_password?: string | null
+          share_token?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budgets_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_model_blocks: {
         Row: {
           block_type: string

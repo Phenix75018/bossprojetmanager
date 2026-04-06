@@ -29,3 +29,9 @@ verify_jwt = false
 
 [functions.get-shared-business-model]
 verify_jwt = false
+
+[functions.generate-budget]
+verify_jwt = false
+
+[functions.get-shared-budget]
+verify_jwt = false
