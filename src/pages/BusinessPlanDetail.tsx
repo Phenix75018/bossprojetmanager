@@ -13,6 +13,8 @@ import ShareBusinessPlanModal from "@/components/ShareBusinessPlanModal";
 import { exportBusinessPlanPDF } from "@/lib/pdfExport";
 import BPChartEditor, { ChartConfig, ChartDataPoint } from "@/components/BPChartEditor";
 import BPChartRenderer from "@/components/BPChartRenderer";
+import { useDocumentVersions } from "@/hooks/useDocumentVersions";
+import VersionHistoryPanel from "@/components/VersionHistoryPanel";
 
 const SECTION_TYPES = [
   { type: "executive_summary", title: "Résumé exécutif", icon: "📋" },
