@@ -23,6 +23,9 @@ import SharedBusinessPlan from "./pages/SharedBusinessPlan";
 import BusinessModels from "./pages/BusinessModels";
 import BusinessModelDetail from "./pages/BusinessModelDetail";
 import SharedBusinessModel from "./pages/SharedBusinessModel";
+import Budgets from "./pages/Budgets";
+import BudgetDetail from "./pages/BudgetDetail";
+import SharedBudget from "./pages/SharedBudget";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
