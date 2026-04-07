@@ -240,8 +240,11 @@ export default function BudgetDetail() {
           ))}
         </div>
 
+        {/* Charts */}
+        <BudgetCharts lines={lines} horizonMonths={horizonMonths} />
+
         {/* Budget tables per category */}
-        <div className="space-y-4">
+        <div className="space-y-4 mt-6">
           {CATEGORIES.map(cat => {
             const catLines = lines.filter(l => l.category === cat.key);
             const expanded = expandedCats.includes(cat.key);
