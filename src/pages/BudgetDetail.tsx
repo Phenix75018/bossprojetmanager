@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { exportBudgetPDF } from "@/lib/budgetPdfExport";
 import ShareBudgetModal from "@/components/ShareBudgetModal";
+import BudgetCharts from "@/components/BudgetCharts";
 import { useDocumentVersions } from "@/hooks/useDocumentVersions";
 import VersionHistoryPanel from "@/components/VersionHistoryPanel";
 
@@ -239,8 +240,11 @@ export default function BudgetDetail() {
           ))}
         </div>
 
+        {/* Charts */}
+        <BudgetCharts lines={lines} horizonMonths={horizonMonths} />
+
         {/* Budget tables per category */}
-        <div className="space-y-4">
+        <div className="space-y-4 mt-6">
           {CATEGORIES.map(cat => {
             const catLines = lines.filter(l => l.category === cat.key);
             const expanded = expandedCats.includes(cat.key);
