@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { exportBudgetPDF } from "@/lib/budgetPdfExport";
 import ShareBudgetModal from "@/components/ShareBudgetModal";
 import BudgetCharts from "@/components/BudgetCharts";
+import BudgetSynthesis from "@/components/BudgetSynthesis";
 import { useDocumentVersions } from "@/hooks/useDocumentVersions";
 import VersionHistoryPanel from "@/components/VersionHistoryPanel";
 
