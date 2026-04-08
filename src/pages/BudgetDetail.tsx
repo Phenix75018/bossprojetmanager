@@ -243,6 +243,7 @@ export default function BudgetDetail() {
 
         {/* Charts */}
         <BudgetCharts lines={lines} horizonMonths={horizonMonths} />
+        <BudgetSynthesis lines={lines} horizonMonths={horizonMonths} />
 
         {/* Budget tables per category */}
         <div className="space-y-4 mt-6">
