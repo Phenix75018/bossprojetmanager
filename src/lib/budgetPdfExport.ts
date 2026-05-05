@@ -581,5 +581,74 @@ export function exportBudgetPDF(budget: BudgetRow, lines: BudgetLineRow[]) {
     tblY += rH;
   }
 
+  // ── Insert clickable Table of Contents as page 2 ──
+  doc.insertPage(2);
+  doc.setPage(2);
+  // After inserting page 2, every previously recorded section page shifts by +1.
+  const tocEntries = toc.map(e => ({ label: e.label, page: e.page + 1 }));
+
+  // Header
+  doc.setFillColor(30, 41, 59);
+  doc.rect(0, 0, pageW, 25, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(18);
+  doc.setFont("helvetica", "bold");
+  doc.text("Sommaire", 15, 17);
+
+  // Subtitle
+  doc.setTextColor(100, 116, 139);
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text("Cliquez sur une section pour y accéder directement", 15, 36);
+
+  // Entries
+  let tocY = 50;
+  const tocRowH = 11;
+  const tocX = 20;
+  const tocW = pageW - 40;
+
+  doc.setFontSize(11);
+  for (let i = 0; i < tocEntries.length; i++) {
+    const entry = tocEntries[i];
+
+    // Row background (zebra)
+    if (i % 2 === 0) {
+      doc.setFillColor(248, 250, 252);
+      doc.roundedRect(tocX, tocY - 5, tocW, tocRowH - 1, 1.5, 1.5, "F");
+    }
+
+    // Number badge
+    doc.setFillColor(59, 130, 246);
+    doc.roundedRect(tocX + 2, tocY - 4, 8, 7, 1, 1, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "bold");
+    doc.text(String(i + 1), tocX + 6, tocY + 1, { align: "center" });
+
+    // Label
+    doc.setTextColor(30, 41, 59);
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    doc.text(entry.label, tocX + 14, tocY + 1);
+
+    // Dotted line + page number
+    doc.setTextColor(100, 116, 139);
+    doc.setFontSize(10);
+    doc.text(String(entry.page), tocX + tocW - 4, tocY + 1, { align: "right" });
+
+    // Clickable link covering the entire row
+    doc.link(tocX, tocY - 5, tocW, tocRowH - 1, { pageNumber: entry.page });
+
+    tocY += tocRowH;
+    if (tocY > pageH - 20) break;
+  }
+
+  // Footer
+  doc.setTextColor(148, 163, 184);
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "italic");
+  doc.text(`${budget.title} — ${tocEntries.length} sections`, pageW / 2, pageH - 10, { align: "center" });
+
   doc.save(`budget-${budget.title.replace(/\s+/g, "-").toLowerCase()}.pdf`);
 }
+
