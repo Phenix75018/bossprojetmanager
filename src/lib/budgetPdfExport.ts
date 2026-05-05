@@ -581,73 +581,116 @@ export function exportBudgetPDF(budget: BudgetRow, lines: BudgetLineRow[]) {
     tblY += rH;
   }
 
-  // ── Insert clickable Table of Contents as page 2 ──
-  doc.insertPage(2);
-  doc.setPage(2);
-  // After inserting page 2, every previously recorded section page shifts by +1.
-  const tocEntries = toc.map(e => ({ label: e.label, page: e.page + 1 }));
+  // ── Insert clickable Table of Contents after the cover page ──
+  // The TOC may span multiple pages depending on the number of sections.
+  // We first determine how many TOC pages are required, insert exactly that
+  // many pages right after the cover, and then shift every recorded section
+  // page number by the same amount so the displayed numbers and the click
+  // targets match the final pagination exactly.
 
-  // Header
-  doc.setFillColor(30, 41, 59);
-  doc.rect(0, 0, pageW, 25, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(18);
-  doc.setFont("helvetica", "bold");
-  doc.text("Sommaire", 15, 17);
-
-  // Subtitle
-  doc.setTextColor(100, 116, 139);
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
-  doc.text("Cliquez sur une section pour y accéder directement", 15, 36);
-
-  // Entries
-  let tocY = 50;
   const tocRowH = 11;
   const tocX = 20;
   const tocW = pageW - 40;
+  const tocFirstPageStartY = 50; // below the header on the first TOC page
+  const tocOtherPageStartY = 30; // below the header on subsequent TOC pages
+  const tocBottomLimit = pageH - 20;
 
-  doc.setFontSize(11);
-  for (let i = 0; i < tocEntries.length; i++) {
-    const entry = tocEntries[i];
+  const rowsFirstPage = Math.max(1, Math.floor((tocBottomLimit - tocFirstPageStartY) / tocRowH));
+  const rowsOtherPage = Math.max(1, Math.floor((tocBottomLimit - tocOtherPageStartY) / tocRowH));
 
-    // Row background (zebra)
-    if (i % 2 === 0) {
-      doc.setFillColor(248, 250, 252);
-      doc.roundedRect(tocX, tocY - 5, tocW, tocRowH - 1, 1.5, 1.5, "F");
-    }
-
-    // Number badge
-    doc.setFillColor(59, 130, 246);
-    doc.roundedRect(tocX + 2, tocY - 4, 8, 7, 1, 1, "F");
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "bold");
-    doc.text(String(i + 1), tocX + 6, tocY + 1, { align: "center" });
-
-    // Label
-    doc.setTextColor(30, 41, 59);
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "normal");
-    doc.text(entry.label, tocX + 14, tocY + 1);
-
-    // Dotted line + page number
-    doc.setTextColor(100, 116, 139);
-    doc.setFontSize(10);
-    doc.text(String(entry.page), tocX + tocW - 4, tocY + 1, { align: "right" });
-
-    // Clickable link covering the entire row
-    doc.link(tocX, tocY - 5, tocW, tocRowH - 1, { pageNumber: entry.page });
-
-    tocY += tocRowH;
-    if (tocY > pageH - 20) break;
+  let tocPagesNeeded = 1;
+  let remaining = toc.length - rowsFirstPage;
+  while (remaining > 0) {
+    tocPagesNeeded += 1;
+    remaining -= rowsOtherPage;
   }
 
-  // Footer
-  doc.setTextColor(148, 163, 184);
-  doc.setFontSize(8);
-  doc.setFont("helvetica", "italic");
-  doc.text(`${budget.title} — ${tocEntries.length} sections`, pageW / 2, pageH - 10, { align: "center" });
+  // Insert the TOC pages right after the cover (cover = page 1).
+  for (let i = 0; i < tocPagesNeeded; i++) {
+    doc.insertPage(2 + i);
+  }
+
+  // Shift every recorded section page by the number of inserted TOC pages.
+  const tocEntries = toc.map(e => ({ label: e.label, page: e.page + tocPagesNeeded }));
+
+  // Render TOC pages
+  let entryIdx = 0;
+  for (let p = 0; p < tocPagesNeeded; p++) {
+    doc.setPage(2 + p);
+
+    // Header
+    doc.setFillColor(30, 41, 59);
+    doc.rect(0, 0, pageW, 25, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    const headerLabel = tocPagesNeeded > 1
+      ? `Sommaire (${p + 1}/${tocPagesNeeded})`
+      : "Sommaire";
+    doc.text(headerLabel, 15, 17);
+
+    let tocY: number;
+    let rowsThisPage: number;
+    if (p === 0) {
+      // Subtitle on first TOC page
+      doc.setTextColor(100, 116, 139);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text("Cliquez sur une section pour y accéder directement", 15, 36);
+      tocY = tocFirstPageStartY;
+      rowsThisPage = rowsFirstPage;
+    } else {
+      tocY = tocOtherPageStartY;
+      rowsThisPage = rowsOtherPage;
+    }
+
+    const endIdx = Math.min(tocEntries.length, entryIdx + rowsThisPage);
+    for (let i = entryIdx; i < endIdx; i++) {
+      const entry = tocEntries[i];
+
+      // Row background (zebra)
+      if (i % 2 === 0) {
+        doc.setFillColor(248, 250, 252);
+        doc.roundedRect(tocX, tocY - 5, tocW, tocRowH - 1, 1.5, 1.5, "F");
+      }
+
+      // Number badge
+      doc.setFillColor(59, 130, 246);
+      doc.roundedRect(tocX + 2, tocY - 4, 8, 7, 1, 1, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "bold");
+      doc.text(String(i + 1), tocX + 6, tocY + 1, { align: "center" });
+
+      // Label
+      doc.setTextColor(30, 41, 59);
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "normal");
+      doc.text(entry.label, tocX + 14, tocY + 1);
+
+      // Page number (right-aligned)
+      doc.setTextColor(100, 116, 139);
+      doc.setFontSize(10);
+      doc.text(String(entry.page), tocX + tocW - 4, tocY + 1, { align: "right" });
+
+      // Clickable link covering the entire row
+      doc.link(tocX, tocY - 5, tocW, tocRowH - 1, { pageNumber: entry.page });
+
+      tocY += tocRowH;
+    }
+    entryIdx = endIdx;
+
+    // Footer
+    doc.setTextColor(148, 163, 184);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "italic");
+    doc.text(
+      `${budget.title} — ${tocEntries.length} sections — page ${p + 1}/${tocPagesNeeded}`,
+      pageW / 2,
+      pageH - 10,
+      { align: "center" }
+    );
+  }
 
   doc.save(`budget-${budget.title.replace(/\s+/g, "-").toLowerCase()}.pdf`);
 }
