@@ -34,6 +34,10 @@ export function exportBudgetPDF(budget: BudgetRow, lines: BudgetLineRow[]) {
   doc.text(`Horizon : ${budget.horizon_months} mois`, pageW / 2, pageH / 2 + 30, { align: "center" });
   doc.text(`Généré le ${new Date().toLocaleDateString("fr-FR")}`, pageW / 2, pageH / 2 + 42, { align: "center" });
 
+  // Track sections for the table of contents (page numbers are recorded as rendered;
+  // a TOC page will be inserted after the cover at the end, so add +1 to all values).
+  const toc: { label: string; page: number }[] = [];
+
   // Data pages per category
   const categories = [...new Set(lines.map(l => l.category))];
   const horizonMonths = budget.horizon_months;
@@ -45,6 +49,9 @@ export function exportBudgetPDF(budget: BudgetRow, lines: BudgetLineRow[]) {
 
     for (let page = 0; page < totalPages; page++) {
       doc.addPage();
+      if (page === 0) {
+        toc.push({ label: CATEGORIES[cat] || cat, page: doc.getNumberOfPages() });
+      }
       const startMonth = page * colsPerPage;
       const endMonth = Math.min(startMonth + colsPerPage, horizonMonths);
       const numCols = endMonth - startMonth;
