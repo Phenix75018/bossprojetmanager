@@ -448,6 +448,7 @@ export function exportBudgetPDF(budget: BudgetRow, lines: BudgetLineRow[]) {
 
   // ── Page: Tableau de synthèse ──
   doc.addPage();
+  toc.push({ label: "Tableau de synthèse", page: doc.getNumberOfPages() });
   doc.setFillColor(30, 41, 59);
   doc.rect(0, 0, pageW, 20, "F");
   doc.setTextColor(255, 255, 255);
