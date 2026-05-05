@@ -322,6 +322,7 @@ export function exportBudgetPDF(budget: BudgetRow, lines: BudgetLineRow[]) {
 
   // ── Page: Pie chart (category distribution) ──
   doc.addPage();
+  toc.push({ label: "Graphique — Répartition par catégorie", page: doc.getNumberOfPages() });
   doc.setFillColor(30, 41, 59);
   doc.rect(0, 0, pageW, 20, "F");
   doc.setTextColor(255, 255, 255);
