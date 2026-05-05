@@ -34,6 +34,10 @@ export function exportBudgetPDF(budget: BudgetRow, lines: BudgetLineRow[]) {
   doc.text(`Horizon : ${budget.horizon_months} mois`, pageW / 2, pageH / 2 + 30, { align: "center" });
   doc.text(`Généré le ${new Date().toLocaleDateString("fr-FR")}`, pageW / 2, pageH / 2 + 42, { align: "center" });
 
+  // Track sections for the table of contents (page numbers are recorded as rendered;
+  // a TOC page will be inserted after the cover at the end, so add +1 to all values).
+  const toc: { label: string; page: number }[] = [];
+
   // Data pages per category
   const categories = [...new Set(lines.map(l => l.category))];
   const horizonMonths = budget.horizon_months;
@@ -45,6 +49,9 @@ export function exportBudgetPDF(budget: BudgetRow, lines: BudgetLineRow[]) {
 
     for (let page = 0; page < totalPages; page++) {
       doc.addPage();
+      if (page === 0) {
+        toc.push({ label: CATEGORIES[cat] || cat, page: doc.getNumberOfPages() });
+      }
       const startMonth = page * colsPerPage;
       const endMonth = Math.min(startMonth + colsPerPage, horizonMonths);
       const numCols = endMonth - startMonth;
@@ -155,6 +162,7 @@ export function exportBudgetPDF(budget: BudgetRow, lines: BudgetLineRow[]) {
 
   // ── Page: Bar chart (Revenue vs Charges) ──
   doc.addPage();
+  toc.push({ label: "Graphique — Revenus vs Charges", page: doc.getNumberOfPages() });
   doc.setFillColor(30, 41, 59);
   doc.rect(0, 0, pageW, 20, "F");
   doc.setTextColor(255, 255, 255);
@@ -314,6 +322,7 @@ export function exportBudgetPDF(budget: BudgetRow, lines: BudgetLineRow[]) {
 
   // ── Page: Pie chart (category distribution) ──
   doc.addPage();
+  toc.push({ label: "Graphique — Répartition par catégorie", page: doc.getNumberOfPages() });
   doc.setFillColor(30, 41, 59);
   doc.rect(0, 0, pageW, 20, "F");
   doc.setTextColor(255, 255, 255);
@@ -439,6 +448,7 @@ export function exportBudgetPDF(budget: BudgetRow, lines: BudgetLineRow[]) {
 
   // ── Page: Tableau de synthèse ──
   doc.addPage();
+  toc.push({ label: "Tableau de synthèse", page: doc.getNumberOfPages() });
   doc.setFillColor(30, 41, 59);
   doc.rect(0, 0, pageW, 20, "F");
   doc.setTextColor(255, 255, 255);
@@ -571,5 +581,74 @@ export function exportBudgetPDF(budget: BudgetRow, lines: BudgetLineRow[]) {
     tblY += rH;
   }
 
+  // ── Insert clickable Table of Contents as page 2 ──
+  doc.insertPage(2);
+  doc.setPage(2);
+  // After inserting page 2, every previously recorded section page shifts by +1.
+  const tocEntries = toc.map(e => ({ label: e.label, page: e.page + 1 }));
+
+  // Header
+  doc.setFillColor(30, 41, 59);
+  doc.rect(0, 0, pageW, 25, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(18);
+  doc.setFont("helvetica", "bold");
+  doc.text("Sommaire", 15, 17);
+
+  // Subtitle
+  doc.setTextColor(100, 116, 139);
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text("Cliquez sur une section pour y accéder directement", 15, 36);
+
+  // Entries
+  let tocY = 50;
+  const tocRowH = 11;
+  const tocX = 20;
+  const tocW = pageW - 40;
+
+  doc.setFontSize(11);
+  for (let i = 0; i < tocEntries.length; i++) {
+    const entry = tocEntries[i];
+
+    // Row background (zebra)
+    if (i % 2 === 0) {
+      doc.setFillColor(248, 250, 252);
+      doc.roundedRect(tocX, tocY - 5, tocW, tocRowH - 1, 1.5, 1.5, "F");
+    }
+
+    // Number badge
+    doc.setFillColor(59, 130, 246);
+    doc.roundedRect(tocX + 2, tocY - 4, 8, 7, 1, 1, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "bold");
+    doc.text(String(i + 1), tocX + 6, tocY + 1, { align: "center" });
+
+    // Label
+    doc.setTextColor(30, 41, 59);
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    doc.text(entry.label, tocX + 14, tocY + 1);
+
+    // Dotted line + page number
+    doc.setTextColor(100, 116, 139);
+    doc.setFontSize(10);
+    doc.text(String(entry.page), tocX + tocW - 4, tocY + 1, { align: "right" });
+
+    // Clickable link covering the entire row
+    doc.link(tocX, tocY - 5, tocW, tocRowH - 1, { pageNumber: entry.page });
+
+    tocY += tocRowH;
+    if (tocY > pageH - 20) break;
+  }
+
+  // Footer
+  doc.setTextColor(148, 163, 184);
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "italic");
+  doc.text(`${budget.title} — ${tocEntries.length} sections`, pageW / 2, pageH - 10, { align: "center" });
+
   doc.save(`budget-${budget.title.replace(/\s+/g, "-").toLowerCase()}.pdf`);
 }
+
