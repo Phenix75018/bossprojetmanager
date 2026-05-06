@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ThemeProvider } from "next-themes";
 import { NotificationInitializer } from "@/components/NotificationInitializer";
+import { CopilotWidget } from "@/components/CopilotWidget";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
@@ -146,6 +147,7 @@ const AppRoutes = () => (
       />
       <Route path="*" element={<NotFound />} />
     </Routes>
+    <CopilotWidget />
   </BrowserRouter>
 );
 
