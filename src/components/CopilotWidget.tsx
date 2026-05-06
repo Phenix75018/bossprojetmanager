@@ -135,7 +135,7 @@ export function CopilotWidget() {
       if (cid) {
         await supabase.from("copilot_messages").insert({
           conversation_id: cid, user_id: user.id, role: "assistant",
-          content: assistantMsg.content, suggestions: assistantMsg.suggestions,
+          content: assistantMsg.content, suggestions: (assistantMsg.suggestions ?? []) as any,
         });
         await supabase
           .from("copilot_conversations")
