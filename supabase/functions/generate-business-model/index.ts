@@ -56,7 +56,35 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { projectDescription, projectTitle, framework, blockType, mode, existingBlocks } = body;
+    const { projectDescription, projectTitle, framework, blockType, mode, existingBlocks, projectId } = body;
+
+    // Fetch linked Business Plan for cross-module coherence
+    let bpContext = "";
+    if (projectId) {
+      try {
+        const { data: bps } = await supabase
+          .from("business_plans")
+          .select("id, title")
+          .eq("project_id", projectId)
+          .order("updated_at", { ascending: false })
+          .limit(1);
+        if (bps?.length) {
+          const { data: sections } = await supabase
+            .from("business_plan_sections")
+            .select("title, content")
+            .eq("business_plan_id", bps[0].id)
+            .order("sort_order");
+          if (sections?.length) {
+            const summary = sections
+              .map((s: { title: string; content: string }) => `### ${s.title}\n${(s.content || "").substring(0, 1000)}`)
+              .join("\n\n");
+            bpContext = `\n\n=== CONTEXTE — Business Plan lié "${bps[0].title}" ===\n${summary}\n=== FIN CONTEXTE ===\n\nIMPORTANT: Ton business model DOIT être cohérent avec ce business plan (proposition de valeur, segments, modèle économique).`;
+          }
+        }
+      } catch (e) {
+        console.error("BP context error:", e);
+      }
+    }
 
     if (!projectDescription || typeof projectDescription !== "string" || projectDescription.length > 15000) {
       return new Response(JSON.stringify({ error: "Description invalide (max 15000 caractères)" }), {
