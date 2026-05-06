@@ -98,7 +98,7 @@ export default function BusinessModelDetail() {
     setGeneratingFull(true);
     try {
       const { data, error } = await supabase.functions.invoke("generate-business-model", {
-        body: { projectDescription: model.description, projectTitle: model.title, framework: model.framework, mode: "full" },
+        body: { projectDescription: model.description, projectTitle: model.title, framework: model.framework, mode: "full", projectId: model.project_id },
       });
       if (error) throw error;
       if (data?.result?.blocks) {
@@ -125,7 +125,7 @@ export default function BusinessModelDetail() {
     try {
       const existingBlocks = blocks.map(b => ({ title: b.title, content: b.content }));
       const { data, error } = await supabase.functions.invoke("generate-business-model", {
-        body: { projectDescription: model.description, projectTitle: model.title, framework: model.framework, mode: "block", blockType, existingBlocks },
+        body: { projectDescription: model.description, projectTitle: model.title, framework: model.framework, mode: "block", blockType, existingBlocks, projectId: model.project_id },
       });
       if (error) throw error;
       if (data?.result) {

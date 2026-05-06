@@ -72,6 +72,7 @@ export default function BudgetDetail() {
           projectDescription: budget.description,
           title: budget.title,
           horizonMonths: budget.horizon_months,
+          projectId: budget.project_id,
         },
       });
       if (error) throw error;
@@ -98,6 +99,7 @@ export default function BudgetDetail() {
           title: budget.title,
           horizonMonths: budget.horizon_months,
           sectionCategory: category,
+          projectId: budget.project_id,
         },
       });
       if (error) throw error;
