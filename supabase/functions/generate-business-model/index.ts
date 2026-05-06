@@ -131,7 +131,7 @@ Règles:
 - Inclus des exemples spécifiques quand pertinent
 - Pour les coûts et revenus, donne des estimations chiffrées`;
 
-      userPrompt = `Projet: ${projectTitle || "Sans titre"}\nDescription: ${projectDescription}`;
+      userPrompt = `Projet: ${projectTitle || "Sans titre"}\nDescription: ${projectDescription}${bpContext}`;
     } else {
       const blockInfo = blocks.find(b => b.type === blockType);
       if (!blockInfo) {
@@ -158,7 +158,7 @@ Règles:
 - Concret et actionnable
 - Estimations chiffrées pour coûts/revenus`;
 
-      userPrompt = `Projet: ${projectTitle || "Sans titre"}\nDescription: ${projectDescription}${context}`;
+      userPrompt = `Projet: ${projectTitle || "Sans titre"}\nDescription: ${projectDescription}${context}${bpContext}`;
     }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
