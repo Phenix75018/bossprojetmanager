@@ -517,6 +517,26 @@ export default function ValidatePlan() {
           </div>
         )}
 
+        {plan.coherence_justifications && plan.coherence_justifications.length > 0 && (
+          <div className="glass-card rounded-2xl p-6 mb-8 border-l-4 border-primary">
+            <div className="flex items-center gap-3 mb-2">
+              <Sparkles className="w-5 h-5 text-primary" />
+              <h3 className="font-display font-bold text-lg">Justifications de cohérence</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              Éléments du Business Plan / Business Model qui ont guidé les durées, coûts et priorités du plan.
+            </p>
+            <ul className="space-y-2 text-sm">
+              {plan.coherence_justifications.map((j, i) => (
+                <li key={i} className="flex gap-2">
+                  <span className="text-primary mt-0.5">•</span>
+                  <span>{j}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {/* Actions */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
