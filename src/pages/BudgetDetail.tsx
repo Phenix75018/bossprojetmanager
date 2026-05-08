@@ -115,6 +115,7 @@ export default function BudgetDetail() {
         for (let i = 0; i < data.lines.length; i++) {
           await addLine(budget.id, { ...data.lines[i], sort_order: maxOrder + i + 1 });
         }
+        if (Array.isArray(data.coherence_justifications)) setCoherenceJustifs(data.coherence_justifications);
         await loadData();
         toast.success("Catégorie générée !");
       }
