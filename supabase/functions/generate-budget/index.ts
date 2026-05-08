@@ -107,6 +107,9 @@ Format attendu :
       "monthly_values": [nombre pour chaque mois],
       "is_total": false
     }
+  ],
+  "coherence_justifications": [
+    "Phrase courte expliquant comment un montant/structure du budget découle d'un élément précis du Business Plan ou du Business Model lié (cite le nom de la section/bloc et l'élément concerné)."
   ]
 }
 
@@ -118,7 +121,8 @@ Règles :
 - Inclus des variations saisonnières réalistes
 - Pour les charges, utilise des valeurs négatives
 - Pour la trésorerie, calcule le solde cumulé
-- Pour les investissements, inclus les amortissements`;
+- Pour les investissements, inclus les amortissements
+- "coherence_justifications" : 4 à 8 puces concrètes liant des montants/lignes à des éléments précis du BP/BM (ex: pricing, segments, structure de coûts, sources de revenus, jalons financiers). Si aucun BP/BM n'est fourni, retourne un tableau vide [].`;
 
     const userPrompt = `Génère un budget prévisionnel professionnel sur ${horizonMonths} mois pour les catégories suivantes : ${categoryList}.
 

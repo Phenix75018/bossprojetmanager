@@ -44,6 +44,7 @@ export default function BudgetDetail() {
   const [showShare, setShowShare] = useState(false);
   const [editingCell, setEditingCell] = useState<{ lineId: string; month: number } | null>(null);
   const [editValue, setEditValue] = useState("");
+  const [coherenceJustifs, setCoherenceJustifs] = useState<string[]>([]);
   const { versions, saveVersion, deleteVersion } = useDocumentVersions("budget", id);
 
   const loadData = useCallback(async () => {
@@ -79,6 +80,7 @@ export default function BudgetDetail() {
       if (data?.lines) {
         await upsertLines(budget.id, data.lines);
         await updateBudgetStatus(budget.id, "in_progress");
+        if (Array.isArray(data.coherence_justifications)) setCoherenceJustifs(data.coherence_justifications);
         await loadData();
         toast.success("Budget généré avec succès !");
       }
@@ -113,6 +115,7 @@ export default function BudgetDetail() {
         for (let i = 0; i < data.lines.length; i++) {
           await addLine(budget.id, { ...data.lines[i], sort_order: maxOrder + i + 1 });
         }
+        if (Array.isArray(data.coherence_justifications)) setCoherenceJustifs(data.coherence_justifications);
         await loadData();
         toast.success("Catégorie générée !");
       }
@@ -246,6 +249,34 @@ export default function BudgetDetail() {
         {/* Charts */}
         <BudgetCharts lines={lines} horizonMonths={horizonMonths} />
         <BudgetSynthesis lines={lines} horizonMonths={horizonMonths} />
+
+        {coherenceJustifs.length > 0 && (
+          <div className="glass-card rounded-xl p-5 mt-6 border-l-4 border-primary">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-serif text-lg flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-primary" />
+                Justifications de cohérence
+              </h3>
+              <button
+                onClick={() => setCoherenceJustifs([])}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                Masquer
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">
+              Éléments du Business Plan / Business Model qui ont guidé les montants et la structure.
+            </p>
+            <ul className="space-y-2 text-sm">
+              {coherenceJustifs.map((j, i) => (
+                <li key={i} className="flex gap-2">
+                  <span className="text-primary mt-0.5">•</span>
+                  <span>{j}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {/* Budget tables per category */}
         <div className="space-y-4 mt-6">
