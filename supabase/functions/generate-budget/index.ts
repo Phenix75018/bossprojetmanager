@@ -92,7 +92,7 @@ Deno.serve(async (req) => {
 
     const categoryList = targetCategories.map((c: string) => categoryLabels[c] || c).join(", ");
 
-    const bpContext = await fetchBusinessPlanContext(authHeader, projectId);
+    const bpContext = await fetchStrategicContext(authHeader, projectId);
 
     const systemPrompt = `Tu es un expert-comptable et analyste financier. Tu génères des budgets prévisionnels professionnels et réalistes.
 Tu dois répondre UNIQUEMENT en JSON valide, sans texte avant/après.
