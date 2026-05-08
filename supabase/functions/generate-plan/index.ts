@@ -33,7 +33,57 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { description, projectType, status, statusDetails } = body;
+    const { description, projectType, status, statusDetails, projectId } = body;
+
+    // Fetch BP + BM context for cross-module coherence (optional)
+    let strategicContext = "";
+    if (projectId && typeof projectId === "string") {
+      try {
+        const { data: bps } = await supabase
+          .from("business_plans")
+          .select("id, title")
+          .eq("project_id", projectId)
+          .order("updated_at", { ascending: false })
+          .limit(1);
+        if (bps?.length) {
+          const { data: sections } = await supabase
+            .from("business_plan_sections")
+            .select("title, content")
+            .eq("business_plan_id", bps[0].id)
+            .order("sort_order");
+          if (sections?.length) {
+            const summary = sections
+              .map((s: { title: string; content: string }) => `### ${s.title}\n${(s.content || "").substring(0, 800)}`)
+              .join("\n\n");
+            strategicContext += `\n\n=== Business Plan lié "${bps[0].title}" ===\n${summary}`;
+          }
+        }
+        const { data: bms } = await supabase
+          .from("business_models")
+          .select("id, title, framework")
+          .eq("project_id", projectId)
+          .order("updated_at", { ascending: false })
+          .limit(1);
+        if (bms?.length) {
+          const { data: blocks } = await supabase
+            .from("business_model_blocks")
+            .select("title, content")
+            .eq("business_model_id", bms[0].id)
+            .order("sort_order");
+          if (blocks?.length) {
+            const summary = blocks
+              .map((b: { title: string; content: string }) => `### ${b.title}\n${(b.content || "").substring(0, 500)}`)
+              .join("\n\n");
+            strategicContext += `\n\n=== Business Model lié "${bms[0].title}" (${bms[0].framework}) ===\n${summary}`;
+          }
+        }
+        if (strategicContext) {
+          strategicContext = `\n\n=== CONTEXTE STRATÉGIQUE ===${strategicContext}\n=== FIN CONTEXTE ===\n\nIMPORTANT: Le plan d'action DOIT être cohérent avec ces documents stratégiques (livrables, jalons, ressources, priorités alignées sur la stratégie et le modèle économique).`;
+        }
+      } catch (e) {
+        console.error("Strategic context error:", e);
+      }
+    }
 
     // Input validation
     if (!description || typeof description !== "string" || description.length > 10000) {
