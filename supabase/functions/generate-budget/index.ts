@@ -8,7 +8,7 @@ const corsHeaders = {
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 const LOVABLE_API_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
-async function fetchBusinessPlanContext(authHeader: string | null, projectId?: string): Promise<string> {
+async function fetchStrategicContext(authHeader: string | null, projectId?: string): Promise<string> {
   if (!authHeader || !projectId) return "";
   try {
     const supabase = createClient(
@@ -17,31 +17,52 @@ async function fetchBusinessPlanContext(authHeader: string | null, projectId?: s
       { global: { headers: { Authorization: authHeader } } }
     );
 
+    let bpBlock = "";
     const { data: bps } = await supabase
       .from("business_plans")
       .select("id, title")
       .eq("project_id", projectId)
       .order("updated_at", { ascending: false })
       .limit(1);
+    if (bps?.length) {
+      const { data: sections } = await supabase
+        .from("business_plan_sections")
+        .select("title, content")
+        .eq("business_plan_id", bps[0].id)
+        .order("sort_order");
+      if (sections?.length) {
+        const summary = sections
+          .map((s: { title: string; content: string }) => `### ${s.title}\n${(s.content || "").substring(0, 1000)}`)
+          .join("\n\n");
+        bpBlock = `\n\n=== CONTEXTE — Business Plan lié "${bps[0].title}" ===\n${summary}\n=== FIN CONTEXTE ===`;
+      }
+    }
 
-    if (!bps?.length) return "";
-    const bp = bps[0];
+    let bmBlock = "";
+    const { data: bms } = await supabase
+      .from("business_models")
+      .select("id, title, framework")
+      .eq("project_id", projectId)
+      .order("updated_at", { ascending: false })
+      .limit(1);
+    if (bms?.length) {
+      const { data: blocks } = await supabase
+        .from("business_model_blocks")
+        .select("title, content")
+        .eq("business_model_id", bms[0].id)
+        .order("sort_order");
+      if (blocks?.length) {
+        const summary = blocks
+          .map((b: { title: string; content: string }) => `### ${b.title}\n${(b.content || "").substring(0, 600)}`)
+          .join("\n\n");
+        bmBlock = `\n\n=== CONTEXTE — Business Model lié "${bms[0].title}" (${bms[0].framework}) ===\n${summary}\n=== FIN CONTEXTE ===`;
+      }
+    }
 
-    const { data: sections } = await supabase
-      .from("business_plan_sections")
-      .select("title, content")
-      .eq("business_plan_id", bp.id)
-      .order("sort_order");
-
-    if (!sections?.length) return "";
-
-    const summary = sections
-      .map((s: { title: string; content: string }) => `### ${s.title}\n${(s.content || "").substring(0, 1200)}`)
-      .join("\n\n");
-
-    return `\n\n=== CONTEXTE — Business Plan lié "${bp.title}" ===\n${summary}\n=== FIN CONTEXTE ===\n\nIMPORTANT: Tes projections budgétaires DOIVENT être cohérentes avec ce business plan (modèle économique, pricing, marché cible, charges déjà identifiées, projections financières mentionnées).`;
+    if (!bpBlock && !bmBlock) return "";
+    return `${bpBlock}${bmBlock}\n\nIMPORTANT: Tes projections budgétaires DOIVENT être cohérentes avec ces documents stratégiques (modèle économique, pricing, segments cibles, sources de revenus, structure de coûts, projections financières mentionnées).`;
   } catch (e) {
-    console.error("BP context fetch error:", e);
+    console.error("Strategic context fetch error:", e);
     return "";
   }
 }
@@ -71,7 +92,7 @@ Deno.serve(async (req) => {
 
     const categoryList = targetCategories.map((c: string) => categoryLabels[c] || c).join(", ");
 
-    const bpContext = await fetchBusinessPlanContext(authHeader, projectId);
+    const bpContext = await fetchStrategicContext(authHeader, projectId);
 
     const systemPrompt = `Tu es un expert-comptable et analyste financier. Tu génères des budgets prévisionnels professionnels et réalistes.
 Tu dois répondre UNIQUEMENT en JSON valide, sans texte avant/après.
