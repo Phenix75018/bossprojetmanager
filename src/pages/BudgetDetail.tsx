@@ -80,6 +80,7 @@ export default function BudgetDetail() {
       if (data?.lines) {
         await upsertLines(budget.id, data.lines);
         await updateBudgetStatus(budget.id, "in_progress");
+        if (Array.isArray(data.coherence_justifications)) setCoherenceJustifs(data.coherence_justifications);
         await loadData();
         toast.success("Budget généré avec succès !");
       }
