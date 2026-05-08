@@ -155,7 +155,10 @@ Le format JSON doit être exactement:
       ]
     }
   ]${isProfessional ? `,
-  "team_recommendations": []` : ""}
+  "team_recommendations": []` : ""},
+  "coherence_justifications": [
+    "Phrase courte expliquant comment une priorité, une durée ou un coût d'une tâche découle d'un élément précis du Business Plan ou du Business Model lié (cite la section/bloc et l'élément)."
+  ]
 }
 ${recruitmentBlock}
 
@@ -167,6 +170,7 @@ Règles:
 - Durées réalistes en heures
 - Adapte le plan au niveau d'avancement du projet
 - Les noms de phases doivent être numérotés (Phase 1, Phase 2, etc.)
+- "coherence_justifications" : 4 à 8 puces concrètes liant priorités/durées/coûts à des éléments précis du BP/BM (proposition de valeur, segments, jalons financiers, ressources clés, structure de coûts). Si aucun BP/BM fourni, retourne [].
 - Type de projet: ${isProfessional ? "PROFESSIONNEL - inclure les recommandations d'équipe" : "PERSONNEL - pas de recommandations d'équipe"}`;
 
     const userPrompt = `Projet: ${description}
