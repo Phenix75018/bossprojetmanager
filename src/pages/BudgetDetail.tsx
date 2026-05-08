@@ -250,6 +250,34 @@ export default function BudgetDetail() {
         <BudgetCharts lines={lines} horizonMonths={horizonMonths} />
         <BudgetSynthesis lines={lines} horizonMonths={horizonMonths} />
 
+        {coherenceJustifs.length > 0 && (
+          <div className="glass-card rounded-xl p-5 mt-6 border-l-4 border-primary">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-serif text-lg flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-primary" />
+                Justifications de cohérence
+              </h3>
+              <button
+                onClick={() => setCoherenceJustifs([])}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                Masquer
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">
+              Éléments du Business Plan / Business Model qui ont guidé les montants et la structure.
+            </p>
+            <ul className="space-y-2 text-sm">
+              {coherenceJustifs.map((j, i) => (
+                <li key={i} className="flex gap-2">
+                  <span className="text-primary mt-0.5">•</span>
+                  <span>{j}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {/* Budget tables per category */}
         <div className="space-y-4 mt-6">
           {CATEGORIES.map(cat => {
