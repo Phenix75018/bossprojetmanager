@@ -171,7 +171,7 @@ Règles:
 
     const userPrompt = `Projet: ${description}
 Type: ${isProfessional ? "Professionnel" : "Personnel"}
-État d'avancement: ${status || "nouveau"}${statusDetails ? `\nDétails: ${statusDetails}` : ""}`;
+État d'avancement: ${status || "nouveau"}${statusDetails ? `\nDétails: ${statusDetails}` : ""}${strategicContext}`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
