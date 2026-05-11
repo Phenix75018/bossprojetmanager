@@ -66,6 +66,7 @@ const BMC_GRID = [
 
 export default function BusinessModelDetail() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const { fetchModelWithBlocks, updateBlock, upsertBlocks, addBlock, updateModelStatus } = useBusinessModels();
   const [model, setModel] = useState<any>(null);
   const [blocks, setBlocks] = useState<BMBlockRow[]>([]);
