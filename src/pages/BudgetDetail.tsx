@@ -45,7 +45,9 @@ export default function BudgetDetail() {
   const [showShare, setShowShare] = useState(false);
   const [editingCell, setEditingCell] = useState<{ lineId: string; month: number } | null>(null);
   const [editValue, setEditValue] = useState("");
-  const [coherenceJustifs, setCoherenceJustifs] = useState<string[]>([]);
+  const [coherenceJustifs, setCoherenceJustifs] = useState<Justif[]>([]);
+  const [bpId, setBpId] = useState<string | null>(null);
+  const [bmId, setBmId] = useState<string | null>(null);
   const { versions, saveVersion, deleteVersion } = useDocumentVersions("budget", id);
 
   const loadData = useCallback(async () => {
