@@ -84,6 +84,8 @@ export default function BudgetDetail() {
         await upsertLines(budget.id, data.lines);
         await updateBudgetStatus(budget.id, "in_progress");
         if (Array.isArray(data.coherence_justifications)) setCoherenceJustifs(data.coherence_justifications);
+        if (data.bp_id) setBpId(data.bp_id);
+        if (data.bm_id) setBmId(data.bm_id);
         await loadData();
         toast.success("Budget généré avec succès !");
       }
