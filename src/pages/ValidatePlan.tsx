@@ -96,6 +96,8 @@ export default function ValidatePlan() {
       if (!fnData?.plan) throw new Error("Plan non généré");
       setPlan(fnData.plan);
       setExpandedPhases(new Set(fnData.plan.phases.map((_: any, i: number) => i)));
+      if (fnData.bp_id) setBpId(fnData.bp_id);
+      if (fnData.bm_id) setBmId(fnData.bm_id);
       toast.success("Nouveau plan généré !");
     } catch (error: any) {
       toast.error(error.message || "Erreur lors de la régénération");
