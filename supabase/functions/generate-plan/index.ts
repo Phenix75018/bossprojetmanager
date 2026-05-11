@@ -236,7 +236,7 @@ Type: ${isProfessional ? "Professionnel" : "Personnel"}
       throw new Error("Failed to parse AI response as JSON");
     }
 
-    return new Response(JSON.stringify({ plan }), {
+    return new Response(JSON.stringify({ plan, bp_id: bpId, bm_id: bmId }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
