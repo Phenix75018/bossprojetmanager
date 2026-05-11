@@ -26,6 +26,7 @@ const SECTION_TYPES = [
 
 export default function BusinessPlanDetail() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const { fetchPlanWithSections, updateSection, upsertSections, addSection, updatePlanStatus } = useBusinessPlans();
   const [plan, setPlan] = useState<any>(null);
   const [sections, setSections] = useState<BPSectionRow[]>([]);
