@@ -83,6 +83,13 @@ export default function BusinessPlanDetail() {
 
   useEffect(() => { load(); }, [id]);
 
+  useEffect(() => {
+    const target = searchParams.get("section");
+    if (target && sections.find(s => s.section_type === target)) {
+      setActiveSection(target);
+    }
+  }, [searchParams, sections]);
+
   const saveChart = async (config: ChartConfig) => {
     const currentSec = sections.find(s => s.section_type === activeSection);
     if (!currentSec) return;
