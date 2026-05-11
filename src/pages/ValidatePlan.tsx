@@ -54,7 +54,7 @@ interface PlanDraft {
   title: string;
   phases: PhaseDraft[];
   team_recommendations?: TeamRecommendation[];
-  coherence_justifications?: string[];
+  coherence_justifications?: Justif[];
 }
 
 const priorityConfig: Record<string, { label: string; class: string }> = {
