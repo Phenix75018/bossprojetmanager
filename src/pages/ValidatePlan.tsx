@@ -22,6 +22,7 @@ import Navbar from "@/components/layout/Navbar";
 import { useProjectsDB } from "@/hooks/useProjectsDB";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import CoherenceJustifications, { Justif } from "@/components/CoherenceJustifications";
 
 interface SubtaskDraft {
   title: string;
