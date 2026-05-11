@@ -269,6 +269,7 @@ export default function BusinessModelDetail() {
             return (
               <motion.div
                 key={blockDef.type}
+                id={`bm-block-${blockDef.type}`}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.03 }}
