@@ -18,6 +18,7 @@ import BudgetCharts from "@/components/BudgetCharts";
 import BudgetSynthesis from "@/components/BudgetSynthesis";
 import { useDocumentVersions } from "@/hooks/useDocumentVersions";
 import VersionHistoryPanel from "@/components/VersionHistoryPanel";
+import CoherenceJustifications, { Justif } from "@/components/CoherenceJustifications";
 
 const CATEGORIES = [
   { key: "revenue", label: "Revenus / Chiffre d'affaires", icon: TrendingUp, color: "text-emerald-600" },
