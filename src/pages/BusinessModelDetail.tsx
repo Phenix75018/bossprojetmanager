@@ -94,6 +94,17 @@ export default function BusinessModelDetail() {
 
   useEffect(() => { load(); }, [id]);
 
+  useEffect(() => {
+    const target = searchParams.get("block");
+    if (target && blocks.find(b => b.block_type === target)) {
+      setSelectedBlock(target);
+      setTimeout(() => {
+        const el = document.getElementById(`bm-block-${target}`);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 100);
+    }
+  }, [searchParams, blocks]);
+
   const generateFull = async () => {
     if (!model) return;
     setGeneratingFull(true);
