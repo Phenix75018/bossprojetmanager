@@ -192,9 +192,15 @@ Génère des lignes budgétaires détaillées et réalistes avec des montants co
 
     const parsed = JSON.parse(content);
 
-    return new Response(JSON.stringify({ ...parsed, usedBusinessPlanContext: !!bpContext }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        ...parsed,
+        usedBusinessPlanContext: !!bpContext,
+        bp_id: strat.bpId,
+        bm_id: strat.bmId,
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   } catch (error) {
     console.error("Error:", error);
     return new Response(JSON.stringify({ error: (error as Error).message }), {
