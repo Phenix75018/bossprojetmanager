@@ -121,6 +121,8 @@ export default function BudgetDetail() {
           await addLine(budget.id, { ...data.lines[i], sort_order: maxOrder + i + 1 });
         }
         if (Array.isArray(data.coherence_justifications)) setCoherenceJustifs(data.coherence_justifications);
+        if (data.bp_id) setBpId(data.bp_id);
+        if (data.bm_id) setBmId(data.bm_id);
         await loadData();
         toast.success("Catégorie générée !");
       }
