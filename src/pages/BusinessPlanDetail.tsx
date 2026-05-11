@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Loader2, Sparkles, Save, Share2, Download, ChevronDown, ChevronRight, PenLine, Eye, FileText, BarChart3, Plus, Wand2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
