@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Loader2, Sparkles, Save, Share2, Download, ChevronDown, ChevronRight, PenLine, Eye, FileText, BarChart3, Plus, Wand2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
@@ -26,6 +26,7 @@ const SECTION_TYPES = [
 
 export default function BusinessPlanDetail() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const { fetchPlanWithSections, updateSection, upsertSections, addSection, updatePlanStatus } = useBusinessPlans();
   const [plan, setPlan] = useState<any>(null);
   const [sections, setSections] = useState<BPSectionRow[]>([]);
@@ -81,6 +82,13 @@ export default function BusinessPlanDetail() {
   }, [id, fetchPlanWithSections, activeSection, loadCharts]);
 
   useEffect(() => { load(); }, [id]);
+
+  useEffect(() => {
+    const target = searchParams.get("section");
+    if (target && sections.find(s => s.section_type === target)) {
+      setActiveSection(target);
+    }
+  }, [searchParams, sections]);
 
   const saveChart = async (config: ChartConfig) => {
     const currentSec = sections.find(s => s.section_type === activeSection);

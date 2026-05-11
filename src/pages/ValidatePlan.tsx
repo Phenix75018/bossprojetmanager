@@ -22,6 +22,7 @@ import Navbar from "@/components/layout/Navbar";
 import { useProjectsDB } from "@/hooks/useProjectsDB";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import CoherenceJustifications, { Justif } from "@/components/CoherenceJustifications";
 
 interface SubtaskDraft {
   title: string;
@@ -53,7 +54,7 @@ interface PlanDraft {
   title: string;
   phases: PhaseDraft[];
   team_recommendations?: TeamRecommendation[];
-  coherence_justifications?: string[];
+  coherence_justifications?: Justif[];
 }
 
 const priorityConfig: Record<string, { label: string; class: string }> = {
@@ -82,6 +83,8 @@ export default function ValidatePlan() {
   const [editingTitle, setEditingTitle] = useState(false);
   const [saving, setSaving] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
+  const [bpId, setBpId] = useState<string | null>(null);
+  const [bmId, setBmId] = useState<string | null>(null);
 
   const handleRegenerate = async () => {
     setRegenerating(true);
@@ -93,6 +96,8 @@ export default function ValidatePlan() {
       if (!fnData?.plan) throw new Error("Plan non généré");
       setPlan(fnData.plan);
       setExpandedPhases(new Set(fnData.plan.phases.map((_: any, i: number) => i)));
+      if (fnData.bp_id) setBpId(fnData.bp_id);
+      if (fnData.bm_id) setBmId(fnData.bm_id);
       toast.success("Nouveau plan généré !");
     } catch (error: any) {
       toast.error(error.message || "Erreur lors de la régénération");
@@ -517,25 +522,11 @@ export default function ValidatePlan() {
           </div>
         )}
 
-        {plan.coherence_justifications && plan.coherence_justifications.length > 0 && (
-          <div className="glass-card rounded-2xl p-6 mb-8 border-l-4 border-primary">
-            <div className="flex items-center gap-3 mb-2">
-              <Sparkles className="w-5 h-5 text-primary" />
-              <h3 className="font-display font-bold text-lg">Justifications de cohérence</h3>
-            </div>
-            <p className="text-sm text-muted-foreground mb-4">
-              Éléments du Business Plan / Business Model qui ont guidé les durées, coûts et priorités du plan.
-            </p>
-            <ul className="space-y-2 text-sm">
-              {plan.coherence_justifications.map((j, i) => (
-                <li key={i} className="flex gap-2">
-                  <span className="text-primary mt-0.5">•</span>
-                  <span>{j}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+        <CoherenceJustifications
+          items={plan.coherence_justifications || []}
+          bpId={bpId}
+          bmId={bmId}
+        />
 
         {/* Actions */}
         <div className="flex items-center justify-between">

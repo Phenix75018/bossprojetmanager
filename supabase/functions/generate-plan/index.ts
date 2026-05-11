@@ -37,6 +37,10 @@ serve(async (req) => {
 
     // Fetch BP + BM context for cross-module coherence (optional)
     let strategicContext = "";
+    let bpId: string | null = null;
+    let bmId: string | null = null;
+    const bpRefs: { ref_type: string; title: string }[] = [];
+    const bmRefs: { ref_type: string; title: string }[] = [];
     if (projectId && typeof projectId === "string") {
       try {
         const { data: bps } = await supabase
@@ -46,14 +50,16 @@ serve(async (req) => {
           .order("updated_at", { ascending: false })
           .limit(1);
         if (bps?.length) {
+          bpId = bps[0].id;
           const { data: sections } = await supabase
             .from("business_plan_sections")
-            .select("title, content")
+            .select("section_type, title, content")
             .eq("business_plan_id", bps[0].id)
             .order("sort_order");
           if (sections?.length) {
+            sections.forEach((s: any) => bpRefs.push({ ref_type: s.section_type, title: s.title }));
             const summary = sections
-              .map((s: { title: string; content: string }) => `### ${s.title}\n${(s.content || "").substring(0, 800)}`)
+              .map((s: any) => `### [ref_type="${s.section_type}"] ${s.title}\n${(s.content || "").substring(0, 800)}`)
               .join("\n\n");
             strategicContext += `\n\n=== Business Plan lié "${bps[0].title}" ===\n${summary}`;
           }
@@ -65,14 +71,16 @@ serve(async (req) => {
           .order("updated_at", { ascending: false })
           .limit(1);
         if (bms?.length) {
+          bmId = bms[0].id;
           const { data: blocks } = await supabase
             .from("business_model_blocks")
-            .select("title, content")
+            .select("block_type, title, content")
             .eq("business_model_id", bms[0].id)
             .order("sort_order");
           if (blocks?.length) {
+            blocks.forEach((b: any) => bmRefs.push({ ref_type: b.block_type, title: b.title }));
             const summary = blocks
-              .map((b: { title: string; content: string }) => `### ${b.title}\n${(b.content || "").substring(0, 500)}`)
+              .map((b: any) => `### [ref_type="${b.block_type}"] ${b.title}\n${(b.content || "").substring(0, 500)}`)
               .join("\n\n");
             strategicContext += `\n\n=== Business Model lié "${bms[0].title}" (${bms[0].framework}) ===\n${summary}`;
           }
@@ -84,6 +92,12 @@ serve(async (req) => {
         console.error("Strategic context error:", e);
       }
     }
+
+    const refsHelp = (bpRefs.length || bmRefs.length)
+      ? `\n\nValeurs autorisées pour "ref" dans coherence_justifications :\n` +
+        (bpRefs.length ? `- Business Plan (doc_type="bp") ref_type ∈ {${bpRefs.map(r => `"${r.ref_type}"`).join(", ")}}\n` : "") +
+        (bmRefs.length ? `- Business Model (doc_type="bm") ref_type ∈ {${bmRefs.map(r => `"${r.ref_type}"`).join(", ")}}` : "")
+      : "";
 
     // Input validation
     if (!description || typeof description !== "string" || description.length > 10000) {
@@ -157,7 +171,10 @@ Le format JSON doit être exactement:
   ]${isProfessional ? `,
   "team_recommendations": []` : ""},
   "coherence_justifications": [
-    "Phrase courte expliquant comment une priorité, une durée ou un coût d'une tâche découle d'un élément précis du Business Plan ou du Business Model lié (cite la section/bloc et l'élément)."
+    {
+      "text": "Phrase courte expliquant comment une priorité, une durée ou un coût d'une tâche découle d'un élément précis du BP/BM.",
+      "ref": { "doc_type": "bp" | "bm", "ref_type": "<id de section ou de bloc>", "ref_title": "Titre lisible de la section/bloc" }
+    }
   ]
 }
 ${recruitmentBlock}
@@ -170,7 +187,7 @@ Règles:
 - Durées réalistes en heures
 - Adapte le plan au niveau d'avancement du projet
 - Les noms de phases doivent être numérotés (Phase 1, Phase 2, etc.)
-- "coherence_justifications" : 4 à 8 puces concrètes liant priorités/durées/coûts à des éléments précis du BP/BM (proposition de valeur, segments, jalons financiers, ressources clés, structure de coûts). Si aucun BP/BM fourni, retourne [].
+- "coherence_justifications" : 4 à 8 objets liant priorités/durées/coûts à des éléments précis du BP/BM. Chaque objet DOIT contenir un "ref" pointant vers une section BP ou un bloc BM existant. Si aucun BP/BM fourni, retourne [].${refsHelp}
 - Type de projet: ${isProfessional ? "PROFESSIONNEL - inclure les recommandations d'équipe" : "PERSONNEL - pas de recommandations d'équipe"}`;
 
     const userPrompt = `Projet: ${description}
@@ -219,7 +236,7 @@ Type: ${isProfessional ? "Professionnel" : "Personnel"}
       throw new Error("Failed to parse AI response as JSON");
     }
 
-    return new Response(JSON.stringify({ plan }), {
+    return new Response(JSON.stringify({ plan, bp_id: bpId, bm_id: bmId }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

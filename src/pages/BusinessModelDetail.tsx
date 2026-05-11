@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Loader2, Sparkles, Save, Share2, Download, PenLine, LayoutGrid } from "lucide-react";
 import ReactMarkdown from "react-markdown";
@@ -66,6 +66,7 @@ const BMC_GRID = [
 
 export default function BusinessModelDetail() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const { fetchModelWithBlocks, updateBlock, upsertBlocks, addBlock, updateModelStatus } = useBusinessModels();
   const [model, setModel] = useState<any>(null);
   const [blocks, setBlocks] = useState<BMBlockRow[]>([]);
@@ -92,6 +93,17 @@ export default function BusinessModelDetail() {
   }, [id, fetchModelWithBlocks]);
 
   useEffect(() => { load(); }, [id]);
+
+  useEffect(() => {
+    const target = searchParams.get("block");
+    if (target && blocks.find(b => b.block_type === target)) {
+      setSelectedBlock(target);
+      setTimeout(() => {
+        const el = document.getElementById(`bm-block-${target}`);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 100);
+    }
+  }, [searchParams, blocks]);
 
   const generateFull = async () => {
     if (!model) return;
@@ -257,6 +269,7 @@ export default function BusinessModelDetail() {
             return (
               <motion.div
                 key={blockDef.type}
+                id={`bm-block-${blockDef.type}`}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.03 }}
