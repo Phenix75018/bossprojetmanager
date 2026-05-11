@@ -8,8 +8,17 @@ const corsHeaders = {
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 const LOVABLE_API_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
-async function fetchStrategicContext(authHeader: string | null, projectId?: string): Promise<string> {
-  if (!authHeader || !projectId) return "";
+interface StratResult {
+  context: string;
+  bpId: string | null;
+  bmId: string | null;
+  bpRefs: { ref_type: string; title: string }[];
+  bmRefs: { ref_type: string; title: string }[];
+}
+
+async function fetchStrategicContext(authHeader: string | null, projectId?: string): Promise<StratResult> {
+  const empty: StratResult = { context: "", bpId: null, bmId: null, bpRefs: [], bmRefs: [] };
+  if (!authHeader || !projectId) return empty;
   try {
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -18,6 +27,8 @@ async function fetchStrategicContext(authHeader: string | null, projectId?: stri
     );
 
     let bpBlock = "";
+    let bpId: string | null = null;
+    const bpRefs: { ref_type: string; title: string }[] = [];
     const { data: bps } = await supabase
       .from("business_plans")
       .select("id, title")
@@ -25,20 +36,24 @@ async function fetchStrategicContext(authHeader: string | null, projectId?: stri
       .order("updated_at", { ascending: false })
       .limit(1);
     if (bps?.length) {
+      bpId = bps[0].id;
       const { data: sections } = await supabase
         .from("business_plan_sections")
-        .select("title, content")
+        .select("section_type, title, content")
         .eq("business_plan_id", bps[0].id)
         .order("sort_order");
       if (sections?.length) {
+        sections.forEach((s: any) => bpRefs.push({ ref_type: s.section_type, title: s.title }));
         const summary = sections
-          .map((s: { title: string; content: string }) => `### ${s.title}\n${(s.content || "").substring(0, 1000)}`)
+          .map((s: any) => `### [ref_type="${s.section_type}"] ${s.title}\n${(s.content || "").substring(0, 1000)}`)
           .join("\n\n");
         bpBlock = `\n\n=== CONTEXTE — Business Plan lié "${bps[0].title}" ===\n${summary}\n=== FIN CONTEXTE ===`;
       }
     }
 
     let bmBlock = "";
+    let bmId: string | null = null;
+    const bmRefs: { ref_type: string; title: string }[] = [];
     const { data: bms } = await supabase
       .from("business_models")
       .select("id, title, framework")
@@ -46,24 +61,27 @@ async function fetchStrategicContext(authHeader: string | null, projectId?: stri
       .order("updated_at", { ascending: false })
       .limit(1);
     if (bms?.length) {
+      bmId = bms[0].id;
       const { data: blocks } = await supabase
         .from("business_model_blocks")
-        .select("title, content")
+        .select("block_type, title, content")
         .eq("business_model_id", bms[0].id)
         .order("sort_order");
       if (blocks?.length) {
+        blocks.forEach((b: any) => bmRefs.push({ ref_type: b.block_type, title: b.title }));
         const summary = blocks
-          .map((b: { title: string; content: string }) => `### ${b.title}\n${(b.content || "").substring(0, 600)}`)
+          .map((b: any) => `### [ref_type="${b.block_type}"] ${b.title}\n${(b.content || "").substring(0, 600)}`)
           .join("\n\n");
         bmBlock = `\n\n=== CONTEXTE — Business Model lié "${bms[0].title}" (${bms[0].framework}) ===\n${summary}\n=== FIN CONTEXTE ===`;
       }
     }
 
-    if (!bpBlock && !bmBlock) return "";
-    return `${bpBlock}${bmBlock}\n\nIMPORTANT: Tes projections budgétaires DOIVENT être cohérentes avec ces documents stratégiques (modèle économique, pricing, segments cibles, sources de revenus, structure de coûts, projections financières mentionnées).`;
+    if (!bpBlock && !bmBlock) return { ...empty, bpId, bmId };
+    const context = `${bpBlock}${bmBlock}\n\nIMPORTANT: Tes projections budgétaires DOIVENT être cohérentes avec ces documents stratégiques (modèle économique, pricing, segments cibles, sources de revenus, structure de coûts, projections financières mentionnées).`;
+    return { context, bpId, bmId, bpRefs, bmRefs };
   } catch (e) {
     console.error("Strategic context fetch error:", e);
-    return "";
+    return empty;
   }
 }
 
