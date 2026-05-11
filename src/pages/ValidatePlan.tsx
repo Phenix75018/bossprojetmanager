@@ -83,6 +83,8 @@ export default function ValidatePlan() {
   const [editingTitle, setEditingTitle] = useState(false);
   const [saving, setSaving] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
+  const [bpId, setBpId] = useState<string | null>(null);
+  const [bmId, setBmId] = useState<string | null>(null);
 
   const handleRegenerate = async () => {
     setRegenerating(true);
