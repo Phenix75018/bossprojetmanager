@@ -110,7 +110,14 @@ Deno.serve(async (req) => {
 
     const categoryList = targetCategories.map((c: string) => categoryLabels[c] || c).join(", ");
 
-    const bpContext = await fetchStrategicContext(authHeader, projectId);
+    const strat = await fetchStrategicContext(authHeader, projectId);
+    const bpContext = strat.context;
+
+    const refsHelp = (strat.bpRefs.length || strat.bmRefs.length)
+      ? `\n\nValeurs autorisées pour "ref" dans coherence_justifications :\n` +
+        (strat.bpRefs.length ? `- Business Plan (doc_type="bp") ref_type ∈ {${strat.bpRefs.map(r => `"${r.ref_type}"`).join(", ")}}\n` : "") +
+        (strat.bmRefs.length ? `- Business Model (doc_type="bm") ref_type ∈ {${strat.bmRefs.map(r => `"${r.ref_type}"`).join(", ")}}` : "")
+      : "";
 
     const systemPrompt = `Tu es un expert-comptable et analyste financier. Tu génères des budgets prévisionnels professionnels et réalistes.
 Tu dois répondre UNIQUEMENT en JSON valide, sans texte avant/après.
@@ -127,7 +134,10 @@ Format attendu :
     }
   ],
   "coherence_justifications": [
-    "Phrase courte expliquant comment un montant/structure du budget découle d'un élément précis du Business Plan ou du Business Model lié (cite le nom de la section/bloc et l'élément concerné)."
+    {
+      "text": "Phrase courte expliquant comment un montant/structure du budget découle d'un élément précis du BP/BM.",
+      "ref": { "doc_type": "bp" | "bm", "ref_type": "<id de section ou de bloc>", "ref_title": "Titre lisible de la section/bloc" }
+    }
   ]
 }
 
@@ -140,7 +150,7 @@ Règles :
 - Pour les charges, utilise des valeurs négatives
 - Pour la trésorerie, calcule le solde cumulé
 - Pour les investissements, inclus les amortissements
-- "coherence_justifications" : 4 à 8 puces concrètes liant des montants/lignes à des éléments précis du BP/BM (ex: pricing, segments, structure de coûts, sources de revenus, jalons financiers). Si aucun BP/BM n'est fourni, retourne un tableau vide [].`;
+- "coherence_justifications" : 4 à 8 objets liant des montants/lignes à des éléments précis du BP/BM. Chaque objet DOIT contenir un "ref" pointant vers une section BP ou un bloc BM existant. Si aucun BP/BM n'est fourni, retourne [].${refsHelp}`;
 
     const userPrompt = `Génère un budget prévisionnel professionnel sur ${horizonMonths} mois pour les catégories suivantes : ${categoryList}.
 
