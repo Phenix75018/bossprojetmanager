@@ -22,14 +22,26 @@ interface Props {
   variant?: "card" | "panel";
 }
 
-function buildHref(ref: JustifRef, bpId?: string | null, bmId?: string | null): string | null {
+/**
+ * Resolve a justification ref to a canonical link.
+ * Returns `{ href, normalizedType }` when the ref_type matches a known
+ * BP section_type / BM block_type, otherwise `{ href: null, normalizedType: null }`
+ * so the UI can flag the link as invalid instead of producing a broken URL.
+ */
+function resolveRef(
+  ref: JustifRef,
+  bpId?: string | null,
+  bmId?: string | null,
+): { href: string | null; normalizedType: string | null } {
+  const normalizedType = normalizeRefType(ref.ref_type, ref.doc_type);
+  if (!normalizedType) return { href: null, normalizedType: null };
   if (ref.doc_type === "bp" && bpId) {
-    return `/business-plan/${bpId}?section=${encodeURIComponent(ref.ref_type)}`;
+    return { href: `/business-plan/${bpId}?section=${encodeURIComponent(normalizedType)}`, normalizedType };
   }
   if (ref.doc_type === "bm" && bmId) {
-    return `/business-model/${bmId}?block=${encodeURIComponent(ref.ref_type)}`;
+    return { href: `/business-model/${bmId}?block=${encodeURIComponent(normalizedType)}`, normalizedType };
   }
-  return null;
+  return { href: null, normalizedType };
 }
 
 function toObject(j: Justif): { text: string; ref?: JustifRef } {
