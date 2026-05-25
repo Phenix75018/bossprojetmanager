@@ -526,6 +526,7 @@ export default function ValidatePlan() {
           items={plan.coherence_justifications || []}
           bpId={bpId}
           bmId={bmId}
+          onChange={(items) => setPlan({ ...plan, coherence_justifications: items })}
         />
 
         {/* Actions */}
