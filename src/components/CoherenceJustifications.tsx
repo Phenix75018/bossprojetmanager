@@ -127,7 +127,9 @@ export default function CoherenceJustifications({ items, bpId, bmId, onClose, on
         {items.map((j, i) => {
           const obj = toObject(j);
           const { text, ref } = obj;
-          const href = ref ? buildHref(ref, bpId, bmId) : null;
+          const resolved = ref ? resolveRef(ref, bpId, bmId) : { href: null, normalizedType: null };
+          const href = resolved.href;
+          const invalidRef = !!ref && resolved.normalizedType === null;
           const isEditing = editingIndex === i;
 
           if (isEditing) {
