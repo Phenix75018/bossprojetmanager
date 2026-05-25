@@ -262,6 +262,7 @@ export default function BudgetDetail() {
           bpId={bpId}
           bmId={bmId}
           onClose={() => setCoherenceJustifs([])}
+          onChange={setCoherenceJustifs}
           variant="card"
         />
 
