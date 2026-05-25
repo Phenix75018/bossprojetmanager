@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Sparkles, ExternalLink, Pencil, Check, X, Trash2, Plus } from "lucide-react";
+import { Sparkles, ExternalLink, Pencil, Check, X, Trash2, Plus, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { normalizeRefType } from "@/lib/strategicRefs";
 
 export type JustifRef = {
   doc_type: "bp" | "bm";
@@ -21,14 +22,26 @@ interface Props {
   variant?: "card" | "panel";
 }
 
-function buildHref(ref: JustifRef, bpId?: string | null, bmId?: string | null): string | null {
+/**
+ * Resolve a justification ref to a canonical link.
+ * Returns `{ href, normalizedType }` when the ref_type matches a known
+ * BP section_type / BM block_type, otherwise `{ href: null, normalizedType: null }`
+ * so the UI can flag the link as invalid instead of producing a broken URL.
+ */
+function resolveRef(
+  ref: JustifRef,
+  bpId?: string | null,
+  bmId?: string | null,
+): { href: string | null; normalizedType: string | null } {
+  const normalizedType = normalizeRefType(ref.ref_type, ref.doc_type);
+  if (!normalizedType) return { href: null, normalizedType: null };
   if (ref.doc_type === "bp" && bpId) {
-    return `/business-plan/${bpId}?section=${encodeURIComponent(ref.ref_type)}`;
+    return { href: `/business-plan/${bpId}?section=${encodeURIComponent(normalizedType)}`, normalizedType };
   }
   if (ref.doc_type === "bm" && bmId) {
-    return `/business-model/${bmId}?block=${encodeURIComponent(ref.ref_type)}`;
+    return { href: `/business-model/${bmId}?block=${encodeURIComponent(normalizedType)}`, normalizedType };
   }
-  return null;
+  return { href: null, normalizedType };
 }
 
 function toObject(j: Justif): { text: string; ref?: JustifRef } {
@@ -114,7 +127,9 @@ export default function CoherenceJustifications({ items, bpId, bmId, onClose, on
         {items.map((j, i) => {
           const obj = toObject(j);
           const { text, ref } = obj;
-          const href = ref ? buildHref(ref, bpId, bmId) : null;
+          const resolved = ref ? resolveRef(ref, bpId, bmId) : { href: null, normalizedType: null };
+          const href = resolved.href;
+          const invalidRef = !!ref && resolved.normalizedType === null;
           const isEditing = editingIndex === i;
 
           if (isEditing) {
@@ -167,9 +182,14 @@ export default function CoherenceJustifications({ items, bpId, bmId, onClose, on
                         <ExternalLink className="w-3 h-3" />
                       </Link>
                     ) : (
-                      <span className="text-muted-foreground italic">
+                      <span
+                        className={`inline-flex items-center gap-1 italic ${invalidRef ? "text-destructive" : "text-muted-foreground"}`}
+                        title={invalidRef ? `Référence invalide : "${ref.ref_type}" ne correspond à aucun ${ref.doc_type === "bp" ? "section_type" : "block_type"} connu.` : undefined}
+                      >
+                        {invalidRef && <AlertCircle className="w-3 h-3" />}
                         ({ref.doc_type === "bp" ? "BP" : "BM"}
-                        {ref.ref_title ? ` — ${ref.ref_title}` : ""})
+                        {ref.ref_title ? ` — ${ref.ref_title}` : ""}
+                        {invalidRef ? " — référence invalide" : ""})
                       </span>
                     )}
                   </>

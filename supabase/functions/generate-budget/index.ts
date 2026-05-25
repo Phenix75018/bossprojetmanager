@@ -8,6 +8,67 @@ const corsHeaders = {
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 const LOVABLE_API_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
+// --- ref_type normalization (mirror of src/lib/strategicRefs.ts) ---
+const BP_SECTION_TYPES = ["executive_summary","market_analysis","business_strategy","financial_plan","best_practices"];
+const BM_BLOCK_TYPES = ["key_partners","key_activities","key_resources","value_propositions","customer_relationships","channels","customer_segments","cost_structure","revenue_streams","problem","solution","unique_value","unfair_advantage","key_metrics"];
+
+function slugifyRefType(raw: string): string {
+  return (raw || "").toString().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim()
+    .replace(/[\s\-./]+/g,"_").replace(/[^a-z0-9_]/g,"").replace(/_+/g,"_").replace(/^_|_$/g,"");
+}
+
+function normalizeRef(refType: string | undefined, docType: "bp" | "bm", refTitle: string | undefined, allowed: { ref_type: string; title: string }[]): string | null {
+  const canonical = docType === "bp" ? BP_SECTION_TYPES : BM_BLOCK_TYPES;
+  const slug = slugifyRefType(refType || "");
+  if (slug && canonical.includes(slug)) return slug;
+  // Try canonical match via slugified comparison
+  if (slug) {
+    for (const c of canonical) if (slugifyRefType(c) === slug) return c;
+  }
+  // Try matching against the actual live refs (handles unknown extensions)
+  for (const r of allowed) {
+    if (slugifyRefType(r.ref_type) === slug) return r.ref_type;
+  }
+  // Fallback: fuzzy match on ref_title
+  const titleSlug = slugifyRefType(refTitle || "");
+  if (titleSlug) {
+    for (const r of allowed) {
+      if (slugifyRefType(r.title) === titleSlug) return r.ref_type;
+    }
+  }
+  return null;
+}
+
+function normalizeJustifications(items: any, bpRefs: { ref_type: string; title: string }[], bmRefs: { ref_type: string; title: string }[]): any[] {
+  if (!Array.isArray(items)) return [];
+  return items
+    .map((j) => {
+      if (typeof j === "string") return { text: j };
+      if (!j || typeof j !== "object") return null;
+      const text = typeof j.text === "string" ? j.text : "";
+      if (!text) return null;
+      if (!j.ref || typeof j.ref !== "object") return { text };
+      const docType = j.ref.doc_type === "bp" || j.ref.doc_type === "bm" ? j.ref.doc_type : null;
+      if (!docType) return { text };
+      const allowed = docType === "bp" ? bpRefs : bmRefs;
+      const normalized = normalizeRef(j.ref.ref_type, docType, j.ref.ref_title, allowed);
+      if (!normalized) {
+        // Drop the broken ref so the UI doesn't render a dead link.
+        return { text };
+      }
+      const titleFromAllowed = allowed.find((r) => r.ref_type === normalized)?.title;
+      return {
+        text,
+        ref: {
+          doc_type: docType,
+          ref_type: normalized,
+          ref_title: j.ref.ref_title || titleFromAllowed || normalized,
+        },
+      };
+    })
+    .filter(Boolean);
+}
+
 interface StratResult {
   context: string;
   bpId: string | null;
@@ -191,6 +252,10 @@ Génère des lignes budgétaires détaillées et réalistes avec des montants co
     if (jsonMatch) content = jsonMatch[1].trim();
 
     const parsed = JSON.parse(content);
+
+    if (parsed && Array.isArray(parsed.coherence_justifications)) {
+      parsed.coherence_justifications = normalizeJustifications(parsed.coherence_justifications, strat.bpRefs, strat.bmRefs);
+    }
 
     return new Response(
       JSON.stringify({
