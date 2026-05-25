@@ -253,6 +253,10 @@ Génère des lignes budgétaires détaillées et réalistes avec des montants co
 
     const parsed = JSON.parse(content);
 
+    if (parsed && Array.isArray(parsed.coherence_justifications)) {
+      parsed.coherence_justifications = normalizeJustifications(parsed.coherence_justifications, strat.bpRefs, strat.bmRefs);
+    }
+
     return new Response(
       JSON.stringify({
         ...parsed,
