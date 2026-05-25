@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Sparkles, ExternalLink, Pencil, Check, X, Trash2, Plus } from "lucide-react";
+import { Sparkles, ExternalLink, Pencil, Check, X, Trash2, Plus, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { normalizeRefType } from "@/lib/strategicRefs";
 
 export type JustifRef = {
   doc_type: "bp" | "bm";
