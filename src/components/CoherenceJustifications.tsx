@@ -182,9 +182,14 @@ export default function CoherenceJustifications({ items, bpId, bmId, onClose, on
                         <ExternalLink className="w-3 h-3" />
                       </Link>
                     ) : (
-                      <span className="text-muted-foreground italic">
+                      <span
+                        className={`inline-flex items-center gap-1 italic ${invalidRef ? "text-destructive" : "text-muted-foreground"}`}
+                        title={invalidRef ? `Référence invalide : "${ref.ref_type}" ne correspond à aucun ${ref.doc_type === "bp" ? "section_type" : "block_type"} connu.` : undefined}
+                      >
+                        {invalidRef && <AlertCircle className="w-3 h-3" />}
                         ({ref.doc_type === "bp" ? "BP" : "BM"}
-                        {ref.ref_title ? ` — ${ref.ref_title}` : ""})
+                        {ref.ref_title ? ` — ${ref.ref_title}` : ""}
+                        {invalidRef ? " — référence invalide" : ""})
                       </span>
                     )}
                   </>
