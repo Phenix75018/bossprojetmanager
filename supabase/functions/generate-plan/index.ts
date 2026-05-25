@@ -274,6 +274,10 @@ Type: ${isProfessional ? "Professionnel" : "Personnel"}
       throw new Error("Failed to parse AI response as JSON");
     }
 
+    if (plan && Array.isArray(plan.coherence_justifications)) {
+      plan.coherence_justifications = normalizeJustifications(plan.coherence_justifications, bpRefs, bmRefs);
+    }
+
     return new Response(JSON.stringify({ plan, bp_id: bpId, bm_id: bmId }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
