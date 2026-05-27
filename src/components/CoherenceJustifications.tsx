@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Sparkles, ExternalLink, Pencil, Check, X, Trash2, Plus, AlertCircle } from "lucide-react";
+import { Sparkles, ExternalLink, Pencil, Check, X, Trash2, Plus, AlertCircle, Link2, Copy } from "lucide-react";
+import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -53,6 +54,16 @@ export default function CoherenceJustifications({ items, bpId, bmId, onClose, on
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [draftText, setDraftText] = useState("");
   const [draftRefTitle, setDraftRefTitle] = useState("");
+
+  const copyLink = async (href: string) => {
+    try {
+      const url = `${window.location.origin}${href}`;
+      await navigator.clipboard.writeText(url);
+      toast.success("Lien copié dans le presse-papiers");
+    } catch {
+      toast.error("Impossible de copier le lien");
+    }
+  };
 
   if ((!items || items.length === 0) && !editable) return null;
 
@@ -173,14 +184,25 @@ export default function CoherenceJustifications({ items, bpId, bmId, onClose, on
                   <>
                     {" "}
                     {href ? (
-                      <Link
-                        to={href}
-                        className="inline-flex items-center gap-1 text-primary hover:underline font-medium"
-                      >
-                        {ref.doc_type === "bp" ? "Voir BP" : "Voir BM"}
-                        {ref.ref_title ? ` — ${ref.ref_title}` : ""}
-                        <ExternalLink className="w-3 h-3" />
-                      </Link>
+                      <>
+                        <Link
+                          to={href}
+                          className="inline-flex items-center gap-1 text-primary hover:underline font-medium"
+                        >
+                          {ref.doc_type === "bp" ? "Voir BP" : "Voir BM"}
+                          {ref.ref_title ? ` — ${ref.ref_title}` : ""}
+                          <ExternalLink className="w-3 h-3" />
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => copyLink(href)}
+                          className="ml-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
+                          title="Copier le lien vers cette section"
+                        >
+                          <Copy className="w-3 h-3" />
+                          Copier le lien
+                        </button>
+                      </>
                     ) : (
                       <span
                         className={`inline-flex items-center gap-1 italic ${invalidRef ? "text-destructive" : "text-muted-foreground"}`}
