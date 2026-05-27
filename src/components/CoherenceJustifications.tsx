@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Sparkles, ExternalLink, Pencil, Check, X, Trash2, Plus, AlertCircle } from "lucide-react";
+import { Sparkles, ExternalLink, Pencil, Check, X, Trash2, Plus, AlertCircle, Link2, Copy } from "lucide-react";
+import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
