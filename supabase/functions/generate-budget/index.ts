@@ -8,35 +8,17 @@ const corsHeaders = {
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 const LOVABLE_API_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
-// --- ref_type normalization (mirror of src/lib/strategicRefs.ts) ---
-const BP_SECTION_TYPES = ["executive_summary","market_analysis","business_strategy","financial_plan","best_practices"];
-const BM_BLOCK_TYPES = ["key_partners","key_activities","key_resources","value_propositions","customer_relationships","channels","customer_segments","cost_structure","revenue_streams","problem","solution","unique_value","unfair_advantage","key_metrics"];
+// Shared ref_type normalization — single source of truth used by both the
+// client (src/lib/strategicRefs.ts re-exports) and edge functions.
+import { normalizeRefWithFallback } from "../_shared/strategicRefs.ts";
 
-function slugifyRefType(raw: string): string {
-  return (raw || "").toString().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim()
-    .replace(/[\s\-./]+/g,"_").replace(/[^a-z0-9_]/g,"").replace(/_+/g,"_").replace(/^_|_$/g,"");
-}
-
-function normalizeRef(refType: string | undefined, docType: "bp" | "bm", refTitle: string | undefined, allowed: { ref_type: string; title: string }[]): string | null {
-  const canonical = docType === "bp" ? BP_SECTION_TYPES : BM_BLOCK_TYPES;
-  const slug = slugifyRefType(refType || "");
-  if (slug && canonical.includes(slug)) return slug;
-  // Try canonical match via slugified comparison
-  if (slug) {
-    for (const c of canonical) if (slugifyRefType(c) === slug) return c;
-  }
-  // Try matching against the actual live refs (handles unknown extensions)
-  for (const r of allowed) {
-    if (slugifyRefType(r.ref_type) === slug) return r.ref_type;
-  }
-  // Fallback: fuzzy match on ref_title
-  const titleSlug = slugifyRefType(refTitle || "");
-  if (titleSlug) {
-    for (const r of allowed) {
-      if (slugifyRefType(r.title) === titleSlug) return r.ref_type;
-    }
-  }
-  return null;
+function normalizeRef(
+  refType: string | undefined,
+  docType: "bp" | "bm",
+  refTitle: string | undefined,
+  allowed: { ref_type: string; title: string }[],
+): string | null {
+  return normalizeRefWithFallback(refType, docType, refTitle, allowed);
 }
 
 function normalizeJustifications(items: any, bpRefs: { ref_type: string; title: string }[], bmRefs: { ref_type: string; title: string }[]): any[] {

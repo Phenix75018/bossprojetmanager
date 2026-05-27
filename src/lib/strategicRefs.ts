@@ -1,75 +1,14 @@
-// Canonical ref_type identifiers for Business Plan sections and Business Model blocks.
-// Used to normalize/validate `ref.ref_type` in coherence justifications so that
-// clickable links always resolve to a real section/block.
-
-export const BP_SECTION_TYPES = [
-  "executive_summary",
-  "market_analysis",
-  "business_strategy",
-  "financial_plan",
-  "best_practices",
-] as const;
-
-export const BM_BLOCK_TYPES = [
-  // BMC
-  "key_partners",
-  "key_activities",
-  "key_resources",
-  "value_propositions",
-  "customer_relationships",
-  "channels",
-  "customer_segments",
-  "cost_structure",
-  "revenue_streams",
-  // Lean (delta)
-  "problem",
-  "solution",
-  "unique_value",
-  "unfair_advantage",
-  "key_metrics",
-] as const;
-
-export type BPSectionType = (typeof BP_SECTION_TYPES)[number];
-export type BMBlockType = (typeof BM_BLOCK_TYPES)[number];
-
-const BP_SET = new Set<string>(BP_SECTION_TYPES);
-const BM_SET = new Set<string>(BM_BLOCK_TYPES);
-
-/** Lowercase, strip accents, replace separators by `_`, collapse repeats. */
-export function slugifyRefType(raw: string): string {
-  return (raw || "")
-    .toString()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim()
-    .replace(/[\s\-./]+/g, "_")
-    .replace(/[^a-z0-9_]/g, "")
-    .replace(/_+/g, "_")
-    .replace(/^_|_$/g, "");
-}
-
-/**
- * Normalize a raw ref_type to a canonical BP section_type or BM block_type.
- * Returns null when no canonical match is found.
- * `extraAllowed` lets callers (e.g. components with access to live DB data)
- * accept additional valid identifiers beyond the static canonical list.
- */
-export function normalizeRefType(
-  refType: string | undefined | null,
-  docType: "bp" | "bm",
-  extraAllowed?: Iterable<string>,
-): string | null {
-  if (!refType) return null;
-  const slug = slugifyRefType(refType);
-  if (!slug) return null;
-
-  const canonical = docType === "bp" ? BP_SET : BM_SET;
-  if (canonical.has(slug)) return slug;
-  if (extraAllowed) {
-    for (const v of extraAllowed) {
-      if (slugifyRefType(v) === slug) return v;
-    }
-  }
-  return null;
-}
+// Re-export the canonical strategic refs module shared with edge functions.
+// The single source of truth lives in supabase/functions/_shared/strategicRefs.ts
+// so client and server normalization can never diverge.
+export {
+  BP_SECTION_TYPES,
+  BM_BLOCK_TYPES,
+  slugifyRefType,
+  normalizeRefType,
+  normalizeRefWithFallback,
+} from "../../supabase/functions/_shared/strategicRefs";
+export type {
+  BPSectionType,
+  BMBlockType,
+} from "../../supabase/functions/_shared/strategicRefs";
