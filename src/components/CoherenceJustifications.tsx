@@ -55,6 +55,16 @@ export default function CoherenceJustifications({ items, bpId, bmId, onClose, on
   const [draftText, setDraftText] = useState("");
   const [draftRefTitle, setDraftRefTitle] = useState("");
 
+  const copyLink = async (href: string) => {
+    try {
+      const url = `${window.location.origin}${href}`;
+      await navigator.clipboard.writeText(url);
+      toast.success("Lien copié dans le presse-papiers");
+    } catch {
+      toast.error("Impossible de copier le lien");
+    }
+  };
+
   if ((!items || items.length === 0) && !editable) return null;
 
   const startEdit = (i: number) => {
