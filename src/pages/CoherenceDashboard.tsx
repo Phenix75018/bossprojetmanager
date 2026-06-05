@@ -13,7 +13,9 @@ import {
   FolderKanban,
   Loader2,
   Sparkles,
+  CalendarPlus,
 } from "lucide-react";
+import { toast } from "sonner";
 import Navbar from "@/components/layout/Navbar";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -83,6 +85,7 @@ export default function CoherenceDashboard() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
 
   useEffect(() => {
@@ -333,6 +336,67 @@ export default function CoherenceDashboard() {
     setAnalyzing(false);
   }
 
+  async function syncToCalendar() {
+    if (!user || !analysis || !selectedId) return;
+    const actionable = analysis.alerts.filter((a) => a.severity !== "info");
+    if (actionable.length === 0) {
+      toast.info("Aucune alerte à synchroniser — cohérence optimale ✨");
+      return;
+    }
+    setSyncing(true);
+    try {
+      const marker = `[coherence-sync:${selectedId}]`;
+
+      // Remove previously synced coherence events for this project to stay idempotent.
+      const { data: existing } = await supabase
+        .from("calendar_events")
+        .select("id, description")
+        .eq("user_id", user.id)
+        .eq("project_id", selectedId)
+        .like("description", `${marker}%`);
+      if (existing && existing.length > 0) {
+        await supabase
+          .from("calendar_events")
+          .delete()
+          .in("id", existing.map((e) => e.id));
+      }
+
+      // Schedule one all-day event per actionable alert, starting tomorrow,
+      // staggered one day apart so they appear as a "to-prioritize" backlog.
+      const start = new Date();
+      start.setDate(start.getDate() + 1);
+      start.setHours(9, 0, 0, 0);
+
+      const rows = actionable.map((a, i) => {
+        const day = new Date(start);
+        day.setDate(start.getDate() + i);
+        const end = new Date(day);
+        end.setHours(10, 0, 0, 0);
+        const prefix = a.severity === "error" ? "🔴" : "🟠";
+        return {
+          user_id: user.id,
+          project_id: selectedId,
+          title: `${prefix} À prioriser : ${a.title}`,
+          description: `${marker} ${a.description}${a.href ? `\n\nLien : ${a.href}` : ""}`,
+          start_time: day.toISOString(),
+          end_time: end.toISOString(),
+          all_day: false,
+          color: a.severity === "error" ? "#ef4444" : "#f59e0b",
+        };
+      });
+
+      const { error } = await supabase.from("calendar_events").insert(rows);
+      if (error) throw error;
+      toast.success(
+        `${rows.length} tâche${rows.length > 1 ? "s" : ""} à prioriser ajoutée${rows.length > 1 ? "s" : ""} au calendrier`,
+      );
+    } catch (e: any) {
+      toast.error(e?.message || "Échec de la synchronisation");
+    } finally {
+      setSyncing(false);
+    }
+  }
+
   const scoreColor = useMemo(() => {
     if (!analysis) return "text-muted-foreground";
     if (analysis.score >= 80) return "text-emerald-500";
@@ -434,9 +498,23 @@ export default function CoherenceDashboard() {
 
                 {/* Alerts */}
                 <div className="lg:col-span-2 space-y-3">
-                  <h2 className="font-display font-bold text-lg">
-                    Alertes & recommandations ({analysis.alerts.length})
-                  </h2>
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <h2 className="font-display font-bold text-lg">
+                      Alertes & recommandations ({analysis.alerts.length})
+                    </h2>
+                    <button
+                      onClick={syncToCalendar}
+                      disabled={syncing}
+                      className="inline-flex items-center gap-2 gradient-bg text-primary-foreground px-4 py-2 rounded-xl text-xs font-bold hover:opacity-90 transition-opacity disabled:opacity-60"
+                    >
+                      {syncing ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <CalendarPlus className="w-3.5 h-3.5" />
+                      )}
+                      Synchroniser au calendrier
+                    </button>
+                  </div>
                   {analysis.alerts.map((a, i) => (
                     <motion.div
                       key={i}
