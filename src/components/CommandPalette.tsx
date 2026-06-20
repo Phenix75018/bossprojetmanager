@@ -281,7 +281,7 @@ export function CommandPalette() {
   ];
 
   return (
-    <CommandDialog open={open} onOpenChange={setOpen}>
+    <CommandDialog open={open} onOpenChange={setOpen} shouldFilter={false}>
       <CommandInput
         placeholder="Rechercher projets, tâches, sections…  (Ctrl/Cmd + K)"
         value={query}
@@ -304,7 +304,7 @@ export function CommandPalette() {
           </button>
         ))}
       </div>
-      <CommandList shouldFilter={false as any}>
+      <CommandList>
         <CommandEmpty>{loading ? "Chargement…" : "Aucun résultat."}</CommandEmpty>
 
         {filter === "all" && !query.trim() && (
