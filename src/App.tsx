@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ThemeProvider } from "next-themes";
 import { NotificationInitializer } from "@/components/NotificationInitializer";
 import { CopilotWidget } from "@/components/CopilotWidget";
+import { CommandPalette } from "@/components/CommandPalette";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
@@ -157,6 +158,7 @@ const AppRoutes = () => (
       <Route path="*" element={<NotFound />} />
     </Routes>
     <CopilotWidget />
+    <CommandPalette />
   </BrowserRouter>
 );
 

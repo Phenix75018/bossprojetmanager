@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { FolderKanban, CalendarDays, Zap, LogOut, User, Link2, FileText, LayoutGrid, DollarSign, ShieldCheck } from "lucide-react";
+import { FolderKanban, CalendarDays, Zap, LogOut, User, Link2, FileText, LayoutGrid, DollarSign, ShieldCheck, Search } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import ThemeToggle from "@/components/ThemeToggle";
 
@@ -61,6 +61,17 @@ export default function Navbar() {
         </nav>
 
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              const ev = new KeyboardEvent("keydown", { key: "k", ctrlKey: true, bubbles: true });
+              window.dispatchEvent(ev);
+            }}
+            title="Rechercher (Ctrl/Cmd + K)"
+            className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground border border-border/60 hover:border-border transition-colors">
+            <Search className="w-3.5 h-3.5" />
+            <span>Rechercher</span>
+            <kbd className="ml-1 px-1.5 py-0.5 rounded bg-muted text-[10px] font-mono">⌘K</kbd>
+          </button>
           <ThemeToggle />
           {user ?
           <>
