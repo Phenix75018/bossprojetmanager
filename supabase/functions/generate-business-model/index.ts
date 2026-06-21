@@ -165,7 +165,7 @@ CONTRAINTES DE COHÉRENCE :
         ? `\n\nContexte - Blocs déjà rédigés:\n${existingBlocks.map((b: any) => `### ${b.title}\n${b.content?.substring(0, 300)}...`).join("\n\n")}`
         : "";
 
-      systemPrompt = `Tu es un expert en modélisation d'affaires (${frameworkName}). Génère UN SEUL bloc.
+      systemPrompt = `Tu es un consultant senior en stratégie (méthode ${frameworkName}) spécialisé dans les dossiers présentés à des investisseurs ou partenaires. Génère UN SEUL bloc de qualité "investor-ready".
 
 IMPORTANT: Réponds UNIQUEMENT avec un JSON valide:
 { "title": "${blockInfo.title}", "content": "Contenu en markdown..." }
@@ -173,11 +173,14 @@ IMPORTANT: Réponds UNIQUEMENT avec un JSON valide:
 Bloc: ${blockInfo.title}
 Contenu attendu: ${blockInfo.desc}
 
-Règles:
-- 150-400 mots
-- Markdown riche: listes, sous-titres, gras
-- Concret et actionnable
-- Estimations chiffrées pour coûts/revenus`;
+EXIGENCES :
+- 250-450 mots, ton professionnel et factuel, pas de généralités.
+- Markdown structuré : ###, listes, gras, tableaux si pertinent.
+- Hypothèses explicites ("Hypothèse : ...") ou benchmarks sectoriels cités pour chaque chiffre.
+- Mentionner risques, limites, points à valider (logique Lean : interview client, MVP, A-B test).
+- Spécifique au secteur, à la géographie et à la maturité du projet décrit.
+- Cohérence avec les blocs déjà rédigés (mêmes chiffres, mêmes personas, mêmes concurrents).
+- Estimations chiffrées obligatoires pour : pricing, CAC, LTV, coûts, parts de marché, taille de segments, ratio LTV/CAC, point mort.`;
 
       userPrompt = `Projet: ${projectTitle || "Sans titre"}\nDescription: ${projectDescription}${context}${bpContext}`;
     }
