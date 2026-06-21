@@ -16,6 +16,67 @@ detected. Jobs:
 A weekly cron also runs the full scan to catch newly disclosed CVEs against
 unchanged code.
 
+## Branch protection (required setup)
+
+To **enforce** that Security Scan must pass before merging into `main`,
+configure branch protection on GitHub (one-time setup, requires admin rights):
+
+### Option A — GitHub UI
+
+1. Go to **Settings → Branches → Branch protection rules → Add rule**.
+2. **Branch name pattern**: `main`.
+3. Enable **Require a pull request before merging**
+   - Require at least **1 approval** (recommended).
+   - Enable **Dismiss stale approvals when new commits are pushed**.
+4. Enable **Require status checks to pass before merging**
+   - Enable **Require branches to be up to date before merging**.
+   - In the search box, add these required checks (run the workflow once on a PR first so they appear):
+     - `Dependency audit`
+     - `Secret scan (gitleaks)`
+     - `CodeQL static analysis`
+     - `Supabase migration checks`
+5. Enable **Require conversation resolution before merging**.
+6. Enable **Do not allow bypassing the above settings** (applies rules to admins too).
+7. (Optional) Enable **Require signed commits** and **Require linear history**.
+8. Click **Create** / **Save changes**.
+
+Also enable **Settings → Code security and analysis**:
+- **Dependency graph** ✅
+- **Dependabot alerts** ✅
+- **Dependabot security updates** ✅
+- **Code scanning** ✅ (so CodeQL/gitleaks findings appear in the Security tab and annotate PRs)
+- **Secret scanning** + **Push protection** ✅
+
+### Option B — GitHub CLI
+
+```sh
+gh api -X PUT "repos/:owner/:repo/branches/main/protection" \
+  -H "Accept: application/vnd.github+json" \
+  -f required_status_checks.strict=true \
+  -F 'required_status_checks.contexts[]=Dependency audit' \
+  -F 'required_status_checks.contexts[]=Secret scan (gitleaks)' \
+  -F 'required_status_checks.contexts[]=CodeQL static analysis' \
+  -F 'required_status_checks.contexts[]=Supabase migration checks' \
+  -F enforce_admins=true \
+  -F 'required_pull_request_reviews.required_approving_review_count=1' \
+  -F required_pull_request_reviews.dismiss_stale_reviews=true \
+  -F required_conversation_resolution=true \
+  -F allow_force_pushes=false \
+  -F allow_deletions=false \
+  -f restrictions=
+```
+
+### Option C — Rulesets (modern alternative)
+
+For organizations, prefer **Settings → Rules → Rulesets → New branch ruleset**
+targeting `main` with the same required status checks. Rulesets support
+inheritance across repositories and clearer bypass auditing.
+
+> ⚠️ Status check names must match the **job `name:`** values in
+> `.github/workflows/security.yml` exactly. If you rename a job there, update
+> the protection rule too — otherwise the old check stays "required" forever
+> and blocks every PR.
+
 ## Dependabot
 
 `.github/dependabot.yml` opens weekly PRs for npm and GitHub Actions updates.
