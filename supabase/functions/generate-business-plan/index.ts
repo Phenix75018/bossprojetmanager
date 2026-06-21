@@ -55,49 +55,79 @@ serve(async (req) => {
     let userPrompt: string;
 
     if (mode === "full") {
-      systemPrompt = `Tu es un expert en création de business plans professionnels. L'utilisateur te décrit son projet et tu dois générer un business plan complet et détaillé.
+      systemPrompt = `Tu es un consultant senior en stratégie (ex-Big Four / banque d'affaires) spécialisé dans la rédaction de business plans destinés à des demandes de financement (banques, BPI, business angels, VCs) ou de partenariats stratégiques. Tu rédiges des documents de qualité "investor-ready" qui peuvent être présentés tels quels en comité de crédit ou en due diligence.
 
 IMPORTANT: Tu dois répondre UNIQUEMENT avec un JSON valide, sans aucun texte avant ou après.
 
 Le format JSON doit être:
 {
   "sections": [
-    {
-      "type": "executive_summary",
-      "title": "Résumé exécutif",
-      "content": "Contenu détaillé en markdown..."
-    },
-    {
-      "type": "market_analysis",
-      "title": "Analyse de marché",
-      "content": "Contenu détaillé en markdown..."
-    },
-    {
-      "type": "business_strategy",
-      "title": "Stratégie commerciale",
-      "content": "Contenu détaillé en markdown..."
-    },
-    {
-      "type": "financial_plan",
-      "title": "Plan financier",
-      "content": "Contenu détaillé en markdown avec tableaux..."
-    },
-    {
-      "type": "best_practices",
-      "title": "Meilleures pratiques du secteur",
-      "content": "Contenu détaillé en markdown..."
-    }
+    { "type": "executive_summary", "title": "Résumé exécutif", "content": "Contenu détaillé en markdown..." },
+    { "type": "market_analysis", "title": "Analyse de marché", "content": "Contenu détaillé en markdown..." },
+    { "type": "business_strategy", "title": "Stratégie commerciale", "content": "Contenu détaillé en markdown..." },
+    { "type": "financial_plan", "title": "Plan financier", "content": "Contenu détaillé en markdown avec tableaux..." },
+    { "type": "best_practices", "title": "Meilleures pratiques du secteur", "content": "Contenu détaillé en markdown..." }
   ]
 }
 
-Règles:
-- Chaque section doit faire au minimum 500 mots
-- Utilise du markdown riche : titres, sous-titres, listes, tableaux, gras, italique
-- Le plan financier doit contenir des tableaux de projections chiffrées
-- L'analyse de marché doit inclure une matrice SWOT en tableau
-- Sois très professionnel, structuré et détaillé
-- Utilise des données réalistes et des estimations crédibles
-- Adapte le contenu au secteur d'activité du projet`;
+EXIGENCES DE QUALITÉ — niveau présentation à un financeur ou partenaire :
+- Chaque section : minimum 700 mots, structurée avec titres (##), sous-titres (###), listes, tableaux markdown, gras pour les chiffres clés.
+- Ton : professionnel, neutre, factuel, sans superlatifs creux ("révolutionnaire", "incroyable"). Privilégier la précision et la nuance.
+- Chaque affirmation chiffrée doit être justifiée par une hypothèse explicite ("Hypothèse : ...") ou une référence sectorielle plausible (rapport type Xerfi, INSEE, Statista, études sectorielles).
+- Mentionner les limites et risques de chaque analyse — un financeur attend de l'honnêteté intellectuelle.
+
+CONTENU OBLIGATOIRE PAR SECTION :
+
+1. Résumé exécutif (executive_summary) :
+   - Pitch en 3 lignes maximum (problème → solution → traction)
+   - Mission, vision, valeurs
+   - Proposition de valeur unique (UVP) avec différenciation claire
+   - Équipe fondatrice (compétences clés, complémentarité)
+   - Demande de financement chiffrée (montant, usage des fonds, durée, contrepartie envisagée si equity)
+   - Indicateurs financiers clés (CA Année 3, EBITDA, point mort, ROI)
+
+2. Analyse de marché (market_analysis) :
+   - Tailles de marché chiffrées : TAM / SAM / SOM (avec méthode de calcul top-down ET bottom-up)
+   - Segmentation clients + personas détaillés (3 personas minimum avec démographie, douleurs, parcours d'achat)
+   - Tendances macro (PESTEL synthétique : Politique, Économique, Social, Technologique, Environnemental, Légal)
+   - Matrice SWOT en tableau markdown 2x2 (5 éléments minimum par quadrant)
+   - Analyse concurrentielle : tableau comparatif (3-5 concurrents directs/indirects, axes : prix, positionnement, parts de marché estimées, forces, faiblesses)
+   - 5 forces de Porter (intensité notée /5 pour chaque force, justification)
+   - Barrières à l'entrée et avantages concurrentiels durables (moat)
+
+3. Stratégie commerciale (business_strategy) :
+   - Modèle économique détaillé (mécanique de monétisation, unit economics : CAC, LTV, ratio LTV/CAC cible >3)
+   - Stratégie de pricing (méthode : cost-plus, value-based, competitive ; tableau des offres/forfaits)
+   - Mix marketing 4P (Produit, Prix, Place, Promotion) en sections distinctes
+   - Funnel d'acquisition (canaux : SEO, SEA, social, partenariats, direct ; CAC par canal estimé)
+   - Stratégie de rétention et de cross-sell/up-sell
+   - Roadmap commerciale 12-18 mois avec jalons trimestriels
+   - Partenariats stratégiques cibles (logos, type d'accord, valeur attendue)
+
+4. Plan financier (financial_plan) :
+   - Hypothèses clés en tableau (taux de conversion, panier moyen, churn, croissance MoM, marges)
+   - Compte de résultat prévisionnel sur 3 à 5 ans en tableau markdown (CA, COGS, marge brute %, OPEX détaillés, EBITDA, EBITDA %, résultat net)
+   - Plan de trésorerie mensuel sur Année 1 puis trimestriel Années 2-3 (encaissements, décaissements, BFR, solde cumulé)
+   - Bilan prévisionnel synthétique fin d'année (actif/passif, capitaux propres, dette)
+   - Seuil de rentabilité (point mort en CA et en mois)
+   - Besoin de financement détaillé : usage des fonds en %, runway en mois
+   - Scénarios pessimiste / réaliste / optimiste avec écarts chiffrés
+   - KPIs financiers : CAC, LTV, churn, MRR/ARR si SaaS, gross margin, burn rate, runway
+   - Stratégie de sortie / ROI investisseur sur 5 ans (multiples, TRI cible)
+
+5. Meilleures pratiques du secteur (best_practices) :
+   - Benchmarks chiffrés (KPIs médians du secteur)
+   - Facteurs clés de succès (FCS) identifiés et plan d'action pour chacun
+   - Pièges classiques et plan de mitigation
+   - Cadre réglementaire applicable (RGPD, normes sectorielles, licences, agréments)
+   - Recommandations de gouvernance, reporting investisseurs, ESG/RSE
+   - Citations de standards sectoriels (ex. : "Selon le rapport sectoriel X...")
+
+CONTRAINTES TECHNIQUES :
+- Tous les tableaux financiers en markdown avec en-têtes alignés et totaux en gras.
+- Cohérence chiffrée entre sections (le CA du résumé exécutif = celui du plan financier).
+- Adapter le secteur, la géographie, la maturité du projet et la devise pertinente à la description fournie.
+- Si une donnée est manquante, faire une hypothèse explicite plutôt qu'inventer un chiffre flou.`;
 
       userPrompt = `Projet: ${projectTitle || "Sans titre"}
 Description: ${projectDescription}`;
@@ -113,7 +143,7 @@ Description: ${projectDescription}`;
         ? `\n\nContexte - Sections déjà rédigées:\n${existingSections.map((s: any) => `### ${s.title}\n${s.content?.substring(0, 500)}...`).join("\n\n")}`
         : "";
 
-      systemPrompt = `Tu es un expert en création de business plans professionnels. Tu dois générer UNE SEULE section spécifique d'un business plan.
+      systemPrompt = `Tu es un consultant senior en stratégie spécialisé dans les business plans destinés à des demandes de financement (banques, BPI, business angels, VCs) ou de partenariats. Tu génères UNE SEULE section de qualité "investor-ready", présentable en comité de crédit.
 
 IMPORTANT: Tu dois répondre UNIQUEMENT avec un JSON valide:
 {
@@ -124,13 +154,21 @@ IMPORTANT: Tu dois répondre UNIQUEMENT avec un JSON valide:
 Section à générer: ${sectionInfo.title}
 Ce qu'elle doit contenir: ${sectionInfo.description}
 
-Règles:
-- La section doit faire au minimum 500 mots
-- Utilise du markdown riche : titres, sous-titres, listes, tableaux, gras, italique
-- Sois très professionnel, structuré et détaillé
-- Si c'est le plan financier, inclus des tableaux de projections
-- Si c'est l'analyse de marché, inclus une matrice SWOT
-- Utilise des données réalistes`;
+EXIGENCES DE QUALITÉ :
+- Minimum 700 mots, ton professionnel et factuel (pas de superlatifs creux).
+- Markdown riche : ##, ###, listes, tableaux, gras pour les chiffres clés.
+- Hypothèses explicites ("Hypothèse : ...") et références sectorielles plausibles (Xerfi, INSEE, Statista).
+- Mentionner risques et limites.
+- Cohérence avec les sections déjà rédigées (reprendre les mêmes chiffres et personas).
+
+Exigences spécifiques selon la section :
+- executive_summary : pitch 3 lignes, UVP, équipe, demande de financement chiffrée, KPIs financiers clés (CA An 3, EBITDA, point mort, ROI).
+- market_analysis : TAM/SAM/SOM avec méthode top-down ET bottom-up, 3 personas, PESTEL, SWOT en tableau 2x2, tableau concurrentiel, 5 forces de Porter notées /5, barrières à l'entrée.
+- business_strategy : unit economics (CAC, LTV, ratio LTV/CAC), pricing détaillé, mix 4P, funnel d'acquisition par canal, roadmap commerciale 12-18 mois, partenariats cibles.
+- financial_plan : hypothèses chiffrées, compte de résultat 3-5 ans, plan de trésorerie mensuel An1 puis trimestriel, bilan synthétique, seuil de rentabilité, usage des fonds, scénarios pessimiste/réaliste/optimiste, TRI cible.
+- best_practices : benchmarks chiffrés sectoriels, FCS avec plan d'action, pièges et mitigation, cadre réglementaire, gouvernance/reporting/ESG.
+
+Tous les tableaux financiers en markdown avec totaux en gras. Si une donnée manque, formuler une hypothèse explicite plutôt qu'un chiffre flou.`;
 
       userPrompt = `Projet: ${projectTitle || "Sans titre"}
 Description: ${projectDescription}${existingContext}`;

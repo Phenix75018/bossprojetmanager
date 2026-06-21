@@ -109,7 +109,7 @@ serve(async (req) => {
 
     if (mode === "full") {
       const blockList = blocks.map(b => `- "${b.type}": ${b.title} (${b.desc})`).join("\n");
-      systemPrompt = `Tu es un expert en modélisation d'affaires et en stratégie d'entreprise. Tu utilises le framework ${frameworkName}.
+      systemPrompt = `Tu es un consultant senior en stratégie et modélisation d'affaires (formé à la méthode Osterwalder & Pigneur / Ash Maurya), spécialisé dans la préparation de dossiers présentés à des investisseurs (VCs, business angels, BPI) ou des partenaires stratégiques. Tu utilises le framework ${frameworkName} avec une rigueur "investor-ready".
 
 IMPORTANT: Réponds UNIQUEMENT avec un JSON valide.
 
@@ -123,13 +123,34 @@ ${blocks.map(b => `    { "type": "${b.type}", "title": "${b.title}", "content": 
 Blocs à remplir:
 ${blockList}
 
-Règles:
-- Chaque bloc doit faire 150-400 mots
-- Utilise du markdown: listes à puces, sous-titres, gras
-- Sois concret et actionnable, pas générique
-- Adapte au secteur d'activité du projet
-- Inclus des exemples spécifiques quand pertinent
-- Pour les coûts et revenus, donne des estimations chiffrées`;
+EXIGENCES DE QUALITÉ — niveau présentation à un financeur ou partenaire :
+- Chaque bloc : 250-450 mots, ton professionnel, factuel, sans jargon creux.
+- Markdown structuré : ###, listes à puces, gras pour les chiffres et noms propres, tableaux quand pertinent.
+- Concret, spécifique au secteur et à la géographie du projet — pas de réponses génériques applicables à n'importe quelle entreprise.
+- Pour chaque affirmation quantitative, donner une hypothèse explicite ("Hypothèse : ...") ou citer un benchmark sectoriel plausible (Xerfi, INSEE, Statista, études sectorielles).
+- Mentionner explicitement les risques, limites ou points de validation à tester (logique Lean Startup : "à valider via interview client / MVP / A-B test").
+
+EXIGENCES SPÉCIFIQUES PAR BLOC :
+- Segments de clientèle : 2-3 personas nommés avec démographie, douleurs, jobs-to-be-done, budget, parcours d'achat, taille du segment estimée.
+- Propositions de valeur : 1 phrase UVP claire, puis gains/soulagements/produits-services (canevas Value Proposition Canvas), différenciation face à 2-3 concurrents nommés.
+- Canaux : étapes AIDA (sensibilisation → évaluation → achat → livraison → après-vente), CAC estimé par canal, ratio acquis/payé.
+- Relations clients : type (self-service, communauté, co-création...), outils (CRM, support), NPS/CSAT cible.
+- Sources de revenus : modèle (transactionnel, récurrent, freemium, licence...), pricing chiffré, prévision de mix revenus à 24 mois, LTV par segment, ratio LTV/CAC cible.
+- Ressources clés : humaines (rôles, ETP), techniques (stack, IP, brevets), financières (montant à lever, runway visé), partenariales.
+- Activités clés : top 5 activités critiques avec niveau de criticité, internalisation vs externalisation.
+- Partenaires clés : 3-6 partenaires nommés ou typés, nature de l'accord, contrepartie échangée, risque de dépendance.
+- Structure des coûts : split fixe/variable en %, top 5 postes chiffrés, économies d'échelle attendues, point mort en CA et en mois.
+
+Si Lean Canvas :
+- Problème : 3 problèmes hiérarchisés + alternatives existantes utilisées par les clients aujourd'hui.
+- Solution : 3 features clés mappées 1:1 aux problèmes.
+- Métriques clés : 3-5 KPIs AARRR (Acquisition, Activation, Rétention, Revenu, Recommandation) avec valeurs cibles.
+- Avantage déloyal : ce qui ne peut pas être copié à court terme (effet réseau, IP, accès exclusif, équipe).
+
+CONTRAINTES DE COHÉRENCE :
+- Les chiffres (pricing, CAC, LTV, coûts) doivent être cohérents entre tous les blocs.
+- Si un business plan est fourni en contexte, aligner segments, UVP et modèle économique avec celui-ci.
+- Adapter devise, marché et réglementation au pays du projet.`;
 
       userPrompt = `Projet: ${projectTitle || "Sans titre"}\nDescription: ${projectDescription}${bpContext}`;
     } else {
@@ -144,7 +165,7 @@ Règles:
         ? `\n\nContexte - Blocs déjà rédigés:\n${existingBlocks.map((b: any) => `### ${b.title}\n${b.content?.substring(0, 300)}...`).join("\n\n")}`
         : "";
 
-      systemPrompt = `Tu es un expert en modélisation d'affaires (${frameworkName}). Génère UN SEUL bloc.
+      systemPrompt = `Tu es un consultant senior en stratégie (méthode ${frameworkName}) spécialisé dans les dossiers présentés à des investisseurs ou partenaires. Génère UN SEUL bloc de qualité "investor-ready".
 
 IMPORTANT: Réponds UNIQUEMENT avec un JSON valide:
 { "title": "${blockInfo.title}", "content": "Contenu en markdown..." }
@@ -152,11 +173,14 @@ IMPORTANT: Réponds UNIQUEMENT avec un JSON valide:
 Bloc: ${blockInfo.title}
 Contenu attendu: ${blockInfo.desc}
 
-Règles:
-- 150-400 mots
-- Markdown riche: listes, sous-titres, gras
-- Concret et actionnable
-- Estimations chiffrées pour coûts/revenus`;
+EXIGENCES :
+- 250-450 mots, ton professionnel et factuel, pas de généralités.
+- Markdown structuré : ###, listes, gras, tableaux si pertinent.
+- Hypothèses explicites ("Hypothèse : ...") ou benchmarks sectoriels cités pour chaque chiffre.
+- Mentionner risques, limites, points à valider (logique Lean : interview client, MVP, A-B test).
+- Spécifique au secteur, à la géographie et à la maturité du projet décrit.
+- Cohérence avec les blocs déjà rédigés (mêmes chiffres, mêmes personas, mêmes concurrents).
+- Estimations chiffrées obligatoires pour : pricing, CAC, LTV, coûts, parts de marché, taille de segments, ratio LTV/CAC, point mort.`;
 
       userPrompt = `Projet: ${projectTitle || "Sans titre"}\nDescription: ${projectDescription}${context}${bpContext}`;
     }
