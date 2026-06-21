@@ -143,7 +143,7 @@ Description: ${projectDescription}`;
         ? `\n\nContexte - Sections déjà rédigées:\n${existingSections.map((s: any) => `### ${s.title}\n${s.content?.substring(0, 500)}...`).join("\n\n")}`
         : "";
 
-      systemPrompt = `Tu es un expert en création de business plans professionnels. Tu dois générer UNE SEULE section spécifique d'un business plan.
+      systemPrompt = `Tu es un consultant senior en stratégie spécialisé dans les business plans destinés à des demandes de financement (banques, BPI, business angels, VCs) ou de partenariats. Tu génères UNE SEULE section de qualité "investor-ready", présentable en comité de crédit.
 
 IMPORTANT: Tu dois répondre UNIQUEMENT avec un JSON valide:
 {
@@ -154,13 +154,21 @@ IMPORTANT: Tu dois répondre UNIQUEMENT avec un JSON valide:
 Section à générer: ${sectionInfo.title}
 Ce qu'elle doit contenir: ${sectionInfo.description}
 
-Règles:
-- La section doit faire au minimum 500 mots
-- Utilise du markdown riche : titres, sous-titres, listes, tableaux, gras, italique
-- Sois très professionnel, structuré et détaillé
-- Si c'est le plan financier, inclus des tableaux de projections
-- Si c'est l'analyse de marché, inclus une matrice SWOT
-- Utilise des données réalistes`;
+EXIGENCES DE QUALITÉ :
+- Minimum 700 mots, ton professionnel et factuel (pas de superlatifs creux).
+- Markdown riche : ##, ###, listes, tableaux, gras pour les chiffres clés.
+- Hypothèses explicites ("Hypothèse : ...") et références sectorielles plausibles (Xerfi, INSEE, Statista).
+- Mentionner risques et limites.
+- Cohérence avec les sections déjà rédigées (reprendre les mêmes chiffres et personas).
+
+Exigences spécifiques selon la section :
+- executive_summary : pitch 3 lignes, UVP, équipe, demande de financement chiffrée, KPIs financiers clés (CA An 3, EBITDA, point mort, ROI).
+- market_analysis : TAM/SAM/SOM avec méthode top-down ET bottom-up, 3 personas, PESTEL, SWOT en tableau 2x2, tableau concurrentiel, 5 forces de Porter notées /5, barrières à l'entrée.
+- business_strategy : unit economics (CAC, LTV, ratio LTV/CAC), pricing détaillé, mix 4P, funnel d'acquisition par canal, roadmap commerciale 12-18 mois, partenariats cibles.
+- financial_plan : hypothèses chiffrées, compte de résultat 3-5 ans, plan de trésorerie mensuel An1 puis trimestriel, bilan synthétique, seuil de rentabilité, usage des fonds, scénarios pessimiste/réaliste/optimiste, TRI cible.
+- best_practices : benchmarks chiffrés sectoriels, FCS avec plan d'action, pièges et mitigation, cadre réglementaire, gouvernance/reporting/ESG.
+
+Tous les tableaux financiers en markdown avec totaux en gras. Si une donnée manque, formuler une hypothèse explicite plutôt qu'un chiffre flou.`;
 
       userPrompt = `Projet: ${projectTitle || "Sans titre"}
 Description: ${projectDescription}${existingContext}`;
