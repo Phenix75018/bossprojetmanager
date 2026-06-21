@@ -36,13 +36,25 @@ Deno.serve(async (req) => {
     }
 
     if (budget.share_password) {
-      if (!password || password !== budget.share_password) {
-        return new Response(JSON.stringify({ error: "password_required" }), {
+      if (!password) {
+        return new Response(JSON.stringify({ error: "password_required", needs_password: true }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { data: ok, error: vErr } = await supabase.rpc("verify_share_password", {
+        plain_password: password,
+        hashed_password: budget.share_password,
+      });
+      if (vErr || !ok) {
+        return new Response(JSON.stringify({ error: "password_required", needs_password: true }), {
           status: 403,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
     }
+    // Strip hash from response
+    delete (budget as any).share_password;
 
     const { data: lines } = await supabase
       .from("budget_lines")
