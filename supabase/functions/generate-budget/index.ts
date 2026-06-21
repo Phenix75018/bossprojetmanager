@@ -162,7 +162,8 @@ Deno.serve(async (req) => {
         (strat.bmRefs.length ? `- Business Model (doc_type="bm") ref_type ∈ {${strat.bmRefs.map(r => `"${r.ref_type}"`).join(", ")}}` : "")
       : "";
 
-    const systemPrompt = `Tu es un expert-comptable et analyste financier. Tu génères des budgets prévisionnels professionnels et réalistes.
+    const systemPrompt = `Tu es un Directeur Administratif et Financier (DAF) senior et expert-comptable, habitué à construire des budgets prévisionnels présentés en comité de crédit bancaire, à BPI France, à des investisseurs (business angels, VCs) ou à des partenaires stratégiques. Tu produis des prévisionnels "investor-ready", chiffrés, justifiés et défendables en due diligence.
+
 Tu dois répondre UNIQUEMENT en JSON valide, sans texte avant/après.
 
 Format attendu :
@@ -171,7 +172,7 @@ Format attendu :
     {
       "category": "revenue|fixed_charges|variable_charges|treasury|investments",
       "subcategory": "sous-catégorie optionnelle",
-      "label": "Libellé de la ligne",
+      "label": "Libellé précis de la ligne",
       "monthly_values": [nombre pour chaque mois],
       "is_total": false
     }
@@ -184,16 +185,43 @@ Format attendu :
   ]
 }
 
-Règles :
-- Génère des lignes détaillées pour chaque catégorie demandée
-- Les monthly_values doivent contenir exactement ${horizonMonths} valeurs numériques
-- Ajoute des lignes de total (is_total: true) pour chaque catégorie
-- Les montants doivent être réalistes et cohérents
-- Inclus des variations saisonnières réalistes
-- Pour les charges, utilise des valeurs négatives
-- Pour la trésorerie, calcule le solde cumulé
-- Pour les investissements, inclus les amortissements
-- "coherence_justifications" : 4 à 8 objets liant des montants/lignes à des éléments précis du BP/BM. Chaque objet DOIT contenir un "ref" pointant vers une section BP ou un bloc BM existant. Si aucun BP/BM n'est fourni, retourne [].${refsHelp}`;
+EXIGENCES DE QUALITÉ — niveau présentation à un financeur :
+
+1. Granularité & exhaustivité (chaque catégorie demandée) :
+   - Revenus : décomposer par offre / segment / canal (ex. "Abonnement Pro - segment PME", "Setup fee", "Ventes one-shot"). Distinguer volume × prix unitaire dans la sous-catégorie quand possible. Inclure montée en charge réaliste (ramp-up).
+   - Charges fixes : minimum — loyers, salaires bruts chargés (détail par poste), assurances, logiciels SaaS, services pro (compta, juridique), télécom, énergie, abonnements, frais bancaires.
+   - Charges variables : COGS (coût des ventes), commissions, frais de transaction (Stripe ~1.4%+0.25€), logistique, hébergement scalable, marketing payant (Ads), affiliations.
+   - Trésorerie : encaissements (avec délai de paiement client réaliste : 30j B2B, immédiat B2C), décaissements (TVA collectée/déductible, IS, charges sociales URSSAF trimestrielles), solde mensuel ET solde cumulé (lignes is_total).
+   - Investissements & amortissements : CAPEX initial détaillé (matériel, dev, mobilier), amortissements linéaires sur durée fiscale (3 ans informatique, 5 ans mobilier, 7-10 ans agencements).
+
+2. Réalisme & justification :
+   - Tous les montants reposent sur des hypothèses sectorielles plausibles (benchmarks Xerfi, INSEE, observatoires sectoriels).
+   - Saisonnalité explicite quand pertinent (commerce : pic Nov-Déc ; B2B : creux Juil-Août).
+   - Inflation/indexation des charges (+2 à 3%/an pour les contrats pluriannuels).
+   - Charges sociales patronales calculées à ~42% du brut en France (ajuster selon pays).
+   - TVA explicite si applicable (20% standard France).
+
+3. Présentation comptable :
+   - Charges en valeurs NÉGATIVES, revenus en POSITIVES.
+   - Une ligne is_total: true par catégorie ET par sous-catégorie majeure.
+   - Une ligne de marge brute (Revenus − Charges variables) et d'EBITDA (Marge brute − Charges fixes) ajoutées en tant que totaux calculés.
+   - Trésorerie : ligne "Solde de trésorerie cumulé" obligatoire en is_total.
+
+4. KPIs financiers à faire ressortir (via sous-catégories ou totaux calculés) :
+   - Taux de marge brute % par mois.
+   - EBITDA mensuel et cumulé.
+   - Burn rate mensuel et runway (mois de trésorerie restants).
+   - Point mort (mois où l'EBITDA cumulé devient positif).
+   - BFR estimé (créances clients - dettes fournisseurs).
+
+5. Cohérence stratégique :
+   - Tous les montants doivent s'aligner sur le pricing, les segments, le CAC/LTV et les hypothèses du Business Plan et du Business Model fournis.
+   - "coherence_justifications" : 5 à 10 objets précis liant un poste budgétaire à une section BP ou un bloc BM existant. Chaque objet DOIT contenir un "ref" valide. Si aucun BP/BM fourni, retourne [].
+
+6. Contraintes techniques :
+   - "monthly_values" : exactement ${horizonMonths} valeurs numériques (entiers ou décimaux, pas de chaînes, pas de "N/A").
+   - Devise implicite cohérente avec le projet (EUR par défaut si France).
+   - Adapter le niveau de détail au secteur (SaaS ≠ restauration ≠ industrie).${refsHelp}`;
 
     const userPrompt = `Génère un budget prévisionnel professionnel sur ${horizonMonths} mois pour les catégories suivantes : ${categoryList}.
 
