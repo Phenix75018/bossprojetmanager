@@ -34,6 +34,41 @@ Deno.serve(async (req) => {
     if (!shareUrl || typeof shareUrl !== "string" || shareUrl.length > 2000) {
       throw new Error("URL de partage invalide");
     }
+    // Restrict the share URL to our own app: must be HTTPS, on an allowed origin,
+    // and point to a known share path. Prevents using this endpoint to send
+    // phishing emails from our domain.
+    let parsedShareUrl: URL;
+    try {
+      parsedShareUrl = new URL(shareUrl);
+    } catch {
+      throw new Error("URL de partage invalide");
+    }
+    if (parsedShareUrl.protocol !== "https:") {
+      throw new Error("URL de partage invalide");
+    }
+    const allowedOriginsEnv = Deno.env.get("APP_ALLOWED_ORIGINS") || "";
+    const allowedOrigins = allowedOriginsEnv
+      .split(",")
+      .map((o) => o.trim())
+      .filter(Boolean);
+    const originHeader = req.headers.get("origin");
+    if (allowedOrigins.length > 0) {
+      if (!allowedOrigins.includes(parsedShareUrl.origin)) {
+        throw new Error("URL de partage invalide");
+      }
+    } else if (originHeader) {
+      // Fall back to requiring the share URL to live on the same origin as the caller.
+      if (parsedShareUrl.origin !== originHeader) {
+        throw new Error("URL de partage invalide");
+      }
+    } else {
+      // No allowlist configured and no caller origin available: refuse to send.
+      throw new Error("URL de partage invalide");
+    }
+    const validSharePath = /^\/(?:share|calendar\/share|business-plan\/share|business-model\/share|budget\/share)\/[A-Za-z0-9-]{8,}\/?$/;
+    if (!validSharePath.test(parsedShareUrl.pathname)) {
+      throw new Error("URL de partage invalide");
+    }
     if (!projectTitle || typeof projectTitle !== "string" || projectTitle.length > 200) {
       throw new Error("Titre de projet invalide");
     }

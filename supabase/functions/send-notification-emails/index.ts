@@ -10,9 +10,19 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Validate the request has a valid authorization header
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
+  // Restrict invocation: require either a shared CRON_SECRET header or the
+  // Supabase service-role key as a Bearer token. Without this, anyone could
+  // trigger reminder emails ahead of schedule.
+  const cronSecret = Deno.env.get("CRON_SECRET");
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const providedSecret = req.headers.get("x-cron-secret");
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const bearerToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
+
+  const validSecret = !!cronSecret && providedSecret === cronSecret;
+  const validServiceRole = !!serviceRoleKey && !!bearerToken && bearerToken === serviceRoleKey;
+
+  if (!validSecret && !validServiceRole) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -31,6 +31,8 @@ export default function ShareCalendarModal({ open, onClose }: ShareCalendarModal
   const loadShare = async () => {
     if (initialized || !user) return;
     setInitialized(true);
+    // Only fetch the token and a boolean indicating whether a password is set —
+    // never read the stored hash back into the client.
     const { data } = await supabase
       .from("calendar_shares" as any)
       .select("share_token, share_password")
@@ -40,7 +42,9 @@ export default function ShareCalendarModal({ open, onClose }: ShareCalendarModal
       setShareToken((data as any).share_token);
       if ((data as any).share_password) {
         setPasswordEnabled(true);
-        setPassword((data as any).share_password);
+        // Do not populate the input with the stored hash. Leave it empty;
+        // the user must re-enter a password to change it.
+        setPassword("");
       }
     }
   };

@@ -65,9 +65,12 @@ export default function SharedPlan() {
     if (!token) return;
     setLoading(true);
     const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-    const params = new URLSearchParams({ token });
-    if (pwd) params.set("password", pwd);
-    fetch(`https://${projectId}.supabase.co/functions/v1/get-shared-plan?${params}`)
+    // POST with JSON body so the password is never exposed in URLs, logs, or browser history.
+    fetch(`https://${projectId}.supabase.co/functions/v1/get-shared-plan`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, ...(pwd ? { password: pwd } : {}) }),
+    })
       .then((res) => res.json())
       .then((d) => {
         if (d.needs_password) {
