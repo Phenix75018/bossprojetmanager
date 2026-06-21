@@ -1,0 +1,142 @@
+name: Security Scan
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    # Weekly full scan every Monday at 06:00 UTC to catch newly disclosed CVEs
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
+  security-events: write
+  pull-requests: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # 1. Dependency vulnerabilities (npm audit + better-formatted audit-ci)
+  # ---------------------------------------------------------------------------
+  dependency-audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Setup Node (for npm audit tooling)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # Regenerate a package-lock so `npm audit` can run against the resolved tree.
+      - name: Generate npm lockfile for audit
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+
+      - name: Run npm audit (fail on high/critical)
+        run: npx --yes audit-ci@^7 --high --report-type=summary
+
+  # ---------------------------------------------------------------------------
+  # 2. Secret scanning (catches leaked tokens / API keys in PR diffs)
+  # ---------------------------------------------------------------------------
+  secret-scan:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "true"
+          GITLEAKS_ENABLE_SUMMARY: "true"
+
+  # ---------------------------------------------------------------------------
+  # 3. Static analysis (CodeQL for JS/TS — detects XSS, injection, etc.)
+  # ---------------------------------------------------------------------------
+  codeql:
+    name: CodeQL static analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          queries: security-and-quality
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript-typescript"
+
+  # ---------------------------------------------------------------------------
+  # 4. Supabase migration safety checks
+  #    Catches common regressions: public tables without RLS, missing GRANTs,
+  #    plaintext share_password columns, etc.
+  # ---------------------------------------------------------------------------
+  supabase-migrations:
+    name: Supabase migration checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check every public CREATE TABLE has RLS + GRANT
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          fail=0
+          for f in supabase/migrations/*.sql; do
+            # Extract table names created in the public schema
+            tables=$(grep -Eio 'create table[[:space:]]+(if not exists[[:space:]]+)?public\.[a-z_][a-z0-9_]*' "$f" \
+                     | sed -E 's/.*public\.//I' | tr '[:upper:]' '[:lower:]' | sort -u || true)
+            for t in $tables; do
+              if ! grep -Eiq "alter table[[:space:]]+(only[[:space:]]+)?public\.${t}[[:space:]]+enable row level security" "$f"; then
+                echo "::error file=$f::Table public.${t} created without ENABLE ROW LEVEL SECURITY"
+                fail=1
+              fi
+              if ! grep -Eiq "grant[[:space:]].*on[[:space:]]+(table[[:space:]]+)?public\.${t}[[:space:]]+to" "$f"; then
+                echo "::error file=$f::Table public.${t} created without an explicit GRANT (Data API will be unreachable)"
+                fail=1
+              fi
+            done
+          done
+          exit $fail
+
+      - name: Forbid plaintext share_password usage
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The hash_share_password_if_needed trigger must hash any plaintext value.
+          # Catch obvious regressions like comparing share_password directly to user input.
+          if grep -rnE "share_password[[:space:]]*=[[:space:]]*('[^']+'|\$[0-9]+)" supabase/migrations 2>/dev/null \
+             | grep -v "hash_share_password_if_needed\|crypt(" ; then
+            echo "::error::Direct assignment to share_password found. Always rely on the hashing trigger."
+            exit 1
+          fi
+
+      - name: Warn on verify_jwt = false edge functions
+        shell: bash
+        run: |
+          # Informational: list publicly invokable edge functions so reviewers can confirm they are intentional.
+          if [ -f supabase/config.toml ]; then
+            echo "Edge functions with verify_jwt = false (must validate auth manually):"
+            awk '/^\[functions\./{fn=$0} /verify_jwt[[:space:]]*=[[:space:]]*false/{print "  " fn}' supabase/config.toml
+          fi
