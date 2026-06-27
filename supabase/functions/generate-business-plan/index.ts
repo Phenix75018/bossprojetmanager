@@ -184,7 +184,7 @@ Exigences spécifiques selon la section :
 Tous les tableaux financiers en markdown avec totaux en gras. Si une donnée manque, formuler une hypothèse explicite plutôt qu'un chiffre flou.`;
 
       userPrompt = `Projet: ${projectTitle || "Sans titre"}
-Description: ${projectDescription}${existingContext}`;
+Description: ${projectDescription}${assumptionsBlock}${existingContext}`;
     }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
