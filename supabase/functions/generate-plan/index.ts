@@ -9,6 +9,12 @@ const corsHeaders = {
 // Shared ref_type normalization — single source of truth used by both the
 // client (src/lib/strategicRefs.ts re-exports) and edge functions.
 import { normalizeRefWithFallback } from "../_shared/strategicRefs.ts";
+import {
+  fetchAssumptions,
+  formatAssumptionsBlock,
+  mergeAssumptions,
+  type BusinessAssumptions,
+} from "../_shared/businessAssumptions.ts";
 
 function normalizeRef(
   refType: string | undefined,
@@ -64,7 +70,15 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { description, projectType, status, statusDetails, projectId } = body;
+    const { description, projectType, status, statusDetails, projectId, assumptions: bodyAssumptions } = body;
+
+    // Resolve business assumptions (body wins over DB)
+    const dbAssumptions = await fetchAssumptions(authHeader, projectId);
+    const assumptions: BusinessAssumptions | null = mergeAssumptions(
+      bodyAssumptions as BusinessAssumptions | undefined,
+      dbAssumptions,
+    );
+    const assumptionsBlock = formatAssumptionsBlock(assumptions);
 
     // Fetch BP + BM context for cross-module coherence (optional)
     let strategicContext = "";
@@ -251,7 +265,7 @@ Type de projet: ${isProfessional ? "PROFESSIONNEL - inclure les recommandations 
 
     const userPrompt = `Projet: ${description}
 Type: ${isProfessional ? "Professionnel" : "Personnel"}
-État d'avancement: ${status || "nouveau"}${statusDetails ? `\nDétails: ${statusDetails}` : ""}${strategicContext}`;
+État d'avancement: ${status || "nouveau"}${statusDetails ? `\nDétails: ${statusDetails}` : ""}${assumptionsBlock}${strategicContext}`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
