@@ -143,7 +143,7 @@ CONTRAINTES TECHNIQUES :
 - Si une donnée est manquante, faire une hypothèse explicite plutôt qu'inventer un chiffre flou.`;
 
       userPrompt = `Projet: ${projectTitle || "Sans titre"}
-Description: ${projectDescription}`;
+Description: ${projectDescription}${assumptionsBlock}`;
     } else {
       const sectionInfo = allSections.find(s => s.type === sectionType);
       if (!sectionInfo) {
