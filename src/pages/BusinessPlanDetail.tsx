@@ -15,6 +15,7 @@ import BPChartEditor, { ChartConfig, ChartDataPoint } from "@/components/BPChart
 import BPChartRenderer from "@/components/BPChartRenderer";
 import { useDocumentVersions } from "@/hooks/useDocumentVersions";
 import VersionHistoryPanel from "@/components/VersionHistoryPanel";
+import BusinessAssumptionsPanel from "@/components/BusinessAssumptionsPanel";
 
 const SECTION_TYPES = [
   { type: "executive_summary", title: "Résumé exécutif", icon: "📋" },
@@ -166,7 +167,7 @@ export default function BusinessPlanDetail() {
     setGeneratingFull(true);
     try {
       const { data, error } = await supabase.functions.invoke("generate-business-plan", {
-        body: { projectDescription: plan.description, projectTitle: plan.title, mode: "full" },
+        body: { projectDescription: plan.description, projectTitle: plan.title, mode: "full", projectId: plan.project_id },
       });
       if (error) throw error;
       if (data?.result?.sections) {
@@ -193,7 +194,7 @@ export default function BusinessPlanDetail() {
     try {
       const existingSections = sections.map(s => ({ title: s.title, content: s.content }));
       const { data, error } = await supabase.functions.invoke("generate-business-plan", {
-        body: { projectDescription: plan.description, projectTitle: plan.title, mode: "section", sectionType, existingSections },
+        body: { projectDescription: plan.description, projectTitle: plan.title, mode: "section", sectionType, existingSections, projectId: plan.project_id },
       });
       if (error) throw error;
       if (data?.result) {
@@ -284,7 +285,8 @@ export default function BusinessPlanDetail() {
             <h1 className="text-2xl font-display font-black">{plan.title}</h1>
             {plan.description && <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{plan.description}</p>}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <BusinessAssumptionsPanel projectId={plan.project_id} />
             <Button variant="outline" size="sm" onClick={() => setShowShare(true)} className="gap-1.5">
               <Share2 className="w-4 h-4" /> Partager
             </Button>
