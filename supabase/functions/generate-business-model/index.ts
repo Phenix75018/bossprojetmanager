@@ -62,7 +62,14 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { projectDescription, projectTitle, framework, blockType, mode, existingBlocks, projectId } = body;
+    const { projectDescription, projectTitle, framework, blockType, mode, existingBlocks, projectId, assumptions: bodyAssumptions } = body;
+
+    const dbAssumptions = await fetchAssumptions(authHeader, projectId);
+    const assumptions: BusinessAssumptions | null = mergeAssumptions(
+      bodyAssumptions as BusinessAssumptions | undefined,
+      dbAssumptions,
+    );
+    const assumptionsBlock = formatAssumptionsBlock(assumptions);
 
     // Fetch linked Business Plan for cross-module coherence
     let bpContext = "";
