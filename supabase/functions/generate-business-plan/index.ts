@@ -1,5 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  fetchAssumptions,
+  formatAssumptionsBlock,
+  mergeAssumptions,
+  type BusinessAssumptions,
+} from "../_shared/businessAssumptions.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -32,7 +38,14 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { projectDescription, projectTitle, sectionType, mode, existingSections } = body;
+    const { projectDescription, projectTitle, sectionType, mode, existingSections, projectId, assumptions: bodyAssumptions } = body;
+
+    const dbAssumptions = await fetchAssumptions(authHeader, projectId);
+    const assumptions: BusinessAssumptions | null = mergeAssumptions(
+      bodyAssumptions as BusinessAssumptions | undefined,
+      dbAssumptions,
+    );
+    const assumptionsBlock = formatAssumptionsBlock(assumptions);
 
     if (!projectDescription || typeof projectDescription !== "string" || projectDescription.length > 15000) {
       return new Response(JSON.stringify({ error: "Description invalide (max 15000 caractères)" }), {
