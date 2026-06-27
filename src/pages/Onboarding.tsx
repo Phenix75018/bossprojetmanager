@@ -80,6 +80,7 @@ export default function Onboarding() {
           projectType: data.projectType,
           status: data.status,
           statusDetails: data.statusDetails,
+          assumptions: data.assumptions,
         },
       });
 
@@ -95,6 +96,7 @@ export default function Onboarding() {
           projectType: data.projectType,
           status: data.status,
           availability: data.availability,
+          assumptions: data.assumptions,
         },
       });
     } catch (error: any) {
