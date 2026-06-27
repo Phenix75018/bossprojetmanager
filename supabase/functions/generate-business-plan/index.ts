@@ -1,5 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  fetchAssumptions,
+  formatAssumptionsBlock,
+  mergeAssumptions,
+  type BusinessAssumptions,
+} from "../_shared/businessAssumptions.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -32,7 +38,14 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { projectDescription, projectTitle, sectionType, mode, existingSections } = body;
+    const { projectDescription, projectTitle, sectionType, mode, existingSections, projectId, assumptions: bodyAssumptions } = body;
+
+    const dbAssumptions = await fetchAssumptions(authHeader, projectId);
+    const assumptions: BusinessAssumptions | null = mergeAssumptions(
+      bodyAssumptions as BusinessAssumptions | undefined,
+      dbAssumptions,
+    );
+    const assumptionsBlock = formatAssumptionsBlock(assumptions);
 
     if (!projectDescription || typeof projectDescription !== "string" || projectDescription.length > 15000) {
       return new Response(JSON.stringify({ error: "Description invalide (max 15000 caractères)" }), {
@@ -130,7 +143,7 @@ CONTRAINTES TECHNIQUES :
 - Si une donnée est manquante, faire une hypothèse explicite plutôt qu'inventer un chiffre flou.`;
 
       userPrompt = `Projet: ${projectTitle || "Sans titre"}
-Description: ${projectDescription}`;
+Description: ${projectDescription}${assumptionsBlock}`;
     } else {
       const sectionInfo = allSections.find(s => s.type === sectionType);
       if (!sectionInfo) {
@@ -171,7 +184,7 @@ Exigences spécifiques selon la section :
 Tous les tableaux financiers en markdown avec totaux en gras. Si une donnée manque, formuler une hypothèse explicite plutôt qu'un chiffre flou.`;
 
       userPrompt = `Projet: ${projectTitle || "Sans titre"}
-Description: ${projectDescription}${existingContext}`;
+Description: ${projectDescription}${assumptionsBlock}${existingContext}`;
     }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {

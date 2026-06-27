@@ -1,5 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  fetchAssumptions,
+  formatAssumptionsBlock,
+  mergeAssumptions,
+  type BusinessAssumptions,
+} from "../_shared/businessAssumptions.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -56,7 +62,14 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { projectDescription, projectTitle, framework, blockType, mode, existingBlocks, projectId } = body;
+    const { projectDescription, projectTitle, framework, blockType, mode, existingBlocks, projectId, assumptions: bodyAssumptions } = body;
+
+    const dbAssumptions = await fetchAssumptions(authHeader, projectId);
+    const assumptions: BusinessAssumptions | null = mergeAssumptions(
+      bodyAssumptions as BusinessAssumptions | undefined,
+      dbAssumptions,
+    );
+    const assumptionsBlock = formatAssumptionsBlock(assumptions);
 
     // Fetch linked Business Plan for cross-module coherence
     let bpContext = "";
@@ -152,7 +165,7 @@ CONTRAINTES DE COHÉRENCE :
 - Si un business plan est fourni en contexte, aligner segments, UVP et modèle économique avec celui-ci.
 - Adapter devise, marché et réglementation au pays du projet.`;
 
-      userPrompt = `Projet: ${projectTitle || "Sans titre"}\nDescription: ${projectDescription}${bpContext}`;
+      userPrompt = `Projet: ${projectTitle || "Sans titre"}\nDescription: ${projectDescription}${assumptionsBlock}${bpContext}`;
     } else {
       const blockInfo = blocks.find(b => b.type === blockType);
       if (!blockInfo) {
@@ -182,7 +195,7 @@ EXIGENCES :
 - Cohérence avec les blocs déjà rédigés (mêmes chiffres, mêmes personas, mêmes concurrents).
 - Estimations chiffrées obligatoires pour : pricing, CAC, LTV, coûts, parts de marché, taille de segments, ratio LTV/CAC, point mort.`;
 
-      userPrompt = `Projet: ${projectTitle || "Sans titre"}\nDescription: ${projectDescription}${context}${bpContext}`;
+      userPrompt = `Projet: ${projectTitle || "Sans titre"}\nDescription: ${projectDescription}${context}${assumptionsBlock}${bpContext}`;
     }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {

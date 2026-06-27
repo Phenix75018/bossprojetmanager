@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import ShareBusinessModelModal from "@/components/ShareBusinessModelModal";
 import { useDocumentVersions } from "@/hooks/useDocumentVersions";
 import VersionHistoryPanel from "@/components/VersionHistoryPanel";
+import BusinessAssumptionsPanel from "@/components/BusinessAssumptionsPanel";
 
 const BMC_BLOCKS = [
   { type: "key_partners", title: "Partenaires clés", icon: "🤝", color: "bg-blue-500/10 border-blue-500/30" },
@@ -222,7 +223,8 @@ export default function BusinessModelDetail() {
               {model.description && <p className="text-sm text-muted-foreground line-clamp-1">{model.description}</p>}
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <BusinessAssumptionsPanel projectId={model.project_id} />
             <Button variant="outline" size="sm" onClick={() => setShowShare(true)} className="gap-1.5">
               <Share2 className="w-4 h-4" /> Partager
             </Button>

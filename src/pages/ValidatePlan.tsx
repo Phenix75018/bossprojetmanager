@@ -68,12 +68,13 @@ export default function ValidatePlan() {
   const navigate = useNavigate();
   const { createProjectFromAI } = useProjectsDB();
 
-  const { plan: initialPlan, description, projectType, status, availability } = (location.state || {}) as {
+  const { plan: initialPlan, description, projectType, status, availability, assumptions } = (location.state || {}) as {
     plan: PlanDraft;
     description: string;
     projectType: string;
     status: string;
     availability: any;
+    assumptions?: Record<string, unknown>;
   };
 
   const [plan, setPlan] = useState<PlanDraft>(initialPlan || { title: "", phases: [] });
@@ -246,8 +247,15 @@ export default function ValidatePlan() {
     try {
       const projectId = await createProjectFromAI(plan, description, status, availability);
       if (projectId) {
-        // Save project_type
-        await supabase.from("projects").update({ project_type: projectType || "personal" }).eq("id", projectId);
+        // Save project_type + business assumptions captured during onboarding
+        await supabase
+          .from("projects")
+          .update({
+            project_type: projectType || "personal",
+            ...(assumptions ? { business_assumptions: assumptions as never } : {}),
+          })
+          .eq("id", projectId);
+
 
         // Save team recommendations to DB
         if (plan.team_recommendations && plan.team_recommendations.length > 0) {

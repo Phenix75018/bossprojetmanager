@@ -11,6 +11,12 @@ const LOVABLE_API_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 // Shared ref_type normalization — single source of truth used by both the
 // client (src/lib/strategicRefs.ts re-exports) and edge functions.
 import { normalizeRefWithFallback } from "../_shared/strategicRefs.ts";
+import {
+  fetchAssumptions,
+  formatAssumptionsBlock,
+  mergeAssumptions,
+  type BusinessAssumptions,
+} from "../_shared/businessAssumptions.ts";
 
 function normalizeRef(
   refType: string | undefined,
@@ -134,7 +140,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { projectDescription, title, horizonMonths, categories, sectionCategory, projectId } = await req.json();
+    const { projectDescription, title, horizonMonths, categories, sectionCategory, projectId, assumptions: bodyAssumptions } = await req.json();
     const authHeader = req.headers.get("Authorization");
 
     const isPartial = !!sectionCategory;
@@ -155,6 +161,12 @@ Deno.serve(async (req) => {
 
     const strat = await fetchStrategicContext(authHeader, projectId);
     const bpContext = strat.context;
+    const dbAssumptions = await fetchAssumptions(authHeader, projectId);
+    const assumptions: BusinessAssumptions | null = mergeAssumptions(
+      bodyAssumptions as BusinessAssumptions | undefined,
+      dbAssumptions,
+    );
+    const assumptionsBlock = formatAssumptionsBlock(assumptions);
 
     const refsHelp = (strat.bpRefs.length || strat.bmRefs.length)
       ? `\n\nValeurs autorisées pour "ref" dans coherence_justifications :\n` +
@@ -226,7 +238,7 @@ EXIGENCES DE QUALITÉ — niveau présentation à un financeur :
     const userPrompt = `Génère un budget prévisionnel professionnel sur ${horizonMonths} mois pour les catégories suivantes : ${categoryList}.
 
 Projet : "${title}"
-Description : "${projectDescription || "Non spécifiée"}"${bpContext}
+Description : "${projectDescription || "Non spécifiée"}"${assumptionsBlock}${bpContext}
 
 Génère des lignes budgétaires détaillées et réalistes avec des montants cohérents.`;
 

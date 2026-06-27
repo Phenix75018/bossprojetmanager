@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ArrowRight, Check, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Sparkles, ChevronDown, ChevronUp, Settings2 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { BusinessAssumptions, EMPTY_ASSUMPTIONS } from "@/lib/businessAssumptions";
 
 type ProjectStatus = "idea" | "planning" | "in-progress" | "halfway" | "finalizing";
 type ProjectType = "personal" | "professional";
@@ -27,6 +28,7 @@ interface OnboardingData {
   projectType: ProjectType;
   status: ProjectStatus;
   statusDetails: string;
+  assumptions: BusinessAssumptions;
   availability: {
     daysPerWeek: string[];
     hoursPerWeek: number;
@@ -42,6 +44,7 @@ export default function Onboarding() {
     projectType: "personal",
     status: "idea",
     statusDetails: "",
+    assumptions: { ...EMPTY_ASSUMPTIONS },
     availability: {
       daysPerWeek: ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"],
       hoursPerWeek: 20,
@@ -49,6 +52,7 @@ export default function Onboarding() {
       deadline: "",
     },
   });
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationStatus, setGenerationStatus] = useState("Analyse du projet...");
   const { user } = useAuth();
@@ -76,6 +80,7 @@ export default function Onboarding() {
           projectType: data.projectType,
           status: data.status,
           statusDetails: data.statusDetails,
+          assumptions: data.assumptions,
         },
       });
 
@@ -91,6 +96,7 @@ export default function Onboarding() {
           projectType: data.projectType,
           status: data.status,
           availability: data.availability,
+          assumptions: data.assumptions,
         },
       });
     } catch (error: any) {
@@ -235,6 +241,112 @@ export default function Onboarding() {
                 <p className="text-xs text-muted-foreground mt-2">
                   {data.description.length} caractères • Minimum 10 recommandé
                 </p>
+
+                {/* Advanced business assumptions */}
+                <div className="mt-6 rounded-xl border border-border bg-card/30">
+                  <button
+                    type="button"
+                    onClick={() => setShowAdvanced((s) => !s)}
+                    className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium hover:bg-muted/30 transition-colors rounded-xl"
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      <Settings2 className="w-4 h-4 text-primary" />
+                      Paramètres business (optionnel) — affine les estimations de l'IA
+                    </span>
+                    {showAdvanced ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  </button>
+                  {showAdvanced && (
+                    <div className="px-4 pb-4 pt-1 grid gap-3">
+                      <p className="text-xs text-muted-foreground">
+                        Ces paramètres seront utilisés pour générer un Business Plan, un Business Model, un Budget et un Plan d'action plus précis. Tu pourras les modifier à tout moment depuis chaque module.
+                      </p>
+                      <div className="grid gap-1">
+                        <label className="text-xs font-medium">Secteur d'activité</label>
+                        <input
+                          type="text"
+                          value={data.assumptions.sector ?? ""}
+                          onChange={(e) => setData({ ...data, assumptions: { ...data.assumptions, sector: e.target.value } })}
+                          placeholder="Ex: SaaS B2B, restauration, e-commerce mode…"
+                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="grid gap-1">
+                          <label className="text-xs font-medium">Géographie</label>
+                          <input
+                            type="text"
+                            value={data.assumptions.geography ?? ""}
+                            onChange={(e) => setData({ ...data, assumptions: { ...data.assumptions, geography: e.target.value } })}
+                            placeholder="France, DACH, Europe…"
+                            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                          />
+                        </div>
+                        <div className="grid gap-1">
+                          <label className="text-xs font-medium">Devise</label>
+                          <input
+                            type="text"
+                            value={data.assumptions.currency ?? ""}
+                            onChange={(e) => setData({ ...data, assumptions: { ...data.assumptions, currency: e.target.value } })}
+                            placeholder="EUR"
+                            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid gap-1">
+                        <label className="text-xs font-medium">Taille de marché visée</label>
+                        <input
+                          type="text"
+                          value={data.assumptions.target_market_size ?? ""}
+                          onChange={(e) => setData({ ...data, assumptions: { ...data.assumptions, target_market_size: e.target.value } })}
+                          placeholder="Ex: TAM 5 Md€, SAM 800 M€, SOM 40 M€"
+                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                        />
+                      </div>
+                      <div className="grid gap-1">
+                        <label className="text-xs font-medium">Pricing</label>
+                        <textarea
+                          rows={2}
+                          value={data.assumptions.pricing ?? ""}
+                          onChange={(e) => setData({ ...data, assumptions: { ...data.assumptions, pricing: e.target.value } })}
+                          placeholder="Ex: Freemium + 29€/mois Pro + 99€/mois Business"
+                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
+                        />
+                      </div>
+                      <div className="grid gap-1">
+                        <label className="text-xs font-medium">Structure de coûts</label>
+                        <textarea
+                          rows={2}
+                          value={data.assumptions.costs ?? ""}
+                          onChange={(e) => setData({ ...data, assumptions: { ...data.assumptions, costs: e.target.value } })}
+                          placeholder="Ex: 2 ETP à 50k€ chargés, hébergement 800€/mois, marketing 20% du CA"
+                          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="grid gap-1">
+                          <label className="text-xs font-medium">Croissance annuelle (%)</label>
+                          <input
+                            type="number"
+                            value={data.assumptions.growth_rate_pct ?? ""}
+                            onChange={(e) => setData({ ...data, assumptions: { ...data.assumptions, growth_rate_pct: e.target.value === "" ? null : Number(e.target.value) } })}
+                            placeholder="Ex: 80"
+                            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                          />
+                        </div>
+                        <div className="grid gap-1">
+                          <label className="text-xs font-medium">Part de marché cible (%)</label>
+                          <input
+                            type="number"
+                            value={data.assumptions.market_share_target_pct ?? ""}
+                            onChange={(e) => setData({ ...data, assumptions: { ...data.assumptions, market_share_target_pct: e.target.value === "" ? null : Number(e.target.value) } })}
+                            placeholder="Ex: 3"
+                            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 

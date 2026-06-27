@@ -19,6 +19,7 @@ import BudgetSynthesis from "@/components/BudgetSynthesis";
 import { useDocumentVersions } from "@/hooks/useDocumentVersions";
 import VersionHistoryPanel from "@/components/VersionHistoryPanel";
 import CoherenceJustifications, { Justif } from "@/components/CoherenceJustifications";
+import BusinessAssumptionsPanel from "@/components/BusinessAssumptionsPanel";
 
 const CATEGORIES = [
   { key: "revenue", label: "Revenus / Chiffre d'affaires", icon: TrendingUp, color: "text-emerald-600" },
@@ -221,7 +222,8 @@ export default function BudgetDetail() {
             <h1 className="text-2xl font-display font-black">{budget.title}</h1>
             <p className="text-sm text-muted-foreground">{budget.description} · {budget.horizon_months} mois</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <BusinessAssumptionsPanel projectId={budget.project_id} />
             <Button variant="outline" size="sm" onClick={generateAll} disabled={!!generating} className="gap-2">
               {generating === "all" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
               Générer tout

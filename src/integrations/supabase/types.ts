@@ -619,6 +619,7 @@ export type Database = {
       }
       projects: {
         Row: {
+          business_assumptions: Json
           completion_percent: number
           created_at: string
           days_per_week: string[]
@@ -636,6 +637,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          business_assumptions?: Json
           completion_percent?: number
           created_at?: string
           days_per_week?: string[]
@@ -653,6 +655,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          business_assumptions?: Json
           completion_percent?: number
           created_at?: string
           days_per_week?: string[]
