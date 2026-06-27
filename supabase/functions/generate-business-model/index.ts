@@ -165,7 +165,7 @@ CONTRAINTES DE COHÉRENCE :
 - Si un business plan est fourni en contexte, aligner segments, UVP et modèle économique avec celui-ci.
 - Adapter devise, marché et réglementation au pays du projet.`;
 
-      userPrompt = `Projet: ${projectTitle || "Sans titre"}\nDescription: ${projectDescription}${bpContext}`;
+      userPrompt = `Projet: ${projectTitle || "Sans titre"}\nDescription: ${projectDescription}${assumptionsBlock}${bpContext}`;
     } else {
       const blockInfo = blocks.find(b => b.type === blockType);
       if (!blockInfo) {
@@ -195,7 +195,7 @@ EXIGENCES :
 - Cohérence avec les blocs déjà rédigés (mêmes chiffres, mêmes personas, mêmes concurrents).
 - Estimations chiffrées obligatoires pour : pricing, CAC, LTV, coûts, parts de marché, taille de segments, ratio LTV/CAC, point mort.`;
 
-      userPrompt = `Projet: ${projectTitle || "Sans titre"}\nDescription: ${projectDescription}${context}${bpContext}`;
+      userPrompt = `Projet: ${projectTitle || "Sans titre"}\nDescription: ${projectDescription}${context}${assumptionsBlock}${bpContext}`;
     }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
