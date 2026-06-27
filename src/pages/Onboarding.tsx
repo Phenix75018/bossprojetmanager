@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ArrowRight, Check, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Sparkles, ChevronDown, ChevronUp, Settings2 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { BusinessAssumptions, EMPTY_ASSUMPTIONS } from "@/lib/businessAssumptions";
 
 type ProjectStatus = "idea" | "planning" | "in-progress" | "halfway" | "finalizing";
 type ProjectType = "personal" | "professional";
@@ -27,6 +28,7 @@ interface OnboardingData {
   projectType: ProjectType;
   status: ProjectStatus;
   statusDetails: string;
+  assumptions: BusinessAssumptions;
   availability: {
     daysPerWeek: string[];
     hoursPerWeek: number;
@@ -42,6 +44,7 @@ export default function Onboarding() {
     projectType: "personal",
     status: "idea",
     statusDetails: "",
+    assumptions: { ...EMPTY_ASSUMPTIONS },
     availability: {
       daysPerWeek: ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"],
       hoursPerWeek: 20,
@@ -49,6 +52,7 @@ export default function Onboarding() {
       deadline: "",
     },
   });
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationStatus, setGenerationStatus] = useState("Analyse du projet...");
   const { user } = useAuth();
