@@ -136,6 +136,7 @@ export default function BusinessModelDetail() {
 
   const generateSingle = async (blockType: string) => {
     if (!model) return;
+    if (!(await preflightAssumptions(model.project_id))) return;
     setGeneratingBlock(blockType);
     try {
       const existingBlocks = blocks.map(b => ({ title: b.title, content: b.content }));
