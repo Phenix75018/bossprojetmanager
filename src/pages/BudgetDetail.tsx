@@ -71,6 +71,7 @@ export default function BudgetDetail() {
 
   const generateAll = async () => {
     if (!budget) return;
+    if (!(await preflightAssumptions(budget.project_id))) return;
     setGenerating("all");
     try {
       const { data, error } = await supabase.functions.invoke("generate-budget", {
