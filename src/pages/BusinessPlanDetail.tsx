@@ -192,6 +192,7 @@ export default function BusinessPlanDetail() {
 
   const generateSingle = async (sectionType: string) => {
     if (!plan) return;
+    if (!(await preflightAssumptions(plan.project_id))) return;
     setGeneratingSection(sectionType);
     try {
       const existingSections = sections.map(s => ({ title: s.title, content: s.content }));
