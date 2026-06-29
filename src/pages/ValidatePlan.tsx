@@ -23,6 +23,8 @@ import { useProjectsDB } from "@/hooks/useProjectsDB";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import CoherenceJustifications, { Justif } from "@/components/CoherenceJustifications";
+import { preflightAssumptionsLocal } from "@/lib/validateAssumptions";
+import type { BusinessAssumptions } from "@/lib/businessAssumptions";
 
 interface SubtaskDraft {
   title: string;
