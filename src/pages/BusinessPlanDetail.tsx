@@ -16,6 +16,7 @@ import BPChartRenderer from "@/components/BPChartRenderer";
 import { useDocumentVersions } from "@/hooks/useDocumentVersions";
 import VersionHistoryPanel from "@/components/VersionHistoryPanel";
 import BusinessAssumptionsPanel from "@/components/BusinessAssumptionsPanel";
+import { preflightAssumptions } from "@/lib/validateAssumptions";
 
 const SECTION_TYPES = [
   { type: "executive_summary", title: "Résumé exécutif", icon: "📋" },
