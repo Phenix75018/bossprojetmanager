@@ -77,8 +77,18 @@ export default function BusinessAssumptionsPanel({
     value: BusinessAssumptions[K],
   ) => setData((prev) => ({ ...prev, [key]: value }));
 
+  const validation = useMemo(() => validateAssumptions(data), [data]);
+  const fieldErr = (k: keyof BusinessAssumptions) =>
+    validation.errors.find((e) => e.field === k)?.message;
+  const fieldWarn = (k: keyof BusinessAssumptions) =>
+    validation.warnings.find((w) => w.field === k)?.message;
+
   const save = async () => {
     if (!projectId) return;
+    if (!validation.ok) {
+      toast.error("Corrigez les erreurs avant d'enregistrer");
+      return;
+    }
     setSaving(true);
     const cleaned: BusinessAssumptions = {
       ...data,
