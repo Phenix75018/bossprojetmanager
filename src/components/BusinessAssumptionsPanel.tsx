@@ -285,7 +285,7 @@ export default function BusinessAssumptionsPanel({
           <Button variant="ghost" onClick={() => setOpen(false)} disabled={saving}>
             Annuler
           </Button>
-          <Button onClick={save} disabled={saving || loading || !projectId}>
+          <Button onClick={save} disabled={saving || loading || !projectId || !validation.ok}>
             {saving ? (
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
             ) : (
