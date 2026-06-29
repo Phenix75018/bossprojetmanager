@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Settings2, Loader2, Save } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Settings2, Loader2, Save, AlertCircle, AlertTriangle } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -20,6 +20,7 @@ import {
   EMPTY_ASSUMPTIONS,
   hasAnyAssumption,
 } from "@/lib/businessAssumptions";
+import { validateAssumptions } from "@/lib/validateAssumptions";
 
 interface Props {
   projectId: string | null | undefined;
