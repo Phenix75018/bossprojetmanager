@@ -71,6 +71,8 @@ export default function Onboarding() {
       return;
     }
 
+    if (!preflightAssumptionsLocal(data.assumptions)) return;
+
     setIsGenerating(true);
     setGenerationStatus("L'IA analyse votre projet...");
 
