@@ -109,6 +109,7 @@ export default function BusinessModelDetail() {
 
   const generateFull = async () => {
     if (!model) return;
+    if (!(await preflightAssumptions(model.project_id))) return;
     setGeneratingFull(true);
     try {
       const { data, error } = await supabase.functions.invoke("generate-business-model", {
