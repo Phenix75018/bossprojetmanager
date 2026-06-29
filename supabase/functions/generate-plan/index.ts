@@ -13,6 +13,8 @@ import {
   fetchAssumptions,
   formatAssumptionsBlock,
   mergeAssumptions,
+  validateAssumptions,
+  validationErrorResponse,
   type BusinessAssumptions,
 } from "../_shared/businessAssumptions.ts";
 
