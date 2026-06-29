@@ -20,6 +20,7 @@ import { useDocumentVersions } from "@/hooks/useDocumentVersions";
 import VersionHistoryPanel from "@/components/VersionHistoryPanel";
 import CoherenceJustifications, { Justif } from "@/components/CoherenceJustifications";
 import BusinessAssumptionsPanel from "@/components/BusinessAssumptionsPanel";
+import { preflightAssumptions } from "@/lib/validateAssumptions";
 
 const CATEGORIES = [
   { key: "revenue", label: "Revenus / Chiffre d'affaires", icon: TrendingUp, color: "text-emerald-600" },
