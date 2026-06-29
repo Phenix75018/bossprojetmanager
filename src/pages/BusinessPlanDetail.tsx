@@ -165,6 +165,7 @@ export default function BusinessPlanDetail() {
 
   const generateFull = async () => {
     if (!plan) return;
+    if (!(await preflightAssumptions(plan.project_id))) return;
     setGeneratingFull(true);
     try {
       const { data, error } = await supabase.functions.invoke("generate-business-plan", {
