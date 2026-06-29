@@ -23,6 +23,8 @@ import { useProjectsDB } from "@/hooks/useProjectsDB";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import CoherenceJustifications, { Justif } from "@/components/CoherenceJustifications";
+import { preflightAssumptionsLocal } from "@/lib/validateAssumptions";
+import type { BusinessAssumptions } from "@/lib/businessAssumptions";
 
 interface SubtaskDraft {
   title: string;
@@ -88,10 +90,11 @@ export default function ValidatePlan() {
   const [bmId, setBmId] = useState<string | null>(null);
 
   const handleRegenerate = async () => {
+    if (!preflightAssumptionsLocal(assumptions as BusinessAssumptions | undefined)) return;
     setRegenerating(true);
     try {
       const { data: fnData, error: fnError } = await supabase.functions.invoke("generate-plan", {
-        body: { description, projectType, status, availability },
+        body: { description, projectType, status, availability, assumptions },
       });
       if (fnError) throw fnError;
       if (!fnData?.plan) throw new Error("Plan non généré");

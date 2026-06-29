@@ -16,6 +16,7 @@ import BPChartRenderer from "@/components/BPChartRenderer";
 import { useDocumentVersions } from "@/hooks/useDocumentVersions";
 import VersionHistoryPanel from "@/components/VersionHistoryPanel";
 import BusinessAssumptionsPanel from "@/components/BusinessAssumptionsPanel";
+import { preflightAssumptions } from "@/lib/validateAssumptions";
 
 const SECTION_TYPES = [
   { type: "executive_summary", title: "Résumé exécutif", icon: "📋" },
@@ -164,6 +165,7 @@ export default function BusinessPlanDetail() {
 
   const generateFull = async () => {
     if (!plan) return;
+    if (!(await preflightAssumptions(plan.project_id))) return;
     setGeneratingFull(true);
     try {
       const { data, error } = await supabase.functions.invoke("generate-business-plan", {
@@ -190,6 +192,7 @@ export default function BusinessPlanDetail() {
 
   const generateSingle = async (sectionType: string) => {
     if (!plan) return;
+    if (!(await preflightAssumptions(plan.project_id))) return;
     setGeneratingSection(sectionType);
     try {
       const existingSections = sections.map(s => ({ title: s.title, content: s.content }));

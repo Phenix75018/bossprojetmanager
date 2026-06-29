@@ -20,6 +20,7 @@ import { useDocumentVersions } from "@/hooks/useDocumentVersions";
 import VersionHistoryPanel from "@/components/VersionHistoryPanel";
 import CoherenceJustifications, { Justif } from "@/components/CoherenceJustifications";
 import BusinessAssumptionsPanel from "@/components/BusinessAssumptionsPanel";
+import { preflightAssumptions } from "@/lib/validateAssumptions";
 
 const CATEGORIES = [
   { key: "revenue", label: "Revenus / Chiffre d'affaires", icon: TrendingUp, color: "text-emerald-600" },
@@ -70,6 +71,7 @@ export default function BudgetDetail() {
 
   const generateAll = async () => {
     if (!budget) return;
+    if (!(await preflightAssumptions(budget.project_id))) return;
     setGenerating("all");
     try {
       const { data, error } = await supabase.functions.invoke("generate-budget", {
@@ -99,6 +101,7 @@ export default function BudgetDetail() {
 
   const generateCategory = async (category: string) => {
     if (!budget) return;
+    if (!(await preflightAssumptions(budget.project_id))) return;
     setGenerating(category);
     try {
       const { data, error } = await supabase.functions.invoke("generate-budget", {

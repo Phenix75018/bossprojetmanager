@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Settings2, Loader2, Save } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Settings2, Loader2, Save, AlertCircle, AlertTriangle } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -20,6 +20,7 @@ import {
   EMPTY_ASSUMPTIONS,
   hasAnyAssumption,
 } from "@/lib/businessAssumptions";
+import { validateAssumptions } from "@/lib/validateAssumptions";
 
 interface Props {
   projectId: string | null | undefined;
@@ -76,8 +77,15 @@ export default function BusinessAssumptionsPanel({
     value: BusinessAssumptions[K],
   ) => setData((prev) => ({ ...prev, [key]: value }));
 
+  const validation = useMemo(() => validateAssumptions(data), [data]);
+
+
   const save = async () => {
     if (!projectId) return;
+    if (!validation.ok) {
+      toast.error("Corrigez les erreurs avant d'enregistrer");
+      return;
+    }
     setSaving(true);
     const cleaned: BusinessAssumptions = {
       ...data,
@@ -132,6 +140,33 @@ export default function BusinessAssumptionsPanel({
           </div>
         ) : (
           <div className="grid gap-4 py-6">
+            {validation.errors.length > 0 && (
+              <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm">
+                <div className="flex items-center gap-2 font-medium text-destructive mb-1">
+                  <AlertCircle className="w-4 h-4" />
+                  {validation.errors.length} erreur{validation.errors.length > 1 ? "s" : ""} à corriger
+                </div>
+                <ul className="list-disc pl-5 space-y-0.5 text-destructive/90">
+                  {validation.errors.map((e, i) => (
+                    <li key={i}>{e.message}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {validation.warnings.length > 0 && (
+              <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
+                <div className="flex items-center gap-2 font-medium text-amber-700 dark:text-amber-400 mb-1">
+                  <AlertTriangle className="w-4 h-4" />
+                  Points d'attention
+                </div>
+                <ul className="list-disc pl-5 space-y-0.5 text-amber-700/90 dark:text-amber-300/90">
+                  {validation.warnings.map((w, i) => (
+                    <li key={i}>{w.message}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             <div className="grid gap-2">
               <Label htmlFor="ba-sector">Secteur d'activité</Label>
               <Input
@@ -247,7 +282,7 @@ export default function BusinessAssumptionsPanel({
           <Button variant="ghost" onClick={() => setOpen(false)} disabled={saving}>
             Annuler
           </Button>
-          <Button onClick={save} disabled={saving || loading || !projectId}>
+          <Button onClick={save} disabled={saving || loading || !projectId || !validation.ok}>
             {saving ? (
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
             ) : (

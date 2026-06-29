@@ -15,6 +15,8 @@ import {
   fetchAssumptions,
   formatAssumptionsBlock,
   mergeAssumptions,
+  validateAssumptions,
+  validationErrorResponse,
   type BusinessAssumptions,
 } from "../_shared/businessAssumptions.ts";
 
@@ -166,6 +168,10 @@ Deno.serve(async (req) => {
       bodyAssumptions as BusinessAssumptions | undefined,
       dbAssumptions,
     );
+    const assumptionsValidation = validateAssumptions(assumptions);
+    if (!assumptionsValidation.ok) {
+      return validationErrorResponse(assumptionsValidation, corsHeaders);
+    }
     const assumptionsBlock = formatAssumptionsBlock(assumptions);
 
     const refsHelp = (strat.bpRefs.length || strat.bmRefs.length)

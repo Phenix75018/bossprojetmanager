@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { BusinessAssumptions, EMPTY_ASSUMPTIONS } from "@/lib/businessAssumptions";
+import { preflightAssumptionsLocal } from "@/lib/validateAssumptions";
 
 type ProjectStatus = "idea" | "planning" | "in-progress" | "halfway" | "finalizing";
 type ProjectType = "personal" | "professional";
@@ -69,6 +70,8 @@ export default function Onboarding() {
       navigate("/auth");
       return;
     }
+
+    if (!preflightAssumptionsLocal(data.assumptions)) return;
 
     setIsGenerating(true);
     setGenerationStatus("L'IA analyse votre projet...");

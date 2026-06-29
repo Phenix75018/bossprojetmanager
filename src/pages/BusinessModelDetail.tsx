@@ -13,6 +13,7 @@ import ShareBusinessModelModal from "@/components/ShareBusinessModelModal";
 import { useDocumentVersions } from "@/hooks/useDocumentVersions";
 import VersionHistoryPanel from "@/components/VersionHistoryPanel";
 import BusinessAssumptionsPanel from "@/components/BusinessAssumptionsPanel";
+import { preflightAssumptions } from "@/lib/validateAssumptions";
 
 const BMC_BLOCKS = [
   { type: "key_partners", title: "Partenaires clés", icon: "🤝", color: "bg-blue-500/10 border-blue-500/30" },
@@ -108,6 +109,7 @@ export default function BusinessModelDetail() {
 
   const generateFull = async () => {
     if (!model) return;
+    if (!(await preflightAssumptions(model.project_id))) return;
     setGeneratingFull(true);
     try {
       const { data, error } = await supabase.functions.invoke("generate-business-model", {
@@ -134,6 +136,7 @@ export default function BusinessModelDetail() {
 
   const generateSingle = async (blockType: string) => {
     if (!model) return;
+    if (!(await preflightAssumptions(model.project_id))) return;
     setGeneratingBlock(blockType);
     try {
       const existingBlocks = blocks.map(b => ({ title: b.title, content: b.content }));

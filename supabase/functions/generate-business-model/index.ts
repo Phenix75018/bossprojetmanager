@@ -4,6 +4,8 @@ import {
   fetchAssumptions,
   formatAssumptionsBlock,
   mergeAssumptions,
+  validateAssumptions,
+  validationErrorResponse,
   type BusinessAssumptions,
 } from "../_shared/businessAssumptions.ts";
 
@@ -69,6 +71,10 @@ serve(async (req) => {
       bodyAssumptions as BusinessAssumptions | undefined,
       dbAssumptions,
     );
+    const assumptionsValidation = validateAssumptions(assumptions);
+    if (!assumptionsValidation.ok) {
+      return validationErrorResponse(assumptionsValidation, corsHeaders);
+    }
     const assumptionsBlock = formatAssumptionsBlock(assumptions);
 
     // Fetch linked Business Plan for cross-module coherence
