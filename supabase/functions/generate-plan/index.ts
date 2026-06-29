@@ -80,6 +80,10 @@ serve(async (req) => {
       bodyAssumptions as BusinessAssumptions | undefined,
       dbAssumptions,
     );
+    const assumptionsValidation = validateAssumptions(assumptions);
+    if (!assumptionsValidation.ok) {
+      return validationErrorResponse(assumptionsValidation, corsHeaders);
+    }
     const assumptionsBlock = formatAssumptionsBlock(assumptions);
 
     // Fetch BP + BM context for cross-module coherence (optional)
