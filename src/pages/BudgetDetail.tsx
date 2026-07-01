@@ -20,6 +20,7 @@ import { useDocumentVersions } from "@/hooks/useDocumentVersions";
 import VersionHistoryPanel from "@/components/VersionHistoryPanel";
 import CoherenceJustifications, { Justif } from "@/components/CoherenceJustifications";
 import BusinessAssumptionsPanel from "@/components/BusinessAssumptionsPanel";
+import ScenarioSwitcher from "@/components/ScenarioSwitcher";
 import { preflightAssumptions } from "@/lib/validateAssumptions";
 
 const CATEGORIES = [
@@ -226,6 +227,7 @@ export default function BudgetDetail() {
             <p className="text-sm text-muted-foreground">{budget.description} · {budget.horizon_months} mois</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
+            <ScenarioSwitcher projectId={budget.project_id} />
             <BusinessAssumptionsPanel projectId={budget.project_id} />
             <Button variant="outline" size="sm" onClick={generateAll} disabled={!!generating} className="gap-2">
               {generating === "all" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}

@@ -16,6 +16,7 @@ import BPChartRenderer from "@/components/BPChartRenderer";
 import { useDocumentVersions } from "@/hooks/useDocumentVersions";
 import VersionHistoryPanel from "@/components/VersionHistoryPanel";
 import BusinessAssumptionsPanel from "@/components/BusinessAssumptionsPanel";
+import ScenarioSwitcher from "@/components/ScenarioSwitcher";
 import { preflightAssumptions } from "@/lib/validateAssumptions";
 
 const SECTION_TYPES = [
@@ -289,6 +290,7 @@ export default function BusinessPlanDetail() {
             {plan.description && <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{plan.description}</p>}
           </div>
           <div className="flex items-center gap-2 flex-wrap">
+            <ScenarioSwitcher projectId={plan.project_id} />
             <BusinessAssumptionsPanel projectId={plan.project_id} />
             <Button variant="outline" size="sm" onClick={() => setShowShare(true)} className="gap-1.5">
               <Share2 className="w-4 h-4" /> Partager
