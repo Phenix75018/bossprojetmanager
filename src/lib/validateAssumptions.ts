@@ -13,6 +13,9 @@ import {
 export type ValidationIssue = {
   field: keyof BusinessAssumptions | "global";
   message: string;
+  suggestion?: string;
+  acceptableRange?: string;
+  suggestedValue?: string | number;
 };
 
 export type ValidationResult = {
