@@ -20,6 +20,7 @@ import { useDocumentVersions } from "@/hooks/useDocumentVersions";
 import VersionHistoryPanel from "@/components/VersionHistoryPanel";
 import CoherenceJustifications, { Justif } from "@/components/CoherenceJustifications";
 import BusinessAssumptionsPanel from "@/components/BusinessAssumptionsPanel";
+import ScenarioSwitcher from "@/components/ScenarioSwitcher";
 import { preflightAssumptions } from "@/lib/validateAssumptions";
 
 const CATEGORIES = [
