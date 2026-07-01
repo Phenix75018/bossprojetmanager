@@ -619,6 +619,8 @@ export type Database = {
       }
       projects: {
         Row: {
+          active_scenario: string
+          assumption_scenarios: Json
           business_assumptions: Json
           completion_percent: number
           created_at: string
@@ -637,6 +639,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          active_scenario?: string
+          assumption_scenarios?: Json
           business_assumptions?: Json
           completion_percent?: number
           created_at?: string
@@ -655,6 +659,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          active_scenario?: string
+          assumption_scenarios?: Json
           business_assumptions?: Json
           completion_percent?: number
           created_at?: string
