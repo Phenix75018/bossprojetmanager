@@ -117,7 +117,8 @@ export default function ScenarioSwitcher({
     if (!projectId) return;
     setSaving(true);
     const activeAssumptions = next[nextActive] || EMPTY_ASSUMPTIONS;
-    const { label: _l, ...cleanAssumptions } = activeAssumptions;
+    const { label: _l, ...cleanAssumptions } =
+      activeAssumptions as BusinessAssumptions & { label?: string };
     const patch: Record<string, unknown> = {
       assumption_scenarios: next as never,
       active_scenario: nextActive,
