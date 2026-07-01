@@ -219,6 +219,9 @@ export function validateAssumptions(
       field: "global",
       message:
         "Cumul croissance > 150 %/an et part de marché > 40 % : objectifs très ambitieux, prévoir une justification solide.",
+      suggestion:
+        "Réduisez l'un des deux : soit croissance 80–120 %/an, soit part de marché 10–20 %.",
+      acceptableRange: "Croissance ≤ 150 %/an OU part de marché ≤ 30 %",
     });
   }
 
