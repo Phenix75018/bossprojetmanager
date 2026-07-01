@@ -142,26 +142,78 @@ export default function BusinessAssumptionsPanel({
           <div className="grid gap-4 py-6">
             {validation.errors.length > 0 && (
               <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm">
-                <div className="flex items-center gap-2 font-medium text-destructive mb-1">
+                <div className="flex items-center gap-2 font-medium text-destructive mb-2">
                   <AlertCircle className="w-4 h-4" />
                   {validation.errors.length} erreur{validation.errors.length > 1 ? "s" : ""} à corriger
                 </div>
-                <ul className="list-disc pl-5 space-y-0.5 text-destructive/90">
+                <ul className="space-y-2 text-destructive/90">
                   {validation.errors.map((e, i) => (
-                    <li key={i}>{e.message}</li>
+                    <li key={i} className="border-l-2 border-destructive/40 pl-2">
+                      <div>{e.message}</div>
+                      {e.suggestion && (
+                        <div className="text-xs opacity-80 mt-0.5">💡 {e.suggestion}</div>
+                      )}
+                      {e.acceptableRange && (
+                        <div className="text-xs opacity-70 mt-0.5">
+                          Plage acceptable : <span className="font-mono">{e.acceptableRange}</span>
+                        </div>
+                      )}
+                      {e.suggestedValue !== undefined && e.field !== "global" && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-6 mt-1 text-xs"
+                          onClick={() =>
+                            update(
+                              e.field as keyof BusinessAssumptions,
+                              e.suggestedValue as never,
+                            )
+                          }
+                        >
+                          Appliquer « {String(e.suggestedValue)} »
+                        </Button>
+                      )}
+                    </li>
                   ))}
                 </ul>
               </div>
             )}
             {validation.warnings.length > 0 && (
               <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
-                <div className="flex items-center gap-2 font-medium text-amber-700 dark:text-amber-400 mb-1">
+                <div className="flex items-center gap-2 font-medium text-amber-700 dark:text-amber-400 mb-2">
                   <AlertTriangle className="w-4 h-4" />
                   Points d'attention
                 </div>
-                <ul className="list-disc pl-5 space-y-0.5 text-amber-700/90 dark:text-amber-300/90">
+                <ul className="space-y-2 text-amber-700/90 dark:text-amber-300/90">
                   {validation.warnings.map((w, i) => (
-                    <li key={i}>{w.message}</li>
+                    <li key={i} className="border-l-2 border-amber-500/40 pl-2">
+                      <div>{w.message}</div>
+                      {w.suggestion && (
+                        <div className="text-xs opacity-80 mt-0.5">💡 {w.suggestion}</div>
+                      )}
+                      {w.acceptableRange && (
+                        <div className="text-xs opacity-70 mt-0.5">
+                          Plage recommandée : <span className="font-mono">{w.acceptableRange}</span>
+                        </div>
+                      )}
+                      {w.suggestedValue !== undefined && w.field !== "global" && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-6 mt-1 text-xs"
+                          onClick={() =>
+                            update(
+                              w.field as keyof BusinessAssumptions,
+                              w.suggestedValue as never,
+                            )
+                          }
+                        >
+                          Appliquer « {String(w.suggestedValue)} »
+                        </Button>
+                      )}
+                    </li>
                   ))}
                 </ul>
               </div>

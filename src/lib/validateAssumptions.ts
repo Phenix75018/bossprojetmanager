@@ -13,6 +13,9 @@ import {
 export type ValidationIssue = {
   field: keyof BusinessAssumptions | "global";
   message: string;
+  suggestion?: string;
+  acceptableRange?: string;
+  suggestedValue?: string | number;
 };
 
 export type ValidationResult = {
@@ -73,36 +76,56 @@ export function validateAssumptions(
       field: "currency",
       message:
         "Devise invalide : utilisez un code ISO (ex: EUR, USD, GBP) ou un symbole (€, $, £).",
+      suggestion: "Essayez « EUR », « USD » ou « € ».",
+      acceptableRange: "Code ISO 3-4 lettres ou symbole € $ £ ¥",
+      suggestedValue: "EUR",
     });
   }
 
   // Growth rate
+  const GROWTH_RANGE = "-90 % à +1000 % (typiquement 10–80 %/an)";
   if (a.growth_rate_pct !== null && a.growth_rate_pct !== undefined) {
     const g = Number(a.growth_rate_pct);
     if (!Number.isFinite(g)) {
       errors.push({
         field: "growth_rate_pct",
         message: "Taux de croissance : valeur numérique attendue.",
+        suggestion: "Saisissez un nombre entier ou décimal (ex: 30 pour 30 %).",
+        acceptableRange: GROWTH_RANGE,
+        suggestedValue: 30,
       });
     } else if (g < -90 || g > 1000) {
       errors.push({
         field: "growth_rate_pct",
-        message: "Taux de croissance hors plage réaliste (-90 % à +1000 %).",
+        message: `Taux de croissance ${g} % hors plage réaliste.`,
+        suggestion:
+          g > 1000
+            ? "Une croissance > 1000 %/an n'est pas soutenable — ramenez à 80–150 % max en phase hyper-croissance."
+            : "Une chute > 90 % implique un arrêt d'activité — revoyez à la hausse.",
+        acceptableRange: GROWTH_RANGE,
+        suggestedValue: g > 1000 ? 100 : -50,
       });
     } else if (g > 300) {
       warnings.push({
         field: "growth_rate_pct",
         message: `Croissance ${g} %/an très agressive — vérifiez la cohérence avec votre TAM/SAM.`,
+        suggestion:
+          "Les scale-ups tech tournent à 100–200 %/an sur 2-3 ans max. Envisagez 150 % ou justifiez.",
+        acceptableRange: "10–200 %/an réaliste, 200–300 % exceptionnel",
+        suggestedValue: 150,
       });
     } else if (g < 0) {
       warnings.push({
         field: "growth_rate_pct",
         message: "Croissance négative : assurez-vous que c'est volontaire.",
+        suggestion: "Pour une phase de recentrage, indiquer -10 à -30 % est courant.",
+        acceptableRange: GROWTH_RANGE,
       });
     }
   }
 
   // Market share
+  const SHARE_RANGE = "0 à 100 % (typiquement 0,5–10 % en 3-5 ans)";
   if (
     a.market_share_target_pct !== null &&
     a.market_share_target_pct !== undefined
@@ -112,37 +135,76 @@ export function validateAssumptions(
       errors.push({
         field: "market_share_target_pct",
         message: "Part de marché : valeur numérique attendue.",
+        suggestion: "Saisissez un pourcentage (ex: 3 pour 3 % du marché adressable).",
+        acceptableRange: SHARE_RANGE,
+        suggestedValue: 3,
       });
     } else if (s < 0 || s > 100) {
       errors.push({
         field: "market_share_target_pct",
-        message: "Part de marché doit être comprise entre 0 et 100 %.",
+        message: `Part de marché ${s} % hors plage.`,
+        suggestion:
+          "Une part réaliste à 3-5 ans se situe entre 0,5 % et 10 % du SAM.",
+        acceptableRange: SHARE_RANGE,
+        suggestedValue: 5,
       });
     } else if (s > 30) {
       warnings.push({
         field: "market_share_target_pct",
         message: `Part de marché cible ${s} % très élevée — justifiez la stratégie de conquête.`,
+        suggestion:
+          "Seuls les leaders monopolistiques dépassent 30 %. Envisagez 10–15 % ou segmentez votre SAM.",
+        acceptableRange: SHARE_RANGE,
+        suggestedValue: 10,
       });
     }
   }
 
-  // Pricing should contain at least one number when filled
+  // Pricing: number presence + magnitude sanity
   const pricing = txt(a.pricing);
+  const PRICING_RANGE =
+    "B2C SaaS : 5–50 €/mois • B2B SaaS : 30–500 €/mois • Entreprise : 1–10 k€/mois";
   if (pricing && !NUMBER_HINT_RE.test(pricing)) {
     warnings.push({
       field: "pricing",
       message:
         "Pricing renseigné sans valeur chiffrée — précisez un montant pour des estimations fiables.",
+      suggestion: "Ex: « 29 €/mois Pro, 99 €/mois Business, setup 500 € ».",
+      acceptableRange: PRICING_RANGE,
     });
+  } else if (pricing) {
+    const nums = pricing.match(/\d+(?:[.,]\d+)?/g)?.map((n) => Number(n.replace(",", "."))) ?? [];
+    const maxPrice = nums.length ? Math.max(...nums) : 0;
+    if (maxPrice > 0 && maxPrice < 3) {
+      warnings.push({
+        field: "pricing",
+        message: `Pricing très bas détecté (${maxPrice}) — risque de non-rentabilité.`,
+        suggestion:
+          "Vérifiez le CAC/LTV : sous 5 €/mois, l'acquisition payante devient rarement rentable.",
+        acceptableRange: PRICING_RANGE,
+        suggestedValue: 19,
+      });
+    } else if (maxPrice > 100000) {
+      warnings.push({
+        field: "pricing",
+        message: `Pricing très élevé (${maxPrice}) — cycle de vente long à prévoir.`,
+        suggestion: "Au-delà de 100 k€, prévoyez 6-12 mois de cycle de vente enterprise.",
+        acceptableRange: PRICING_RANGE,
+      });
+    }
   }
 
-  // Costs should contain at least one number when filled
+  // Costs
   const costs = txt(a.costs);
   if (costs && !NUMBER_HINT_RE.test(costs)) {
     warnings.push({
       field: "costs",
       message:
         "Structure de coûts sans valeur chiffrée — précisez des montants ou % du CA.",
+      suggestion:
+        "Ex: « 2 ETP à 55 k€ chargés, hébergement 800 €/mois, marketing 20 % du CA ».",
+      acceptableRange:
+        "Masse salariale 40–60 % CA • Marketing 15–30 % CA • Infra 2–8 % CA",
     });
   }
 
@@ -157,6 +219,9 @@ export function validateAssumptions(
       field: "global",
       message:
         "Cumul croissance > 150 %/an et part de marché > 40 % : objectifs très ambitieux, prévoir une justification solide.",
+      suggestion:
+        "Réduisez l'un des deux : soit croissance 80–120 %/an, soit part de marché 10–20 %.",
+      acceptableRange: "Croissance ≤ 150 %/an OU part de marché ≤ 30 %",
     });
   }
 
