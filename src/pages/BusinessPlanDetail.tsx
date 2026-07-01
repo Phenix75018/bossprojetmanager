@@ -16,6 +16,7 @@ import BPChartRenderer from "@/components/BPChartRenderer";
 import { useDocumentVersions } from "@/hooks/useDocumentVersions";
 import VersionHistoryPanel from "@/components/VersionHistoryPanel";
 import BusinessAssumptionsPanel from "@/components/BusinessAssumptionsPanel";
+import ScenarioSwitcher from "@/components/ScenarioSwitcher";
 import { preflightAssumptions } from "@/lib/validateAssumptions";
 
 const SECTION_TYPES = [
