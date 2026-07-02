@@ -92,8 +92,9 @@ export default function BudgetDetail() {
         if (Array.isArray(data.coherence_justifications)) setCoherenceJustifs(data.coherence_justifications);
         if (data.bp_id) setBpId(data.bp_id);
         if (data.bm_id) setBmId(data.bm_id);
+        await syncKpisFromBudget(budget.project_id, data.lines, budget.horizon_months);
         await loadData();
-        toast.success("Budget généré avec succès !");
+        toast.success("Budget généré — KPIs synchronisés avec la comparaison de scénarios.");
       }
     } catch (err) {
       console.error(err);
