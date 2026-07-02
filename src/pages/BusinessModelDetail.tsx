@@ -128,7 +128,8 @@ export default function BusinessModelDetail() {
         }));
         await upsertBlocks(model.id, blks);
         await updateModelStatus(model.id, "in_progress");
-        toast.success("Business model généré avec succès !");
+        await syncKpisFromTexts(model.project_id, blks.map((b: any) => b.content));
+        toast.success("Business model généré — KPIs synchronisés.");
         await load();
       }
     } catch (e: any) {
