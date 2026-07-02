@@ -23,6 +23,7 @@ import BusinessAssumptionsPanel from "@/components/BusinessAssumptionsPanel";
 import ScenarioSwitcher from "@/components/ScenarioSwitcher";
 import ScenarioComparison from "@/components/ScenarioComparison";
 import { preflightAssumptions } from "@/lib/validateAssumptions";
+import { syncKpisFromBudget } from "@/lib/syncKpis";
 
 const CATEGORIES = [
   { key: "revenue", label: "Revenus / Chiffre d'affaires", icon: TrendingUp, color: "text-emerald-600" },
