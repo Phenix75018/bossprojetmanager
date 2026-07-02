@@ -156,6 +156,7 @@ export default function BusinessModelDetail() {
           const info = BLOCKS.find(b => b.type === blockType);
           await addBlock(model.id, blockType, data.result.title || info?.title || "", data.result.content, BLOCKS.findIndex(b => b.type === blockType));
         }
+        await syncKpisFromTexts(model.project_id, [data.result.content]);
         toast.success("Bloc généré !");
         await load();
       }
