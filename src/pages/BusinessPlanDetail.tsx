@@ -184,7 +184,8 @@ export default function BusinessPlanDetail() {
         }));
         await upsertSections(plan.id, secs);
         await updatePlanStatus(plan.id, "in_progress");
-        toast.success("Business plan généré avec succès !");
+        await syncKpisFromTexts(plan.project_id, secs.map((s: any) => s.content));
+        toast.success("Business plan généré — KPIs synchronisés.");
         await load();
       }
     } catch (e: any) {
