@@ -482,6 +482,26 @@ function ScenarioEditor({
           />
         </div>
       </div>
+
+      <div className="pt-2">
+        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+          KPIs financiers (optionnels — utilisés dans la vue de comparaison)
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <NumField label="CA annuel attendu" value={draft.expected_annual_revenue}
+            onChange={(v) => update("expected_annual_revenue", v)} />
+          <NumField label="CAC moyen" value={draft.avg_cac}
+            onChange={(v) => update("avg_cac", v)} />
+          <NumField label="LTV moyen" value={draft.avg_ltv}
+            onChange={(v) => update("avg_ltv", v)} />
+          <NumField label="Marge brute (%)" value={draft.gross_margin_pct}
+            onChange={(v) => update("gross_margin_pct", v)} />
+          <NumField label="Marge EBITDA (%)" value={draft.ebitda_margin_pct}
+            onChange={(v) => update("ebitda_margin_pct", v)} />
+          <NumField label="Coûts fixes / mois" value={draft.fixed_costs_monthly}
+            onChange={(v) => update("fixed_costs_monthly", v)} />
+        </div>
+      </div>
       <div className="flex gap-2 justify-end pt-1">
         <Button size="sm" variant="ghost" onClick={onCancel}>
           <X className="w-4 h-4 mr-1" /> Annuler
