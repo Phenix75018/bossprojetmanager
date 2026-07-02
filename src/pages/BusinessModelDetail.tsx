@@ -14,6 +14,7 @@ import { useDocumentVersions } from "@/hooks/useDocumentVersions";
 import VersionHistoryPanel from "@/components/VersionHistoryPanel";
 import BusinessAssumptionsPanel from "@/components/BusinessAssumptionsPanel";
 import ScenarioSwitcher from "@/components/ScenarioSwitcher";
+import ScenarioComparison from "@/components/ScenarioComparison";
 import { preflightAssumptions } from "@/lib/validateAssumptions";
 
 const BMC_BLOCKS = [
@@ -229,6 +230,7 @@ export default function BusinessModelDetail() {
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <ScenarioSwitcher projectId={model.project_id} />
+            <ScenarioComparison projectId={model.project_id} />
             <BusinessAssumptionsPanel projectId={model.project_id} />
             <Button variant="outline" size="sm" onClick={() => setShowShare(true)} className="gap-1.5">
               <Share2 className="w-4 h-4" /> Partager
