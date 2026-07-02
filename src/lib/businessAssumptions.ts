@@ -12,6 +12,13 @@ export type BusinessAssumptions = {
   market_share_target_pct?: number | null;
   target_market_size?: string;
   notes?: string;
+  // Optional financial KPIs used by the scenario comparison view.
+  avg_cac?: number | null;
+  avg_ltv?: number | null;
+  gross_margin_pct?: number | null;
+  fixed_costs_monthly?: number | null;
+  ebitda_margin_pct?: number | null;
+  expected_annual_revenue?: number | null;
 };
 
 export const EMPTY_ASSUMPTIONS: BusinessAssumptions = {
@@ -24,6 +31,12 @@ export const EMPTY_ASSUMPTIONS: BusinessAssumptions = {
   market_share_target_pct: null,
   target_market_size: "",
   notes: "",
+  avg_cac: null,
+  avg_ltv: null,
+  gross_margin_pct: null,
+  fixed_costs_monthly: null,
+  ebitda_margin_pct: null,
+  expected_annual_revenue: null,
 };
 
 export function hasAnyAssumption(a?: BusinessAssumptions | null): boolean {
