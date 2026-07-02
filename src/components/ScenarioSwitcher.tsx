@@ -518,3 +518,24 @@ function ScenarioEditor({
     </div>
   );
 }
+
+function NumField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number | null | undefined;
+  onChange: (v: number | null) => void;
+}) {
+  return (
+    <div className="grid gap-1">
+      <Label className="text-xs">{label}</Label>
+      <Input
+        type="number"
+        value={value ?? ""}
+        onChange={(e) => onChange(e.target.value === "" ? null : Number(e.target.value))}
+      />
+    </div>
+  );
+}
