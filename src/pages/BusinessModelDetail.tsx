@@ -16,6 +16,7 @@ import BusinessAssumptionsPanel from "@/components/BusinessAssumptionsPanel";
 import ScenarioSwitcher from "@/components/ScenarioSwitcher";
 import ScenarioComparison from "@/components/ScenarioComparison";
 import { preflightAssumptions } from "@/lib/validateAssumptions";
+import { syncKpisFromTexts } from "@/lib/syncKpis";
 
 const BMC_BLOCKS = [
   { type: "key_partners", title: "Partenaires clés", icon: "🤝", color: "bg-blue-500/10 border-blue-500/30" },
@@ -127,7 +128,8 @@ export default function BusinessModelDetail() {
         }));
         await upsertBlocks(model.id, blks);
         await updateModelStatus(model.id, "in_progress");
-        toast.success("Business model généré avec succès !");
+        await syncKpisFromTexts(model.project_id, blks.map((b: any) => b.content));
+        toast.success("Business model généré — KPIs synchronisés.");
         await load();
       }
     } catch (e: any) {
@@ -154,6 +156,7 @@ export default function BusinessModelDetail() {
           const info = BLOCKS.find(b => b.type === blockType);
           await addBlock(model.id, blockType, data.result.title || info?.title || "", data.result.content, BLOCKS.findIndex(b => b.type === blockType));
         }
+        await syncKpisFromTexts(model.project_id, [data.result.content]);
         toast.success("Bloc généré !");
         await load();
       }

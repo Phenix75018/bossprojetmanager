@@ -19,6 +19,7 @@ import BusinessAssumptionsPanel from "@/components/BusinessAssumptionsPanel";
 import ScenarioSwitcher from "@/components/ScenarioSwitcher";
 import ScenarioComparison from "@/components/ScenarioComparison";
 import { preflightAssumptions } from "@/lib/validateAssumptions";
+import { syncKpisFromTexts } from "@/lib/syncKpis";
 
 const SECTION_TYPES = [
   { type: "executive_summary", title: "Résumé exécutif", icon: "📋" },
@@ -183,7 +184,8 @@ export default function BusinessPlanDetail() {
         }));
         await upsertSections(plan.id, secs);
         await updatePlanStatus(plan.id, "in_progress");
-        toast.success("Business plan généré avec succès !");
+        await syncKpisFromTexts(plan.project_id, secs.map((s: any) => s.content));
+        toast.success("Business plan généré — KPIs synchronisés.");
         await load();
       }
     } catch (e: any) {
@@ -210,6 +212,7 @@ export default function BusinessPlanDetail() {
           const info = SECTION_TYPES.find(s => s.type === sectionType);
           await addSection(plan.id, sectionType, data.result.title || info?.title || "", data.result.content, SECTION_TYPES.findIndex(s => s.type === sectionType));
         }
+        await syncKpisFromTexts(plan.project_id, [data.result.content]);
         toast.success("Section générée !");
         await load();
         setActiveSection(sectionType);

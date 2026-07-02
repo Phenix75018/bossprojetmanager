@@ -23,6 +23,7 @@ import BusinessAssumptionsPanel from "@/components/BusinessAssumptionsPanel";
 import ScenarioSwitcher from "@/components/ScenarioSwitcher";
 import ScenarioComparison from "@/components/ScenarioComparison";
 import { preflightAssumptions } from "@/lib/validateAssumptions";
+import { syncKpisFromBudget } from "@/lib/syncKpis";
 
 const CATEGORIES = [
   { key: "revenue", label: "Revenus / Chiffre d'affaires", icon: TrendingUp, color: "text-emerald-600" },
@@ -91,8 +92,9 @@ export default function BudgetDetail() {
         if (Array.isArray(data.coherence_justifications)) setCoherenceJustifs(data.coherence_justifications);
         if (data.bp_id) setBpId(data.bp_id);
         if (data.bm_id) setBmId(data.bm_id);
+        await syncKpisFromBudget(budget.project_id, data.lines, budget.horizon_months);
         await loadData();
-        toast.success("Budget généré avec succès !");
+        toast.success("Budget généré — KPIs synchronisés avec la comparaison de scénarios.");
       }
     } catch (err) {
       console.error(err);
@@ -130,7 +132,10 @@ export default function BudgetDetail() {
         if (data.bp_id) setBpId(data.bp_id);
         if (data.bm_id) setBmId(data.bm_id);
         await loadData();
-        toast.success("Catégorie générée !");
+        // Re-sync KPIs using the full merged set of lines after refresh.
+        const merged = [...lines.filter(l => l.category !== category), ...data.lines];
+        await syncKpisFromBudget(budget.project_id, merged, budget.horizon_months);
+        toast.success("Catégorie générée — KPIs mis à jour.");
       }
     } catch (err) {
       console.error(err);
