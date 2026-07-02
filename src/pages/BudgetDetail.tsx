@@ -132,7 +132,10 @@ export default function BudgetDetail() {
         if (data.bp_id) setBpId(data.bp_id);
         if (data.bm_id) setBmId(data.bm_id);
         await loadData();
-        toast.success("Catégorie générée !");
+        // Re-sync KPIs using the full merged set of lines after refresh.
+        const merged = [...lines.filter(l => l.category !== category), ...data.lines];
+        await syncKpisFromBudget(budget.project_id, merged, budget.horizon_months);
+        toast.success("Catégorie générée — KPIs mis à jour.");
       }
     } catch (err) {
       console.error(err);
