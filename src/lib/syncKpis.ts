@@ -2,9 +2,36 @@
 // annual revenue, breakeven) into the active scenario and business_assumptions
 // after a generation completes. Populates the ScenarioComparison view without
 // requiring manual entry.
+//
+// Every inferred KPI also records the source data (budget lines aggregated or
+// textual snippet extracted) so the comparison UI can explain how the value
+// was calculated.
 
 import { supabase } from "@/integrations/supabase/client";
 import type { BusinessAssumptions } from "@/lib/businessAssumptions";
+
+// -----------------------------------------------------------------------
+// Source metadata attached to each KPI
+// -----------------------------------------------------------------------
+
+export type KpiContributor = {
+  label: string;
+  value?: number | string;
+  snippet?: string;
+};
+
+export type KpiSource = {
+  origin: "budget" | "text" | "manual";
+  formula?: string;
+  contributors?: KpiContributor[];
+};
+
+export type KpiSources = Partial<Record<keyof BusinessAssumptions, KpiSource>>;
+
+export type KpiResult = {
+  patch: Partial<BusinessAssumptions>;
+  sources: KpiSources;
+};
 
 // -----------------------------------------------------------------------
 // Budget-line inference
@@ -17,11 +44,6 @@ export type BudgetLineLite = {
   monthly_values: number[] | unknown;
   is_total?: boolean;
 };
-
-function sumArr(a: unknown): number {
-  if (!Array.isArray(a)) return 0;
-  return a.reduce((s: number, v) => s + (Number(v) || 0), 0);
-}
 
 function sliceAnnual(a: unknown, months = 12): number {
   if (!Array.isArray(a)) return 0;
@@ -43,54 +65,104 @@ function isCOGS(l: BudgetLineLite): boolean {
   );
 }
 
+function lineLabel(l: BudgetLineLite): string {
+  return l.label || l.subcategory || l.category || "Ligne";
+}
+
 export function kpisFromBudgetLines(
   lines: BudgetLineLite[],
   horizonMonths = 12,
-): Partial<BusinessAssumptions> {
+): KpiResult {
   const months = Math.min(horizonMonths || 12, 12);
-  const kept = lines.filter((l) => !l?.is_total);
+  const kept = (lines || []).filter((l) => !l?.is_total);
 
   const revenueLines = kept.filter((l) => l.category === "revenue");
   const fixedLines = kept.filter((l) => l.category === "fixed_charges");
   const variableLines = kept.filter((l) => l.category === "variable_charges");
+  const cogsLines = variableLines.filter(isCOGS);
 
   const revenue = revenueLines.reduce(
     (s, l) => s + sliceAnnual(l.monthly_values, months),
     0,
   );
-  const fixedMonthly =
-    fixedLines.reduce((s, l) => s + monthlyAvg(l.monthly_values, months), 0);
+  const fixedMonthly = fixedLines.reduce(
+    (s, l) => s + monthlyAvg(l.monthly_values, months),
+    0,
+  );
   const variableAnnual = variableLines.reduce(
     (s, l) => s + sliceAnnual(l.monthly_values, months),
     0,
   );
-  const cogsAnnual = variableLines
-    .filter(isCOGS)
-    .reduce((s, l) => s + sliceAnnual(l.monthly_values, months), 0);
+  const cogsAnnual = cogsLines.reduce(
+    (s, l) => s + sliceAnnual(l.monthly_values, months),
+    0,
+  );
 
-  const out: Partial<BusinessAssumptions> = {};
-  if (revenue > 0) out.expected_annual_revenue = Math.round(revenue);
-  if (fixedMonthly > 0) out.fixed_costs_monthly = Math.round(fixedMonthly);
+  const patch: Partial<BusinessAssumptions> = {};
+  const sources: KpiSources = {};
+
+  if (revenue > 0) {
+    patch.expected_annual_revenue = Math.round(revenue);
+    sources.expected_annual_revenue = {
+      origin: "budget",
+      formula: `Somme des lignes « Revenus » sur ${months} mois`,
+      contributors: revenueLines.map((l) => ({
+        label: lineLabel(l),
+        value: Math.round(sliceAnnual(l.monthly_values, months)),
+      })),
+    };
+  }
+
+  if (fixedMonthly > 0) {
+    patch.fixed_costs_monthly = Math.round(fixedMonthly);
+    sources.fixed_costs_monthly = {
+      origin: "budget",
+      formula: `Moyenne mensuelle des lignes « Charges fixes » sur ${months} mois`,
+      contributors: fixedLines.map((l) => ({
+        label: lineLabel(l),
+        value: Math.round(monthlyAvg(l.monthly_values, months)),
+      })),
+    };
+  }
 
   if (revenue > 0) {
     const cogs = cogsAnnual > 0 ? cogsAnnual : variableAnnual;
-    if (cogs >= 0) {
-      const gm = ((revenue - cogs) / revenue) * 100;
-      if (Number.isFinite(gm)) out.gross_margin_pct = Math.round(gm * 10) / 10;
+    const gm = ((revenue - cogs) / revenue) * 100;
+    if (Number.isFinite(gm)) {
+      patch.gross_margin_pct = Math.round(gm * 10) / 10;
+      const contribLines = cogsAnnual > 0 ? cogsLines : variableLines;
+      sources.gross_margin_pct = {
+        origin: "budget",
+        formula: `(CA − ${cogsAnnual > 0 ? "COGS" : "charges variables"}) ÷ CA = (${Math.round(revenue)} − ${Math.round(cogs)}) ÷ ${Math.round(revenue)}`,
+        contributors: contribLines.map((l) => ({
+          label: lineLabel(l),
+          value: Math.round(sliceAnnual(l.monthly_values, months)),
+        })),
+      };
     }
     const ebitda = revenue - fixedMonthly * 12 - variableAnnual;
     const em = (ebitda / revenue) * 100;
-    if (Number.isFinite(em)) out.ebitda_margin_pct = Math.round(em * 10) / 10;
+    if (Number.isFinite(em)) {
+      patch.ebitda_margin_pct = Math.round(em * 10) / 10;
+      sources.ebitda_margin_pct = {
+        origin: "budget",
+        formula: `(CA − charges fixes annuelles − charges variables) ÷ CA = (${Math.round(revenue)} − ${Math.round(fixedMonthly * 12)} − ${Math.round(variableAnnual)}) ÷ ${Math.round(revenue)}`,
+        contributors: [
+          { label: "CA annuel", value: Math.round(revenue) },
+          { label: "Charges fixes (annuelles)", value: Math.round(fixedMonthly * 12) },
+          { label: "Charges variables (annuelles)", value: Math.round(variableAnnual) },
+        ],
+      };
+    }
   }
-  return out;
+
+  return { patch, sources };
 }
 
 // -----------------------------------------------------------------------
-// Text-based inference (BP / BM sections) — pulls CAC / LTV / margins /
-// breakeven / annual revenue if the AI mentions them explicitly.
+// Text-based inference (BP / BM sections)
 // -----------------------------------------------------------------------
 
-// Parse a numeric expression like "1 250,50", "1,250.50", "12.5k", "3M", "3 M€".
 function parseNumber(raw: string): number | null {
   if (!raw) return null;
   let s = raw.trim().toLowerCase().replace(/[€$£¥\s]/g, "");
@@ -99,9 +171,7 @@ function parseNumber(raw: string): number | null {
     mult = s.endsWith("m") ? 1_000_000 : 1_000;
     s = s.slice(0, -1);
   }
-  // Handle FR/EN decimal separators.
   if (s.includes(",") && s.includes(".")) {
-    // Assume "," is thousands.
     s = s.replace(/,/g, "");
   } else if (s.includes(",")) {
     s = s.replace(",", ".");
@@ -110,64 +180,108 @@ function parseNumber(raw: string): number | null {
   return Number.isFinite(n) ? n * mult : null;
 }
 
-function firstMatch(text: string, re: RegExp): string | null {
-  const m = text.match(re);
-  return m ? (m[1] ?? m[0]) : null;
+function snippetAround(text: string, index: number, length: number, pad = 40): string {
+  const start = Math.max(0, index - pad);
+  const end = Math.min(text.length, index + length + pad);
+  return (start > 0 ? "…" : "") + text.slice(start, end).trim() + (end < text.length ? "…" : "");
+}
+
+function matchWithSnippet(
+  text: string,
+  re: RegExp,
+): { raw: string; snippet: string } | null {
+  const m = re.exec(text);
+  if (!m) return null;
+  return {
+    raw: m[1] ?? m[0],
+    snippet: snippetAround(text, m.index, m[0].length),
+  };
 }
 
 const NUM = "([0-9]+(?:[.,\\s][0-9]+)*\\s*[km]?)";
 
-export function kpisFromText(text: string): Partial<BusinessAssumptions> {
-  if (!text || typeof text !== "string") return {};
+export function kpisFromText(text: string): KpiResult {
+  const patch: Partial<BusinessAssumptions> = {};
+  const sources: KpiSources = {};
+  if (!text || typeof text !== "string") return { patch, sources };
   const t = text.replace(/\s+/g, " ");
-  const out: Partial<BusinessAssumptions> = {};
 
-  const cac = firstMatch(
+  const cac = matchWithSnippet(
     t,
     new RegExp(`\\bcac\\b[^0-9]{0,40}${NUM}\\s*(?:€|eur|\\$|usd)?`, "i"),
   );
   if (cac) {
-    const n = parseNumber(cac);
-    if (n !== null && n > 0 && n < 1_000_000) out.avg_cac = Math.round(n);
+    const n = parseNumber(cac.raw);
+    if (n !== null && n > 0 && n < 1_000_000) {
+      patch.avg_cac = Math.round(n);
+      sources.avg_cac = {
+        origin: "text",
+        formula: "Extrait de la section générée",
+        contributors: [{ label: "Extrait", snippet: cac.snippet }],
+      };
+    }
   }
 
-  const ltv = firstMatch(
+  const ltv = matchWithSnippet(
     t,
     new RegExp(`\\bltv\\b[^0-9]{0,40}${NUM}\\s*(?:€|eur|\\$|usd)?`, "i"),
   );
   if (ltv) {
-    const n = parseNumber(ltv);
-    if (n !== null && n > 0 && n < 10_000_000) out.avg_ltv = Math.round(n);
+    const n = parseNumber(ltv.raw);
+    if (n !== null && n > 0 && n < 10_000_000) {
+      patch.avg_ltv = Math.round(n);
+      sources.avg_ltv = {
+        origin: "text",
+        formula: "Extrait de la section générée",
+        contributors: [{ label: "Extrait", snippet: ltv.snippet }],
+      };
+    }
   }
 
-  const gm = firstMatch(
+  const gm = matchWithSnippet(
     t,
     /marge\s+brute[^0-9]{0,40}([0-9]{1,3}(?:[.,][0-9]+)?)\s*%/i,
   );
   if (gm) {
-    const n = parseNumber(gm);
-    if (n !== null && n >= 0 && n <= 100) out.gross_margin_pct = n;
+    const n = parseNumber(gm.raw);
+    if (n !== null && n >= 0 && n <= 100) {
+      patch.gross_margin_pct = n;
+      sources.gross_margin_pct = {
+        origin: "text",
+        formula: "Extrait de la section générée",
+        contributors: [{ label: "Extrait", snippet: gm.snippet }],
+      };
+    }
   }
 
-  const em = firstMatch(
+  const em = matchWithSnippet(
     t,
     /(?:marge\s+ebitda|ebitda\s+margin)[^0-9]{0,40}([0-9]{1,3}(?:[.,][0-9]+)?)\s*%/i,
   );
   if (em) {
-    const n = parseNumber(em);
-    if (n !== null && n >= -100 && n <= 100) out.ebitda_margin_pct = n;
+    const n = parseNumber(em.raw);
+    if (n !== null && n >= -100 && n <= 100) {
+      patch.ebitda_margin_pct = n;
+      sources.ebitda_margin_pct = {
+        origin: "text",
+        formula: "Extrait de la section générée",
+        contributors: [{ label: "Extrait", snippet: em.snippet }],
+      };
+    }
   }
 
-  return out;
+  return { patch, sources };
 }
 
 // -----------------------------------------------------------------------
 // Persist to project (active scenario + business_assumptions).
+// Sources are stored under `__kpi_sources` inside the active scenario entry.
 // -----------------------------------------------------------------------
 
 export async function syncKpisToProject(
   projectId: string | null | undefined,
   patch: Partial<BusinessAssumptions>,
+  sources: KpiSources = {},
 ): Promise<boolean> {
   if (!projectId) return false;
   const clean: Partial<BusinessAssumptions> = {};
@@ -176,7 +290,7 @@ export async function syncKpisToProject(
     if (typeof v === "number" && !Number.isFinite(v)) continue;
     (clean as Record<string, unknown>)[k] = v;
   }
-  if (Object.keys(clean).length === 0) return false;
+  if (Object.keys(clean).length === 0 && Object.keys(sources).length === 0) return false;
 
   const { data, error } = await supabase
     .from("projects")
@@ -188,13 +302,19 @@ export async function syncKpisToProject(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const row = data as any;
   const active: string = row.active_scenario || "base";
-  const scenarios: Record<
-    string,
-    BusinessAssumptions & { label?: string }
-  > = row.assumption_scenarios || {};
+  const scenarios: Record<string, Record<string, unknown>> =
+    row.assumption_scenarios || {};
   const current: BusinessAssumptions = row.business_assumptions || {};
 
-  const nextScenario = { ...(scenarios[active] || {}), ...clean };
+  const prevScenario = (scenarios[active] || {}) as Record<string, unknown>;
+  const prevSources = (prevScenario.__kpi_sources || {}) as KpiSources;
+  const nextSources: KpiSources = { ...prevSources, ...sources };
+
+  const nextScenario = {
+    ...prevScenario,
+    ...clean,
+    __kpi_sources: nextSources,
+  };
   const nextScenarios = { ...scenarios, [active]: nextScenario };
   const nextAssumptions = { ...current, ...clean };
 
@@ -217,18 +337,21 @@ export async function syncKpisFromBudget(
   lines: BudgetLineLite[],
   horizonMonths = 12,
 ): Promise<void> {
-  const patch = kpisFromBudgetLines(lines || [], horizonMonths);
-  await syncKpisToProject(projectId, patch);
+  const { patch, sources } = kpisFromBudgetLines(lines || [], horizonMonths);
+  await syncKpisToProject(projectId, patch, sources);
 }
 
 export async function syncKpisFromTexts(
   projectId: string | null | undefined,
   texts: (string | undefined | null)[],
 ): Promise<void> {
-  const merged: Partial<BusinessAssumptions> = {};
+  const patch: Partial<BusinessAssumptions> = {};
+  const sources: KpiSources = {};
   for (const t of texts) {
     if (!t) continue;
-    Object.assign(merged, kpisFromText(String(t)));
+    const r = kpisFromText(String(t));
+    Object.assign(patch, r.patch);
+    Object.assign(sources, r.sources);
   }
-  await syncKpisToProject(projectId, merged);
+  await syncKpisToProject(projectId, patch, sources);
 }
