@@ -161,6 +161,7 @@ export default function ScenarioComparison({
         label: v.label || DEFAULT_LABELS[id] || id,
         a: { ...EMPTY_ASSUMPTIONS, ...v } as BusinessAssumptions,
         derived: derive(v),
+        sources: (v.__kpi_sources || {}) as KpiSources,
       })),
     [scenarios],
   );
