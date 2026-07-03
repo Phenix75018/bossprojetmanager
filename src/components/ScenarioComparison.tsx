@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { BarChart3, Loader2, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { BarChart3, Info, Loader2, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -8,6 +8,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -22,8 +27,12 @@ import {
   BusinessAssumptions,
   EMPTY_ASSUMPTIONS,
 } from "@/lib/businessAssumptions";
+import type { KpiSource, KpiSources } from "@/lib/syncKpis";
 
-type ScenarioMap = Record<string, BusinessAssumptions & { label?: string }>;
+type ScenarioMap = Record<
+  string,
+  BusinessAssumptions & { label?: string; __kpi_sources?: KpiSources }
+>;
 
 interface Props {
   projectId: string | null | undefined;
