@@ -373,3 +373,104 @@ function Row({
     </TableRow>
   );
 }
+
+function SourceInfo({
+  source,
+  currency = "EUR",
+}: {
+  source?: KpiSource | null;
+  currency?: string;
+}) {
+  if (!source) return null;
+  const originLabel =
+    source.origin === "budget"
+      ? "Calculé depuis le budget"
+      : source.origin === "text"
+        ? "Extrait du texte généré"
+        : "Saisie manuelle";
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label="Voir le détail du calcul"
+          className="inline-flex ml-1 align-middle text-muted-foreground hover:text-foreground"
+        >
+          <Info className="w-3.5 h-3.5" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent side="top" className="w-80 text-xs space-y-2">
+        <div className="font-medium text-sm">{originLabel}</div>
+        {source.formula && (
+          <div className="text-muted-foreground">
+            <span className="font-medium text-foreground">Formule : </span>
+            {source.formula}
+          </div>
+        )}
+        {source.contributors && source.contributors.length > 0 && (
+          <div>
+            <div className="font-medium text-foreground mb-1">
+              {source.origin === "budget" ? "Lignes sources" : "Extraits"}
+            </div>
+            <ul className="space-y-1 max-h-52 overflow-y-auto">
+              {source.contributors.map((c, i) => (
+                <li key={i} className="flex justify-between gap-2">
+                  <span className="text-muted-foreground truncate">
+                    {c.snippet ? (
+                      <em className="not-italic">« {c.snippet} »</em>
+                    ) : (
+                      c.label
+                    )}
+                  </span>
+                  {typeof c.value === "number" && (
+                    <span className="tabular-nums font-medium shrink-0">
+                      {c.value.toLocaleString("fr-FR")}{" "}
+                      {currency === "USD"
+                        ? "$"
+                        : currency === "GBP"
+                          ? "£"
+                          : currency === "EUR"
+                            ? "€"
+                            : ""}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+// Build a synthetic source for a derived KPI from its underlying components.
+function derivedSource(
+  formula: string,
+  parts: Array<{ label: string; source?: KpiSource | null; value?: number | null }>,
+): KpiSource | null {
+  const contributors: KpiContributorLite[] = [];
+  for (const p of parts) {
+    if (p.value !== null && p.value !== undefined && Number.isFinite(p.value)) {
+      contributors.push({ label: p.label, value: Math.round(p.value) });
+    }
+    const src = p.source;
+    if (src?.contributors) {
+      for (const c of src.contributors) {
+        contributors.push({
+          label: `${p.label} · ${c.label}`,
+          value: c.value,
+          snippet: c.snippet,
+        });
+      }
+    }
+  }
+  if (contributors.length === 0) return null;
+  return { origin: "budget", formula, contributors };
+}
+
+type KpiContributorLite = {
+  label: string;
+  value?: number | string;
+  snippet?: string;
+};
