@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { BarChart3, Loader2, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { BarChart3, Info, Loader2, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -8,6 +8,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -22,8 +27,12 @@ import {
   BusinessAssumptions,
   EMPTY_ASSUMPTIONS,
 } from "@/lib/businessAssumptions";
+import type { KpiSource, KpiSources } from "@/lib/syncKpis";
 
-type ScenarioMap = Record<string, BusinessAssumptions & { label?: string }>;
+type ScenarioMap = Record<
+  string,
+  BusinessAssumptions & { label?: string; __kpi_sources?: KpiSources }
+>;
 
 interface Props {
   projectId: string | null | undefined;
@@ -152,6 +161,7 @@ export default function ScenarioComparison({
         label: v.label || DEFAULT_LABELS[id] || id,
         a: { ...EMPTY_ASSUMPTIONS, ...v } as BusinessAssumptions,
         derived: derive(v),
+        sources: (v.__kpi_sources || {}) as KpiSources,
       })),
     [scenarios],
   );
@@ -267,6 +277,7 @@ export default function ScenarioComparison({
                     <TableCell key={c.id}>
                       {fmtMoney(c.a.expected_annual_revenue, currency)}
                       {trendIcon(c.a.expected_annual_revenue ?? null, revArr)}
+                      <SourceInfo source={c.sources.expected_annual_revenue} currency={currency} />
                     </TableCell>
                   ))}
                 </Row>
@@ -275,6 +286,7 @@ export default function ScenarioComparison({
                     <TableCell key={c.id}>
                       {fmtMoney(c.a.avg_cac, currency)}
                       {trendIcon(c.a.avg_cac ?? null, cacArr, true)}
+                      <SourceInfo source={c.sources.avg_cac} currency={currency} />
                     </TableCell>
                   ))}
                 </Row>
@@ -283,6 +295,7 @@ export default function ScenarioComparison({
                     <TableCell key={c.id}>
                       {fmtMoney(c.a.avg_ltv, currency)}
                       {trendIcon(c.a.avg_ltv ?? null, ltvArr)}
+                      <SourceInfo source={c.sources.avg_ltv} currency={currency} />
                     </TableCell>
                   ))}
                 </Row>
@@ -291,6 +304,13 @@ export default function ScenarioComparison({
                     <TableCell key={c.id}>
                       {fmtNum(c.derived.ltvCac, 2)}
                       {trendIcon(c.derived.ltvCac, ltvCacArr)}
+                      <SourceInfo
+                        source={derivedSource("LTV ÷ CAC", [
+                          { label: "LTV", source: c.sources.avg_ltv, value: c.a.avg_ltv ?? null },
+                          { label: "CAC", source: c.sources.avg_cac, value: c.a.avg_cac ?? null },
+                        ])}
+                        currency={currency}
+                      />
                     </TableCell>
                   ))}
                 </Row>
@@ -299,6 +319,7 @@ export default function ScenarioComparison({
                     <TableCell key={c.id}>
                       {fmtPct(c.a.gross_margin_pct)}
                       {trendIcon(c.a.gross_margin_pct ?? null, gmArr)}
+                      <SourceInfo source={c.sources.gross_margin_pct} currency={currency} />
                     </TableCell>
                   ))}
                 </Row>
@@ -307,6 +328,7 @@ export default function ScenarioComparison({
                     <TableCell key={c.id}>
                       {fmtPct(c.a.ebitda_margin_pct)}
                       {trendIcon(c.a.ebitda_margin_pct ?? null, ebitdaMarginArr)}
+                      <SourceInfo source={c.sources.ebitda_margin_pct} currency={currency} />
                     </TableCell>
                   ))}
                 </Row>
@@ -315,6 +337,21 @@ export default function ScenarioComparison({
                     <TableCell key={c.id}>
                       {fmtMoney(c.derived.ebitdaAnnual, currency)}
                       {trendIcon(c.derived.ebitdaAnnual, ebitdaArr)}
+                      <SourceInfo
+                        source={derivedSource("CA annuel × marge EBITDA", [
+                          {
+                            label: "CA annuel",
+                            source: c.sources.expected_annual_revenue,
+                            value: c.a.expected_annual_revenue ?? null,
+                          },
+                          {
+                            label: "Marge EBITDA (%)",
+                            source: c.sources.ebitda_margin_pct,
+                            value: c.a.ebitda_margin_pct ?? null,
+                          },
+                        ])}
+                        currency={currency}
+                      />
                     </TableCell>
                   ))}
                 </Row>
@@ -323,6 +360,7 @@ export default function ScenarioComparison({
                     <TableCell key={c.id}>
                       {fmtMoney(c.a.fixed_costs_monthly, currency)}
                       {trendIcon(c.a.fixed_costs_monthly ?? null, fcArr, true)}
+                      <SourceInfo source={c.sources.fixed_costs_monthly} currency={currency} />
                     </TableCell>
                   ))}
                 </Row>
@@ -331,9 +369,25 @@ export default function ScenarioComparison({
                     <TableCell key={c.id}>
                       {fmtMoney(c.derived.breakevenRevenueMonthly, currency)}
                       {trendIcon(c.derived.breakevenRevenueMonthly, beArr, true)}
+                      <SourceInfo
+                        source={derivedSource("Coûts fixes mensuels ÷ marge brute", [
+                          {
+                            label: "Coûts fixes / mois",
+                            source: c.sources.fixed_costs_monthly,
+                            value: c.a.fixed_costs_monthly ?? null,
+                          },
+                          {
+                            label: "Marge brute (%)",
+                            source: c.sources.gross_margin_pct,
+                            value: c.a.gross_margin_pct ?? null,
+                          },
+                        ])}
+                        currency={currency}
+                      />
                     </TableCell>
                   ))}
                 </Row>
+
               </TableBody>
             </Table>
             <p className="text-[11px] text-muted-foreground mt-3">
@@ -363,3 +417,104 @@ function Row({
     </TableRow>
   );
 }
+
+function SourceInfo({
+  source,
+  currency = "EUR",
+}: {
+  source?: KpiSource | null;
+  currency?: string;
+}) {
+  if (!source) return null;
+  const originLabel =
+    source.origin === "budget"
+      ? "Calculé depuis le budget"
+      : source.origin === "text"
+        ? "Extrait du texte généré"
+        : "Saisie manuelle";
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label="Voir le détail du calcul"
+          className="inline-flex ml-1 align-middle text-muted-foreground hover:text-foreground"
+        >
+          <Info className="w-3.5 h-3.5" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent side="top" className="w-80 text-xs space-y-2">
+        <div className="font-medium text-sm">{originLabel}</div>
+        {source.formula && (
+          <div className="text-muted-foreground">
+            <span className="font-medium text-foreground">Formule : </span>
+            {source.formula}
+          </div>
+        )}
+        {source.contributors && source.contributors.length > 0 && (
+          <div>
+            <div className="font-medium text-foreground mb-1">
+              {source.origin === "budget" ? "Lignes sources" : "Extraits"}
+            </div>
+            <ul className="space-y-1 max-h-52 overflow-y-auto">
+              {source.contributors.map((c, i) => (
+                <li key={i} className="flex justify-between gap-2">
+                  <span className="text-muted-foreground truncate">
+                    {c.snippet ? (
+                      <em className="not-italic">« {c.snippet} »</em>
+                    ) : (
+                      c.label
+                    )}
+                  </span>
+                  {typeof c.value === "number" && (
+                    <span className="tabular-nums font-medium shrink-0">
+                      {c.value.toLocaleString("fr-FR")}{" "}
+                      {currency === "USD"
+                        ? "$"
+                        : currency === "GBP"
+                          ? "£"
+                          : currency === "EUR"
+                            ? "€"
+                            : ""}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+// Build a synthetic source for a derived KPI from its underlying components.
+function derivedSource(
+  formula: string,
+  parts: Array<{ label: string; source?: KpiSource | null; value?: number | null }>,
+): KpiSource | null {
+  const contributors: KpiContributorLite[] = [];
+  for (const p of parts) {
+    if (p.value !== null && p.value !== undefined && Number.isFinite(p.value)) {
+      contributors.push({ label: p.label, value: Math.round(p.value) });
+    }
+    const src = p.source;
+    if (src?.contributors) {
+      for (const c of src.contributors) {
+        contributors.push({
+          label: `${p.label} · ${c.label}`,
+          value: c.value,
+          snippet: c.snippet,
+        });
+      }
+    }
+  }
+  if (contributors.length === 0) return null;
+  return { origin: "budget", formula, contributors };
+}
+
+type KpiContributorLite = {
+  label: string;
+  value?: number | string;
+  snippet?: string;
+};
