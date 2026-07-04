@@ -325,15 +325,35 @@ export async function syncKpisToProject(
 
   const prevScenario = (scenarios[active] || {}) as Record<string, unknown>;
   const prevSources = (prevScenario.__kpi_sources || {}) as KpiSources;
-  const nextSources: KpiSources = { ...prevSources, ...sources };
+  const locks = (prevScenario.__kpi_locks || {}) as KpiLocks;
+
+  // Drop any patch entry (and its source) whose key is locked in the active
+  // scenario — respect the user's manual override.
+  const filteredClean: Partial<BusinessAssumptions> = {};
+  for (const [k, v] of Object.entries(clean)) {
+    if (locks[k as keyof BusinessAssumptions]) continue;
+    (filteredClean as Record<string, unknown>)[k] = v;
+  }
+  const filteredSources: KpiSources = {};
+  for (const [k, v] of Object.entries(sources)) {
+    if (locks[k as keyof BusinessAssumptions]) continue;
+    (filteredSources as Record<string, unknown>)[k] = v;
+  }
+  if (
+    Object.keys(filteredClean).length === 0 &&
+    Object.keys(filteredSources).length === 0
+  )
+    return false;
+
+  const nextSources: KpiSources = { ...prevSources, ...filteredSources };
 
   const nextScenario = {
     ...prevScenario,
-    ...clean,
+    ...filteredClean,
     __kpi_sources: nextSources,
   };
   const nextScenarios = { ...scenarios, [active]: nextScenario };
-  const nextAssumptions = { ...current, ...clean };
+  const nextAssumptions = { ...current, ...filteredClean };
 
   const { error: upErr } = await supabase
     .from("projects")
