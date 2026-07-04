@@ -1,5 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { BarChart3, Info, Loader2, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import {
+  BarChart3,
+  Info,
+  Loader2,
+  Lock,
+  LockOpen,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -22,16 +31,27 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {
   BusinessAssumptions,
   EMPTY_ASSUMPTIONS,
 } from "@/lib/businessAssumptions";
-import type { KpiSource, KpiSources } from "@/lib/syncKpis";
+import {
+  LOCKABLE_KPI_KEYS,
+  setKpiLock,
+  type KpiLocks,
+  type KpiSource,
+  type KpiSources,
+} from "@/lib/syncKpis";
 
 type ScenarioMap = Record<
   string,
-  BusinessAssumptions & { label?: string; __kpi_sources?: KpiSources }
+  BusinessAssumptions & {
+    label?: string;
+    __kpi_sources?: KpiSources;
+    __kpi_locks?: KpiLocks;
+  }
 >;
 
 interface Props {
