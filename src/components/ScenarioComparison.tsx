@@ -483,6 +483,11 @@ export default function ScenarioComparison({
             </Table>
             <p className="text-[11px] text-muted-foreground mt-3">
               Calculs : LTV/CAC = LTV ÷ CAC · EBITDA annuel = CA × marge EBITDA
+              · Point mort mensuel = coûts fixes ÷ marge brute. Cliquez sur
+              l'icône <Lock className="w-3 h-3 inline" /> pour verrouiller un
+              KPI : sa valeur (et son origine) seront préservées lors des
+              prochaines générations.
+
               · Point mort mensuel = coûts fixes ÷ marge brute. Les KPIs
               financiers optionnels (CAC, LTV, marges, coûts fixes, CA attendu)
               se saisissent dans « Gérer les scénarios ».
