@@ -392,3 +392,36 @@ export async function syncKpisFromTexts(
   }
   await syncKpisToProject(projectId, patch, sources);
 }
+
+// -----------------------------------------------------------------------
+// Persist a KPI lock toggle for a given scenario.
+// -----------------------------------------------------------------------
+
+export async function setKpiLock(
+  projectId: string | null | undefined,
+  scenarioId: string,
+  key: keyof BusinessAssumptions,
+  locked: boolean,
+): Promise<boolean> {
+  if (!projectId || !scenarioId) return false;
+  const { data, error } = await supabase
+    .from("projects")
+    .select("assumption_scenarios")
+    .eq("id", projectId)
+    .maybeSingle();
+  if (error || !data) return false;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const scenarios: Record<string, Record<string, unknown>> = ((data as any)
+    .assumption_scenarios || {}) as Record<string, Record<string, unknown>>;
+  const scen = { ...(scenarios[scenarioId] || {}) };
+  const locks: KpiLocks = { ...((scen.__kpi_locks as KpiLocks) || {}) };
+  if (locked) locks[key] = true;
+  else delete locks[key];
+  scen.__kpi_locks = locks;
+  const next = { ...scenarios, [scenarioId]: scen };
+  const { error: upErr } = await supabase
+    .from("projects")
+    .update({ assumption_scenarios: next as never })
+    .eq("id", projectId);
+  return !upErr;
+}
