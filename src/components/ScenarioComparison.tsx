@@ -182,9 +182,47 @@ export default function ScenarioComparison({
         a: { ...EMPTY_ASSUMPTIONS, ...v } as BusinessAssumptions,
         derived: derive(v),
         sources: (v.__kpi_sources || {}) as KpiSources,
+        locks: (v.__kpi_locks || {}) as KpiLocks,
       })),
     [scenarios],
   );
+
+  const toggleLock = async (
+    scenarioId: string,
+    key: keyof BusinessAssumptions,
+  ) => {
+    const scen = scenarios[scenarioId];
+    if (!scen) return;
+    const currentLocks = (scen.__kpi_locks || {}) as KpiLocks;
+    const nextLocked = !currentLocks[key];
+    // optimistic update
+    setScenarios((prev) => {
+      const cur = prev[scenarioId] || ({} as ScenarioMap[string]);
+      const locks = { ...((cur.__kpi_locks || {}) as KpiLocks) };
+      if (nextLocked) locks[key] = true;
+      else delete locks[key];
+      return { ...prev, [scenarioId]: { ...cur, __kpi_locks: locks } };
+    });
+    const ok = await setKpiLock(projectId, scenarioId, key, nextLocked);
+    if (!ok) {
+      toast.error("Impossible de mettre à jour le verrou");
+      // revert
+      setScenarios((prev) => {
+        const cur = prev[scenarioId] || ({} as ScenarioMap[string]);
+        const locks = { ...((cur.__kpi_locks || {}) as KpiLocks) };
+        if (nextLocked) delete locks[key];
+        else locks[key] = true;
+        return { ...prev, [scenarioId]: { ...cur, __kpi_locks: locks } };
+      });
+    } else {
+      toast.success(
+        nextLocked
+          ? "KPI verrouillé — vos valeurs seront préservées"
+          : "KPI déverrouillé — l'auto-sync est réactivé",
+      );
+    }
+  };
+
 
   const growthArr = cols.map((c) => c.a.growth_rate_pct ?? null);
   const shareArr = cols.map((c) => c.a.market_share_target_pct ?? null);
