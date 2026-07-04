@@ -1,5 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { BarChart3, Info, Loader2, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import {
+  BarChart3,
+  Info,
+  Loader2,
+  Lock,
+  LockOpen,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -22,16 +31,27 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {
   BusinessAssumptions,
   EMPTY_ASSUMPTIONS,
 } from "@/lib/businessAssumptions";
-import type { KpiSource, KpiSources } from "@/lib/syncKpis";
+import {
+  LOCKABLE_KPI_KEYS,
+  setKpiLock,
+  type KpiLocks,
+  type KpiSource,
+  type KpiSources,
+} from "@/lib/syncKpis";
 
 type ScenarioMap = Record<
   string,
-  BusinessAssumptions & { label?: string; __kpi_sources?: KpiSources }
+  BusinessAssumptions & {
+    label?: string;
+    __kpi_sources?: KpiSources;
+    __kpi_locks?: KpiLocks;
+  }
 >;
 
 interface Props {
@@ -162,9 +182,47 @@ export default function ScenarioComparison({
         a: { ...EMPTY_ASSUMPTIONS, ...v } as BusinessAssumptions,
         derived: derive(v),
         sources: (v.__kpi_sources || {}) as KpiSources,
+        locks: (v.__kpi_locks || {}) as KpiLocks,
       })),
     [scenarios],
   );
+
+  const toggleLock = async (
+    scenarioId: string,
+    key: keyof BusinessAssumptions,
+  ) => {
+    const scen = scenarios[scenarioId];
+    if (!scen) return;
+    const currentLocks = (scen.__kpi_locks || {}) as KpiLocks;
+    const nextLocked = !currentLocks[key];
+    // optimistic update
+    setScenarios((prev) => {
+      const cur = prev[scenarioId] || ({} as ScenarioMap[string]);
+      const locks = { ...((cur.__kpi_locks || {}) as KpiLocks) };
+      if (nextLocked) locks[key] = true;
+      else delete locks[key];
+      return { ...prev, [scenarioId]: { ...cur, __kpi_locks: locks } };
+    });
+    const ok = await setKpiLock(projectId, scenarioId, key, nextLocked);
+    if (!ok) {
+      toast.error("Impossible de mettre à jour le verrou");
+      // revert
+      setScenarios((prev) => {
+        const cur = prev[scenarioId] || ({} as ScenarioMap[string]);
+        const locks = { ...((cur.__kpi_locks || {}) as KpiLocks) };
+        if (nextLocked) delete locks[key];
+        else locks[key] = true;
+        return { ...prev, [scenarioId]: { ...cur, __kpi_locks: locks } };
+      });
+    } else {
+      toast.success(
+        nextLocked
+          ? "KPI verrouillé — vos valeurs seront préservées"
+          : "KPI déverrouillé — l'auto-sync est réactivé",
+      );
+    }
+  };
+
 
   const growthArr = cols.map((c) => c.a.growth_rate_pct ?? null);
   const shareArr = cols.map((c) => c.a.market_share_target_pct ?? null);
@@ -261,6 +319,10 @@ export default function ScenarioComparison({
                     <TableCell key={c.id}>
                       {fmtPct(c.a.growth_rate_pct)}
                       {trendIcon(c.a.growth_rate_pct ?? null, growthArr)}
+                      <LockToggle
+                        locked={!!c.locks.growth_rate_pct}
+                        onToggle={() => toggleLock(c.id, "growth_rate_pct")}
+                      />
                     </TableCell>
                   ))}
                 </Row>
@@ -269,6 +331,10 @@ export default function ScenarioComparison({
                     <TableCell key={c.id}>
                       {fmtPct(c.a.market_share_target_pct)}
                       {trendIcon(c.a.market_share_target_pct ?? null, shareArr)}
+                      <LockToggle
+                        locked={!!c.locks.market_share_target_pct}
+                        onToggle={() => toggleLock(c.id, "market_share_target_pct")}
+                      />
                     </TableCell>
                   ))}
                 </Row>
@@ -278,6 +344,10 @@ export default function ScenarioComparison({
                       {fmtMoney(c.a.expected_annual_revenue, currency)}
                       {trendIcon(c.a.expected_annual_revenue ?? null, revArr)}
                       <SourceInfo source={c.sources.expected_annual_revenue} currency={currency} />
+                      <LockToggle
+                        locked={!!c.locks.expected_annual_revenue}
+                        onToggle={() => toggleLock(c.id, "expected_annual_revenue")}
+                      />
                     </TableCell>
                   ))}
                 </Row>
@@ -287,6 +357,10 @@ export default function ScenarioComparison({
                       {fmtMoney(c.a.avg_cac, currency)}
                       {trendIcon(c.a.avg_cac ?? null, cacArr, true)}
                       <SourceInfo source={c.sources.avg_cac} currency={currency} />
+                      <LockToggle
+                        locked={!!c.locks.avg_cac}
+                        onToggle={() => toggleLock(c.id, "avg_cac")}
+                      />
                     </TableCell>
                   ))}
                 </Row>
@@ -296,6 +370,10 @@ export default function ScenarioComparison({
                       {fmtMoney(c.a.avg_ltv, currency)}
                       {trendIcon(c.a.avg_ltv ?? null, ltvArr)}
                       <SourceInfo source={c.sources.avg_ltv} currency={currency} />
+                      <LockToggle
+                        locked={!!c.locks.avg_ltv}
+                        onToggle={() => toggleLock(c.id, "avg_ltv")}
+                      />
                     </TableCell>
                   ))}
                 </Row>
@@ -320,6 +398,10 @@ export default function ScenarioComparison({
                       {fmtPct(c.a.gross_margin_pct)}
                       {trendIcon(c.a.gross_margin_pct ?? null, gmArr)}
                       <SourceInfo source={c.sources.gross_margin_pct} currency={currency} />
+                      <LockToggle
+                        locked={!!c.locks.gross_margin_pct}
+                        onToggle={() => toggleLock(c.id, "gross_margin_pct")}
+                      />
                     </TableCell>
                   ))}
                 </Row>
@@ -329,6 +411,10 @@ export default function ScenarioComparison({
                       {fmtPct(c.a.ebitda_margin_pct)}
                       {trendIcon(c.a.ebitda_margin_pct ?? null, ebitdaMarginArr)}
                       <SourceInfo source={c.sources.ebitda_margin_pct} currency={currency} />
+                      <LockToggle
+                        locked={!!c.locks.ebitda_margin_pct}
+                        onToggle={() => toggleLock(c.id, "ebitda_margin_pct")}
+                      />
                     </TableCell>
                   ))}
                 </Row>
@@ -361,9 +447,14 @@ export default function ScenarioComparison({
                       {fmtMoney(c.a.fixed_costs_monthly, currency)}
                       {trendIcon(c.a.fixed_costs_monthly ?? null, fcArr, true)}
                       <SourceInfo source={c.sources.fixed_costs_monthly} currency={currency} />
+                      <LockToggle
+                        locked={!!c.locks.fixed_costs_monthly}
+                        onToggle={() => toggleLock(c.id, "fixed_costs_monthly")}
+                      />
                     </TableCell>
                   ))}
                 </Row>
+
                 <Row label="Point mort (CA mensuel)">
                   {cols.map((c) => (
                     <TableCell key={c.id}>
@@ -392,6 +483,11 @@ export default function ScenarioComparison({
             </Table>
             <p className="text-[11px] text-muted-foreground mt-3">
               Calculs : LTV/CAC = LTV ÷ CAC · EBITDA annuel = CA × marge EBITDA
+              · Point mort mensuel = coûts fixes ÷ marge brute. Cliquez sur
+              l'icône <Lock className="w-3 h-3 inline" /> pour verrouiller un
+              KPI : sa valeur (et son origine) seront préservées lors des
+              prochaines générations.
+
               · Point mort mensuel = coûts fixes ÷ marge brute. Les KPIs
               financiers optionnels (CAC, LTV, marges, coûts fixes, CA attendu)
               se saisissent dans « Gérer les scénarios ».
@@ -415,6 +511,35 @@ function Row({
       <TableCell className="font-medium text-sm">{label}</TableCell>
       {children}
     </TableRow>
+  );
+}
+
+function LockToggle({
+  locked,
+  onToggle,
+}: {
+  locked: boolean;
+  onToggle: () => void;
+}) {
+  const Icon = locked ? Lock : LockOpen;
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-label={locked ? "Déverrouiller ce KPI" : "Verrouiller ce KPI"}
+      title={
+        locked
+          ? "KPI verrouillé — la valeur ne sera pas écrasée par les générations"
+          : "Verrouiller pour préserver cette valeur lors des générations"
+      }
+      className={`inline-flex ml-1 align-middle transition-colors ${
+        locked
+          ? "text-amber-500 hover:text-amber-600"
+          : "text-muted-foreground/60 hover:text-foreground"
+      }`}
+    >
+      <Icon className="w-3.5 h-3.5" />
+    </button>
   );
 }
 

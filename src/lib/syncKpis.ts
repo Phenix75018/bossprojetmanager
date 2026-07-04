@@ -28,6 +28,23 @@ export type KpiSource = {
 
 export type KpiSources = Partial<Record<keyof BusinessAssumptions, KpiSource>>;
 
+// Manual locks: when set to true for a given KPI on a scenario, the auto-sync
+// leaves that KPI (and its source metadata) untouched so the user's custom
+// value survives future generations.
+export type KpiLocks = Partial<Record<keyof BusinessAssumptions, boolean>>;
+
+// Fields users can lock in the comparison view.
+export const LOCKABLE_KPI_KEYS: (keyof BusinessAssumptions)[] = [
+  "expected_annual_revenue",
+  "fixed_costs_monthly",
+  "gross_margin_pct",
+  "ebitda_margin_pct",
+  "avg_cac",
+  "avg_ltv",
+  "growth_rate_pct",
+  "market_share_target_pct",
+];
+
 export type KpiResult = {
   patch: Partial<BusinessAssumptions>;
   sources: KpiSources;
@@ -308,15 +325,35 @@ export async function syncKpisToProject(
 
   const prevScenario = (scenarios[active] || {}) as Record<string, unknown>;
   const prevSources = (prevScenario.__kpi_sources || {}) as KpiSources;
-  const nextSources: KpiSources = { ...prevSources, ...sources };
+  const locks = (prevScenario.__kpi_locks || {}) as KpiLocks;
+
+  // Drop any patch entry (and its source) whose key is locked in the active
+  // scenario — respect the user's manual override.
+  const filteredClean: Partial<BusinessAssumptions> = {};
+  for (const [k, v] of Object.entries(clean)) {
+    if (locks[k as keyof BusinessAssumptions]) continue;
+    (filteredClean as Record<string, unknown>)[k] = v;
+  }
+  const filteredSources: KpiSources = {};
+  for (const [k, v] of Object.entries(sources)) {
+    if (locks[k as keyof BusinessAssumptions]) continue;
+    (filteredSources as Record<string, unknown>)[k] = v;
+  }
+  if (
+    Object.keys(filteredClean).length === 0 &&
+    Object.keys(filteredSources).length === 0
+  )
+    return false;
+
+  const nextSources: KpiSources = { ...prevSources, ...filteredSources };
 
   const nextScenario = {
     ...prevScenario,
-    ...clean,
+    ...filteredClean,
     __kpi_sources: nextSources,
   };
   const nextScenarios = { ...scenarios, [active]: nextScenario };
-  const nextAssumptions = { ...current, ...clean };
+  const nextAssumptions = { ...current, ...filteredClean };
 
   const { error: upErr } = await supabase
     .from("projects")
@@ -354,4 +391,37 @@ export async function syncKpisFromTexts(
     Object.assign(sources, r.sources);
   }
   await syncKpisToProject(projectId, patch, sources);
+}
+
+// -----------------------------------------------------------------------
+// Persist a KPI lock toggle for a given scenario.
+// -----------------------------------------------------------------------
+
+export async function setKpiLock(
+  projectId: string | null | undefined,
+  scenarioId: string,
+  key: keyof BusinessAssumptions,
+  locked: boolean,
+): Promise<boolean> {
+  if (!projectId || !scenarioId) return false;
+  const { data, error } = await supabase
+    .from("projects")
+    .select("assumption_scenarios")
+    .eq("id", projectId)
+    .maybeSingle();
+  if (error || !data) return false;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const scenarios: Record<string, Record<string, unknown>> = ((data as any)
+    .assumption_scenarios || {}) as Record<string, Record<string, unknown>>;
+  const scen = { ...(scenarios[scenarioId] || {}) };
+  const locks: KpiLocks = { ...((scen.__kpi_locks as KpiLocks) || {}) };
+  if (locked) locks[key] = true;
+  else delete locks[key];
+  scen.__kpi_locks = locks;
+  const next = { ...scenarios, [scenarioId]: scen };
+  const { error: upErr } = await supabase
+    .from("projects")
+    .update({ assumption_scenarios: next as never })
+    .eq("id", projectId);
+  return !upErr;
 }
