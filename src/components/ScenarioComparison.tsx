@@ -514,6 +514,35 @@ function Row({
   );
 }
 
+function LockToggle({
+  locked,
+  onToggle,
+}: {
+  locked: boolean;
+  onToggle: () => void;
+}) {
+  const Icon = locked ? Lock : LockOpen;
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-label={locked ? "Déverrouiller ce KPI" : "Verrouiller ce KPI"}
+      title={
+        locked
+          ? "KPI verrouillé — la valeur ne sera pas écrasée par les générations"
+          : "Verrouiller pour préserver cette valeur lors des générations"
+      }
+      className={`inline-flex ml-1 align-middle transition-colors ${
+        locked
+          ? "text-amber-500 hover:text-amber-600"
+          : "text-muted-foreground/60 hover:text-foreground"
+      }`}
+    >
+      <Icon className="w-3.5 h-3.5" />
+    </button>
+  );
+}
+
 function SourceInfo({
   source,
   currency = "EUR",
