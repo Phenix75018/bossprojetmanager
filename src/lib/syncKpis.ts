@@ -28,6 +28,23 @@ export type KpiSource = {
 
 export type KpiSources = Partial<Record<keyof BusinessAssumptions, KpiSource>>;
 
+// Manual locks: when set to true for a given KPI on a scenario, the auto-sync
+// leaves that KPI (and its source metadata) untouched so the user's custom
+// value survives future generations.
+export type KpiLocks = Partial<Record<keyof BusinessAssumptions, boolean>>;
+
+// Fields users can lock in the comparison view.
+export const LOCKABLE_KPI_KEYS: (keyof BusinessAssumptions)[] = [
+  "expected_annual_revenue",
+  "fixed_costs_monthly",
+  "gross_margin_pct",
+  "ebitda_margin_pct",
+  "avg_cac",
+  "avg_ltv",
+  "growth_rate_pct",
+  "market_share_target_pct",
+];
+
 export type KpiResult = {
   patch: Partial<BusinessAssumptions>;
   sources: KpiSources;
