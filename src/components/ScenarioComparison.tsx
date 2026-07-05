@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { ExternalLink } from "lucide-react";
 import {
   BarChart3,
   Info,
