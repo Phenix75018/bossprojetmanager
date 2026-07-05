@@ -128,7 +128,11 @@ export default function BusinessModelDetail() {
         }));
         await upsertBlocks(model.id, blks);
         await updateModelStatus(model.id, "in_progress");
-        await syncKpisFromTexts(model.project_id, blks.map((b: any) => b.content));
+        await syncKpisFromTexts(
+          model.project_id,
+          blks.map((b: any) => ({ content: b.content, sectionKey: b.block_type, label: b.title })),
+          { docType: "bm", docId: model.id },
+        );
         toast.success("Business model généré — KPIs synchronisés.");
         await load();
       }
