@@ -143,6 +143,12 @@ export default function ScenarioComparison({
   triggerLabel = "Comparer les scénarios",
 }: Props) {
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
+  const goTo = (href: string) => {
+    setOpen(false);
+    // slight delay to let the dialog close before navigating
+    setTimeout(() => navigate(href), 60);
+  };
   const [loading, setLoading] = useState(false);
   const [scenarios, setScenarios] = useState<ScenarioMap>({});
   const [active, setActive] = useState<string>("base");
