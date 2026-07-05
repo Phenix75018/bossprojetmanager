@@ -351,7 +351,7 @@ export default function ScenarioComparison({
                     <TableCell key={c.id}>
                       {fmtMoney(c.a.expected_annual_revenue, currency)}
                       {trendIcon(c.a.expected_annual_revenue ?? null, revArr)}
-                      <SourceInfo source={c.sources.expected_annual_revenue} currency={currency} />
+                      <SourceInfo source={c.sources.expected_annual_revenue} currency={currency} onNavigate={goTo} />
                       <LockToggle
                         locked={!!c.locks.expected_annual_revenue}
                         onToggle={() => toggleLock(c.id, "expected_annual_revenue")}
@@ -364,7 +364,7 @@ export default function ScenarioComparison({
                     <TableCell key={c.id}>
                       {fmtMoney(c.a.avg_cac, currency)}
                       {trendIcon(c.a.avg_cac ?? null, cacArr, true)}
-                      <SourceInfo source={c.sources.avg_cac} currency={currency} />
+                      <SourceInfo source={c.sources.avg_cac} currency={currency} onNavigate={goTo} />
                       <LockToggle
                         locked={!!c.locks.avg_cac}
                         onToggle={() => toggleLock(c.id, "avg_cac")}
@@ -377,7 +377,7 @@ export default function ScenarioComparison({
                     <TableCell key={c.id}>
                       {fmtMoney(c.a.avg_ltv, currency)}
                       {trendIcon(c.a.avg_ltv ?? null, ltvArr)}
-                      <SourceInfo source={c.sources.avg_ltv} currency={currency} />
+                      <SourceInfo source={c.sources.avg_ltv} currency={currency} onNavigate={goTo} />
                       <LockToggle
                         locked={!!c.locks.avg_ltv}
                         onToggle={() => toggleLock(c.id, "avg_ltv")}
@@ -405,7 +405,7 @@ export default function ScenarioComparison({
                     <TableCell key={c.id}>
                       {fmtPct(c.a.gross_margin_pct)}
                       {trendIcon(c.a.gross_margin_pct ?? null, gmArr)}
-                      <SourceInfo source={c.sources.gross_margin_pct} currency={currency} />
+                      <SourceInfo source={c.sources.gross_margin_pct} currency={currency} onNavigate={goTo} />
                       <LockToggle
                         locked={!!c.locks.gross_margin_pct}
                         onToggle={() => toggleLock(c.id, "gross_margin_pct")}
@@ -418,7 +418,7 @@ export default function ScenarioComparison({
                     <TableCell key={c.id}>
                       {fmtPct(c.a.ebitda_margin_pct)}
                       {trendIcon(c.a.ebitda_margin_pct ?? null, ebitdaMarginArr)}
-                      <SourceInfo source={c.sources.ebitda_margin_pct} currency={currency} />
+                      <SourceInfo source={c.sources.ebitda_margin_pct} currency={currency} onNavigate={goTo} />
                       <LockToggle
                         locked={!!c.locks.ebitda_margin_pct}
                         onToggle={() => toggleLock(c.id, "ebitda_margin_pct")}
@@ -454,7 +454,7 @@ export default function ScenarioComparison({
                     <TableCell key={c.id}>
                       {fmtMoney(c.a.fixed_costs_monthly, currency)}
                       {trendIcon(c.a.fixed_costs_monthly ?? null, fcArr, true)}
-                      <SourceInfo source={c.sources.fixed_costs_monthly} currency={currency} />
+                      <SourceInfo source={c.sources.fixed_costs_monthly} currency={currency} onNavigate={goTo} />
                       <LockToggle
                         locked={!!c.locks.fixed_costs_monthly}
                         onToggle={() => toggleLock(c.id, "fixed_costs_monthly")}
