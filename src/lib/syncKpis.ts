@@ -18,12 +18,16 @@ export type KpiContributor = {
   label: string;
   value?: number | string;
   snippet?: string;
+  href?: string;
+  hrefLabel?: string;
 };
 
 export type KpiSource = {
   origin: "budget" | "text" | "manual";
   formula?: string;
   contributors?: KpiContributor[];
+  href?: string;
+  hrefLabel?: string;
 };
 
 export type KpiSources = Partial<Record<keyof BusinessAssumptions, KpiSource>>;
