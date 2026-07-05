@@ -69,6 +69,29 @@ export default function BudgetDetail() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // Deep-linking from Scenario Comparison popovers: ?category=...&line=...
+  useEffect(() => {
+    if (loading) return;
+    const cat = searchParams.get("category");
+    const lineId = searchParams.get("line");
+    if (cat && !expandedCats.includes(cat)) {
+      setExpandedCats(prev => [...prev, cat]);
+    }
+    const target = lineId
+      ? document.getElementById(`budget-line-${lineId}`)
+      : cat
+        ? document.getElementById(`budget-cat-${cat}`)
+        : null;
+    if (target) {
+      setTimeout(() => {
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+        target.classList.add("ring-2", "ring-primary/60");
+        setTimeout(() => target.classList.remove("ring-2", "ring-primary/60"), 1800);
+      }, 150);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, loading, lines.length]);
+
   const toggleCat = (key: string) => {
     setExpandedCats(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
   };
