@@ -409,22 +409,73 @@ export async function syncKpisFromBudget(
   projectId: string | null | undefined,
   lines: BudgetLineLite[],
   horizonMonths = 12,
+  opts: BudgetSyncOpts = {},
 ): Promise<void> {
-  const { patch, sources } = kpisFromBudgetLines(lines || [], horizonMonths);
+  const { patch, sources } = kpisFromBudgetLines(lines || [], horizonMonths, opts);
   await syncKpisToProject(projectId, patch, sources);
+}
+
+export type TextSyncItem = {
+  content: string;
+  sectionKey?: string; // section_type / block_type
+  label?: string;
+};
+export type TextSyncOpts = {
+  docType?: "bp" | "bm";
+  docId?: string;
+};
+
+function textItemHref(
+  opts: TextSyncOpts,
+  item: TextSyncItem,
+): { href?: string; hrefLabel?: string } {
+  if (!opts.docId || !opts.docType) return {};
+  const key = item.sectionKey ? encodeURIComponent(item.sectionKey) : "";
+  if (opts.docType === "bp") {
+    return {
+      href: key
+        ? `/business-plan/${opts.docId}?section=${key}`
+        : `/business-plan/${opts.docId}`,
+      hrefLabel: item.label ? `Ouvrir « ${item.label} »` : "Ouvrir la section",
+    };
+  }
+  return {
+    href: key
+      ? `/business-model/${opts.docId}?block=${key}`
+      : `/business-model/${opts.docId}`,
+    hrefLabel: item.label ? `Ouvrir « ${item.label} »` : "Ouvrir le bloc",
+  };
 }
 
 export async function syncKpisFromTexts(
   projectId: string | null | undefined,
-  texts: (string | undefined | null)[],
+  items: (string | TextSyncItem | undefined | null)[],
+  opts: TextSyncOpts = {},
 ): Promise<void> {
   const patch: Partial<BusinessAssumptions> = {};
   const sources: KpiSources = {};
-  for (const t of texts) {
-    if (!t) continue;
-    const r = kpisFromText(String(t));
+  for (const raw of items) {
+    if (!raw) continue;
+    const item: TextSyncItem =
+      typeof raw === "string" ? { content: raw } : raw;
+    if (!item.content) continue;
+    const r = kpisFromText(String(item.content));
     Object.assign(patch, r.patch);
-    Object.assign(sources, r.sources);
+    const linkMeta = textItemHref(opts, item);
+    for (const [k, src] of Object.entries(r.sources)) {
+      if (!src) continue;
+      const enriched: KpiSource = {
+        ...src,
+        href: linkMeta.href ?? src.href,
+        hrefLabel: linkMeta.hrefLabel ?? src.hrefLabel,
+        contributors: src.contributors?.map((c) => ({
+          ...c,
+          href: c.href ?? linkMeta.href,
+          hrefLabel: c.hrefLabel ?? linkMeta.hrefLabel,
+        })),
+      };
+      (sources as Record<string, KpiSource>)[k] = enriched;
+    }
   }
   await syncKpisToProject(projectId, patch, sources);
 }
