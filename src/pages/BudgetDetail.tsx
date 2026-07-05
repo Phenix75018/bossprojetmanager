@@ -116,8 +116,9 @@ export default function BudgetDetail() {
         if (Array.isArray(data.coherence_justifications)) setCoherenceJustifs(data.coherence_justifications);
         if (data.bp_id) setBpId(data.bp_id);
         if (data.bm_id) setBmId(data.bm_id);
-        await syncKpisFromBudget(budget.project_id, data.lines, budget.horizon_months);
-        await loadData();
+        const fresh = await fetchBudgetWithLines(budget.id);
+        if (fresh) { setBudget(fresh.budget); setLines(fresh.lines); }
+        await syncKpisFromBudget(budget.project_id, (fresh?.lines || data.lines) as never, budget.horizon_months, { budgetId: budget.id });
         toast.success("Budget généré — KPIs synchronisés avec la comparaison de scénarios.");
       }
     } catch (err) {
