@@ -156,10 +156,11 @@ export default function BudgetDetail() {
         if (Array.isArray(data.coherence_justifications)) setCoherenceJustifs(data.coherence_justifications);
         if (data.bp_id) setBpId(data.bp_id);
         if (data.bm_id) setBmId(data.bm_id);
-        await loadData();
-        // Re-sync KPIs using the full merged set of lines after refresh.
-        const merged = [...lines.filter(l => l.category !== category), ...data.lines];
-        await syncKpisFromBudget(budget.project_id, merged, budget.horizon_months);
+        const fresh = await fetchBudgetWithLines(budget.id);
+        if (fresh) { setBudget(fresh.budget); setLines(fresh.lines); }
+        // Re-sync KPIs using the fresh persisted lines (with DB IDs for deep links).
+        const merged = fresh?.lines || [...lines.filter(l => l.category !== category), ...data.lines];
+        await syncKpisFromBudget(budget.project_id, merged as never, budget.horizon_months, { budgetId: budget.id });
         toast.success("Catégorie générée — KPIs mis à jour.");
       }
     } catch (err) {
