@@ -41,6 +41,7 @@ function getMonthLabel(index: number): string {
 
 export default function BudgetDetail() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const { fetchBudgetWithLines, upsertLines, updateLine, addLine, deleteLine, enableSharing, updateBudgetStatus } = useBudgets();
   const [budget, setBudget] = useState<BudgetRow | null>(null);
   const [lines, setLines] = useState<BudgetLineRow[]>([]);
