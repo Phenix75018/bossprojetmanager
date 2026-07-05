@@ -364,7 +364,7 @@ export default function BudgetDetail() {
                           const total = values.slice(0, visibleMonths).reduce((a, b) => a + b, 0);
 
                           return (
-                            <tr key={line.id} className={`border-t ${line.is_total ? "bg-muted/50 font-bold" : "hover:bg-muted/20"}`}>
+                            <tr key={line.id} id={`budget-line-${line.id}`} className={`border-t transition-shadow ${line.is_total ? "bg-muted/50 font-bold" : "hover:bg-muted/20"}`}>
                               <td className="px-4 py-1.5 sticky left-0 bg-background">
                                 <Input
                                   value={line.label}
