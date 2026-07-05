@@ -128,7 +128,11 @@ export default function BusinessModelDetail() {
         }));
         await upsertBlocks(model.id, blks);
         await updateModelStatus(model.id, "in_progress");
-        await syncKpisFromTexts(model.project_id, blks.map((b: any) => b.content));
+        await syncKpisFromTexts(
+          model.project_id,
+          blks.map((b: any) => ({ content: b.content, sectionKey: b.block_type, label: b.title })),
+          { docType: "bm", docId: model.id },
+        );
         toast.success("Business model généré — KPIs synchronisés.");
         await load();
       }
@@ -156,7 +160,11 @@ export default function BusinessModelDetail() {
           const info = BLOCKS.find(b => b.type === blockType);
           await addBlock(model.id, blockType, data.result.title || info?.title || "", data.result.content, BLOCKS.findIndex(b => b.type === blockType));
         }
-        await syncKpisFromTexts(model.project_id, [data.result.content]);
+        await syncKpisFromTexts(
+          model.project_id,
+          [{ content: data.result.content, sectionKey: blockType, label: data.result.title }],
+          { docType: "bm", docId: model.id },
+        );
         toast.success("Bloc généré !");
         await load();
       }

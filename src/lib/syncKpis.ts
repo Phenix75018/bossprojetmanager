@@ -18,12 +18,16 @@ export type KpiContributor = {
   label: string;
   value?: number | string;
   snippet?: string;
+  href?: string;
+  hrefLabel?: string;
 };
 
 export type KpiSource = {
   origin: "budget" | "text" | "manual";
   formula?: string;
   contributors?: KpiContributor[];
+  href?: string;
+  hrefLabel?: string;
 };
 
 export type KpiSources = Partial<Record<keyof BusinessAssumptions, KpiSource>>;
@@ -55,6 +59,7 @@ export type KpiResult = {
 // -----------------------------------------------------------------------
 
 export type BudgetLineLite = {
+  id?: string;
   category: string;
   label?: string;
   subcategory?: string;
@@ -86,9 +91,24 @@ function lineLabel(l: BudgetLineLite): string {
   return l.label || l.subcategory || l.category || "Ligne";
 }
 
+function budgetLineHref(budgetId: string | undefined, l: BudgetLineLite): string | undefined {
+  if (!budgetId) return undefined;
+  const cat = encodeURIComponent(l.category || "");
+  if (l.id) return `/budget/${budgetId}?category=${cat}&line=${encodeURIComponent(l.id)}`;
+  return `/budget/${budgetId}?category=${cat}`;
+}
+
+function categoryHref(budgetId: string | undefined, category: string): string | undefined {
+  if (!budgetId) return undefined;
+  return `/budget/${budgetId}?category=${encodeURIComponent(category)}`;
+}
+
+export type BudgetSyncOpts = { budgetId?: string };
+
 export function kpisFromBudgetLines(
   lines: BudgetLineLite[],
   horizonMonths = 12,
+  opts: BudgetSyncOpts = {},
 ): KpiResult {
   const months = Math.min(horizonMonths || 12, 12);
   const kept = (lines || []).filter((l) => !l?.is_total);
@@ -118,14 +138,20 @@ export function kpisFromBudgetLines(
   const patch: Partial<BusinessAssumptions> = {};
   const sources: KpiSources = {};
 
+  const bId = opts.budgetId;
+
   if (revenue > 0) {
     patch.expected_annual_revenue = Math.round(revenue);
     sources.expected_annual_revenue = {
       origin: "budget",
       formula: `Somme des lignes « Revenus » sur ${months} mois`,
+      href: categoryHref(bId, "revenue"),
+      hrefLabel: "Ouvrir la catégorie « Revenus »",
       contributors: revenueLines.map((l) => ({
         label: lineLabel(l),
         value: Math.round(sliceAnnual(l.monthly_values, months)),
+        href: budgetLineHref(bId, l),
+        hrefLabel: "Voir la ligne",
       })),
     };
   }
@@ -135,9 +161,13 @@ export function kpisFromBudgetLines(
     sources.fixed_costs_monthly = {
       origin: "budget",
       formula: `Moyenne mensuelle des lignes « Charges fixes » sur ${months} mois`,
+      href: categoryHref(bId, "fixed_charges"),
+      hrefLabel: "Ouvrir la catégorie « Charges fixes »",
       contributors: fixedLines.map((l) => ({
         label: lineLabel(l),
         value: Math.round(monthlyAvg(l.monthly_values, months)),
+        href: budgetLineHref(bId, l),
+        hrefLabel: "Voir la ligne",
       })),
     };
   }
@@ -151,9 +181,13 @@ export function kpisFromBudgetLines(
       sources.gross_margin_pct = {
         origin: "budget",
         formula: `(CA − ${cogsAnnual > 0 ? "COGS" : "charges variables"}) ÷ CA = (${Math.round(revenue)} − ${Math.round(cogs)}) ÷ ${Math.round(revenue)}`,
+        href: categoryHref(bId, "variable_charges"),
+        hrefLabel: "Ouvrir la catégorie « Charges variables »",
         contributors: contribLines.map((l) => ({
           label: lineLabel(l),
           value: Math.round(sliceAnnual(l.monthly_values, months)),
+          href: budgetLineHref(bId, l),
+          hrefLabel: "Voir la ligne",
         })),
       };
     }
@@ -164,10 +198,12 @@ export function kpisFromBudgetLines(
       sources.ebitda_margin_pct = {
         origin: "budget",
         formula: `(CA − charges fixes annuelles − charges variables) ÷ CA = (${Math.round(revenue)} − ${Math.round(fixedMonthly * 12)} − ${Math.round(variableAnnual)}) ÷ ${Math.round(revenue)}`,
+        href: bId ? `/budget/${bId}` : undefined,
+        hrefLabel: "Ouvrir le budget",
         contributors: [
-          { label: "CA annuel", value: Math.round(revenue) },
-          { label: "Charges fixes (annuelles)", value: Math.round(fixedMonthly * 12) },
-          { label: "Charges variables (annuelles)", value: Math.round(variableAnnual) },
+          { label: "CA annuel", value: Math.round(revenue), href: categoryHref(bId, "revenue"), hrefLabel: "Voir les revenus" },
+          { label: "Charges fixes (annuelles)", value: Math.round(fixedMonthly * 12), href: categoryHref(bId, "fixed_charges"), hrefLabel: "Voir les charges fixes" },
+          { label: "Charges variables (annuelles)", value: Math.round(variableAnnual), href: categoryHref(bId, "variable_charges"), hrefLabel: "Voir les charges variables" },
         ],
       };
     }
@@ -373,22 +409,73 @@ export async function syncKpisFromBudget(
   projectId: string | null | undefined,
   lines: BudgetLineLite[],
   horizonMonths = 12,
+  opts: BudgetSyncOpts = {},
 ): Promise<void> {
-  const { patch, sources } = kpisFromBudgetLines(lines || [], horizonMonths);
+  const { patch, sources } = kpisFromBudgetLines(lines || [], horizonMonths, opts);
   await syncKpisToProject(projectId, patch, sources);
+}
+
+export type TextSyncItem = {
+  content: string;
+  sectionKey?: string; // section_type / block_type
+  label?: string;
+};
+export type TextSyncOpts = {
+  docType?: "bp" | "bm";
+  docId?: string;
+};
+
+function textItemHref(
+  opts: TextSyncOpts,
+  item: TextSyncItem,
+): { href?: string; hrefLabel?: string } {
+  if (!opts.docId || !opts.docType) return {};
+  const key = item.sectionKey ? encodeURIComponent(item.sectionKey) : "";
+  if (opts.docType === "bp") {
+    return {
+      href: key
+        ? `/business-plan/${opts.docId}?section=${key}`
+        : `/business-plan/${opts.docId}`,
+      hrefLabel: item.label ? `Ouvrir « ${item.label} »` : "Ouvrir la section",
+    };
+  }
+  return {
+    href: key
+      ? `/business-model/${opts.docId}?block=${key}`
+      : `/business-model/${opts.docId}`,
+    hrefLabel: item.label ? `Ouvrir « ${item.label} »` : "Ouvrir le bloc",
+  };
 }
 
 export async function syncKpisFromTexts(
   projectId: string | null | undefined,
-  texts: (string | undefined | null)[],
+  items: (string | TextSyncItem | undefined | null)[],
+  opts: TextSyncOpts = {},
 ): Promise<void> {
   const patch: Partial<BusinessAssumptions> = {};
   const sources: KpiSources = {};
-  for (const t of texts) {
-    if (!t) continue;
-    const r = kpisFromText(String(t));
+  for (const raw of items) {
+    if (!raw) continue;
+    const item: TextSyncItem =
+      typeof raw === "string" ? { content: raw } : raw;
+    if (!item.content) continue;
+    const r = kpisFromText(String(item.content));
     Object.assign(patch, r.patch);
-    Object.assign(sources, r.sources);
+    const linkMeta = textItemHref(opts, item);
+    for (const [k, src] of Object.entries(r.sources)) {
+      if (!src) continue;
+      const enriched: KpiSource = {
+        ...src,
+        href: linkMeta.href ?? src.href,
+        hrefLabel: linkMeta.hrefLabel ?? src.hrefLabel,
+        contributors: src.contributors?.map((c) => ({
+          ...c,
+          href: c.href ?? linkMeta.href,
+          hrefLabel: c.hrefLabel ?? linkMeta.hrefLabel,
+        })),
+      };
+      (sources as Record<string, KpiSource>)[k] = enriched;
+    }
   }
   await syncKpisToProject(projectId, patch, sources);
 }

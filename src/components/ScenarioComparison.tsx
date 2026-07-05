@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { ExternalLink } from "lucide-react";
 import {
   BarChart3,
   Info,
@@ -141,6 +143,12 @@ export default function ScenarioComparison({
   triggerLabel = "Comparer les scénarios",
 }: Props) {
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
+  const goTo = (href: string) => {
+    setOpen(false);
+    // slight delay to let the dialog close before navigating
+    setTimeout(() => navigate(href), 60);
+  };
   const [loading, setLoading] = useState(false);
   const [scenarios, setScenarios] = useState<ScenarioMap>({});
   const [active, setActive] = useState<string>("base");
@@ -343,7 +351,7 @@ export default function ScenarioComparison({
                     <TableCell key={c.id}>
                       {fmtMoney(c.a.expected_annual_revenue, currency)}
                       {trendIcon(c.a.expected_annual_revenue ?? null, revArr)}
-                      <SourceInfo source={c.sources.expected_annual_revenue} currency={currency} />
+                      <SourceInfo source={c.sources.expected_annual_revenue} currency={currency} onNavigate={goTo} />
                       <LockToggle
                         locked={!!c.locks.expected_annual_revenue}
                         onToggle={() => toggleLock(c.id, "expected_annual_revenue")}
@@ -356,7 +364,7 @@ export default function ScenarioComparison({
                     <TableCell key={c.id}>
                       {fmtMoney(c.a.avg_cac, currency)}
                       {trendIcon(c.a.avg_cac ?? null, cacArr, true)}
-                      <SourceInfo source={c.sources.avg_cac} currency={currency} />
+                      <SourceInfo source={c.sources.avg_cac} currency={currency} onNavigate={goTo} />
                       <LockToggle
                         locked={!!c.locks.avg_cac}
                         onToggle={() => toggleLock(c.id, "avg_cac")}
@@ -369,7 +377,7 @@ export default function ScenarioComparison({
                     <TableCell key={c.id}>
                       {fmtMoney(c.a.avg_ltv, currency)}
                       {trendIcon(c.a.avg_ltv ?? null, ltvArr)}
-                      <SourceInfo source={c.sources.avg_ltv} currency={currency} />
+                      <SourceInfo source={c.sources.avg_ltv} currency={currency} onNavigate={goTo} />
                       <LockToggle
                         locked={!!c.locks.avg_ltv}
                         onToggle={() => toggleLock(c.id, "avg_ltv")}
@@ -387,7 +395,7 @@ export default function ScenarioComparison({
                           { label: "LTV", source: c.sources.avg_ltv, value: c.a.avg_ltv ?? null },
                           { label: "CAC", source: c.sources.avg_cac, value: c.a.avg_cac ?? null },
                         ])}
-                        currency={currency}
+                        currency={currency} onNavigate={goTo}
                       />
                     </TableCell>
                   ))}
@@ -397,7 +405,7 @@ export default function ScenarioComparison({
                     <TableCell key={c.id}>
                       {fmtPct(c.a.gross_margin_pct)}
                       {trendIcon(c.a.gross_margin_pct ?? null, gmArr)}
-                      <SourceInfo source={c.sources.gross_margin_pct} currency={currency} />
+                      <SourceInfo source={c.sources.gross_margin_pct} currency={currency} onNavigate={goTo} />
                       <LockToggle
                         locked={!!c.locks.gross_margin_pct}
                         onToggle={() => toggleLock(c.id, "gross_margin_pct")}
@@ -410,7 +418,7 @@ export default function ScenarioComparison({
                     <TableCell key={c.id}>
                       {fmtPct(c.a.ebitda_margin_pct)}
                       {trendIcon(c.a.ebitda_margin_pct ?? null, ebitdaMarginArr)}
-                      <SourceInfo source={c.sources.ebitda_margin_pct} currency={currency} />
+                      <SourceInfo source={c.sources.ebitda_margin_pct} currency={currency} onNavigate={goTo} />
                       <LockToggle
                         locked={!!c.locks.ebitda_margin_pct}
                         onToggle={() => toggleLock(c.id, "ebitda_margin_pct")}
@@ -436,7 +444,7 @@ export default function ScenarioComparison({
                             value: c.a.ebitda_margin_pct ?? null,
                           },
                         ])}
-                        currency={currency}
+                        currency={currency} onNavigate={goTo}
                       />
                     </TableCell>
                   ))}
@@ -446,7 +454,7 @@ export default function ScenarioComparison({
                     <TableCell key={c.id}>
                       {fmtMoney(c.a.fixed_costs_monthly, currency)}
                       {trendIcon(c.a.fixed_costs_monthly ?? null, fcArr, true)}
-                      <SourceInfo source={c.sources.fixed_costs_monthly} currency={currency} />
+                      <SourceInfo source={c.sources.fixed_costs_monthly} currency={currency} onNavigate={goTo} />
                       <LockToggle
                         locked={!!c.locks.fixed_costs_monthly}
                         onToggle={() => toggleLock(c.id, "fixed_costs_monthly")}
@@ -473,7 +481,7 @@ export default function ScenarioComparison({
                             value: c.a.gross_margin_pct ?? null,
                           },
                         ])}
-                        currency={currency}
+                        currency={currency} onNavigate={goTo}
                       />
                     </TableCell>
                   ))}
@@ -546,9 +554,11 @@ function LockToggle({
 function SourceInfo({
   source,
   currency = "EUR",
+  onNavigate,
 }: {
   source?: KpiSource | null;
   currency?: string;
+  onNavigate?: (href: string) => void;
 }) {
   if (!source) return null;
   const originLabel =
@@ -557,6 +567,8 @@ function SourceInfo({
       : source.origin === "text"
         ? "Extrait du texte généré"
         : "Saisie manuelle";
+  const currencySym =
+    currency === "USD" ? "$" : currency === "GBP" ? "£" : currency === "EUR" ? "€" : "";
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -576,6 +588,16 @@ function SourceInfo({
             {source.formula}
           </div>
         )}
+        {source.href && onNavigate && (
+          <button
+            type="button"
+            onClick={() => onNavigate(source.href!)}
+            className="inline-flex items-center gap-1 text-primary hover:underline text-[11px] font-medium"
+          >
+            <ExternalLink className="w-3 h-3" />
+            {source.hrefLabel || "Ouvrir la source"}
+          </button>
+        )}
         {source.contributors && source.contributors.length > 0 && (
           <div>
             <div className="font-medium text-foreground mb-1">
@@ -583,9 +605,23 @@ function SourceInfo({
             </div>
             <ul className="space-y-1 max-h-52 overflow-y-auto">
               {source.contributors.map((c, i) => (
-                <li key={i} className="flex justify-between gap-2">
-                  <span className="text-muted-foreground truncate">
-                    {c.snippet ? (
+                <li key={i} className="flex justify-between gap-2 items-start">
+                  <span className="text-muted-foreground truncate flex-1">
+                    {c.href && onNavigate ? (
+                      <button
+                        type="button"
+                        onClick={() => onNavigate(c.href!)}
+                        className="inline-flex items-center gap-1 text-left hover:text-primary hover:underline"
+                        title={c.hrefLabel || "Ouvrir"}
+                      >
+                        {c.snippet ? (
+                          <em className="not-italic">« {c.snippet} »</em>
+                        ) : (
+                          c.label
+                        )}
+                        <ExternalLink className="w-3 h-3 shrink-0 opacity-70" />
+                      </button>
+                    ) : c.snippet ? (
                       <em className="not-italic">« {c.snippet} »</em>
                     ) : (
                       c.label
@@ -593,14 +629,7 @@ function SourceInfo({
                   </span>
                   {typeof c.value === "number" && (
                     <span className="tabular-nums font-medium shrink-0">
-                      {c.value.toLocaleString("fr-FR")}{" "}
-                      {currency === "USD"
-                        ? "$"
-                        : currency === "GBP"
-                          ? "£"
-                          : currency === "EUR"
-                            ? "€"
-                            : ""}
+                      {c.value.toLocaleString("fr-FR")} {currencySym}
                     </span>
                   )}
                 </li>
@@ -619,27 +648,40 @@ function derivedSource(
   parts: Array<{ label: string; source?: KpiSource | null; value?: number | null }>,
 ): KpiSource | null {
   const contributors: KpiContributorLite[] = [];
+  let firstHref: { href?: string; hrefLabel?: string } = {};
   for (const p of parts) {
     if (p.value !== null && p.value !== undefined && Number.isFinite(p.value)) {
-      contributors.push({ label: p.label, value: Math.round(p.value) });
+      contributors.push({
+        label: p.label,
+        value: Math.round(p.value),
+        href: p.source?.href,
+        hrefLabel: p.source?.hrefLabel,
+      });
     }
     const src = p.source;
+    if (src?.href && !firstHref.href) {
+      firstHref = { href: src.href, hrefLabel: src.hrefLabel };
+    }
     if (src?.contributors) {
       for (const c of src.contributors) {
         contributors.push({
           label: `${p.label} · ${c.label}`,
           value: c.value,
           snippet: c.snippet,
+          href: c.href,
+          hrefLabel: c.hrefLabel,
         });
       }
     }
   }
   if (contributors.length === 0) return null;
-  return { origin: "budget", formula, contributors };
+  return { origin: "budget", formula, contributors, ...firstHref };
 }
 
 type KpiContributorLite = {
   label: string;
   value?: number | string;
   snippet?: string;
+  href?: string;
+  hrefLabel?: string;
 };

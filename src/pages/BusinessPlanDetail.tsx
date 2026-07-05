@@ -184,7 +184,11 @@ export default function BusinessPlanDetail() {
         }));
         await upsertSections(plan.id, secs);
         await updatePlanStatus(plan.id, "in_progress");
-        await syncKpisFromTexts(plan.project_id, secs.map((s: any) => s.content));
+        await syncKpisFromTexts(
+          plan.project_id,
+          secs.map((s: any) => ({ content: s.content, sectionKey: s.section_type, label: s.title })),
+          { docType: "bp", docId: plan.id },
+        );
         toast.success("Business plan généré — KPIs synchronisés.");
         await load();
       }
@@ -212,7 +216,11 @@ export default function BusinessPlanDetail() {
           const info = SECTION_TYPES.find(s => s.type === sectionType);
           await addSection(plan.id, sectionType, data.result.title || info?.title || "", data.result.content, SECTION_TYPES.findIndex(s => s.type === sectionType));
         }
-        await syncKpisFromTexts(plan.project_id, [data.result.content]);
+        await syncKpisFromTexts(
+          plan.project_id,
+          [{ content: data.result.content, sectionKey: sectionType, label: data.result.title }],
+          { docType: "bp", docId: plan.id },
+        );
         toast.success("Section générée !");
         await load();
         setActiveSection(sectionType);

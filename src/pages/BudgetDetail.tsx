@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, Loader2, Wand2, Download, Share2, Plus, Trash2,
@@ -41,6 +41,7 @@ function getMonthLabel(index: number): string {
 
 export default function BudgetDetail() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const { fetchBudgetWithLines, upsertLines, updateLine, addLine, deleteLine, enableSharing, updateBudgetStatus } = useBudgets();
   const [budget, setBudget] = useState<BudgetRow | null>(null);
   const [lines, setLines] = useState<BudgetLineRow[]>([]);
@@ -68,6 +69,29 @@ export default function BudgetDetail() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // Deep-linking from Scenario Comparison popovers: ?category=...&line=...
+  useEffect(() => {
+    if (loading) return;
+    const cat = searchParams.get("category");
+    const lineId = searchParams.get("line");
+    if (cat && !expandedCats.includes(cat)) {
+      setExpandedCats(prev => [...prev, cat]);
+    }
+    const target = lineId
+      ? document.getElementById(`budget-line-${lineId}`)
+      : cat
+        ? document.getElementById(`budget-cat-${cat}`)
+        : null;
+    if (target) {
+      setTimeout(() => {
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+        target.classList.add("ring-2", "ring-primary/60");
+        setTimeout(() => target.classList.remove("ring-2", "ring-primary/60"), 1800);
+      }, 150);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, loading, lines.length]);
+
   const toggleCat = (key: string) => {
     setExpandedCats(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
   };
@@ -92,8 +116,9 @@ export default function BudgetDetail() {
         if (Array.isArray(data.coherence_justifications)) setCoherenceJustifs(data.coherence_justifications);
         if (data.bp_id) setBpId(data.bp_id);
         if (data.bm_id) setBmId(data.bm_id);
-        await syncKpisFromBudget(budget.project_id, data.lines, budget.horizon_months);
-        await loadData();
+        const fresh = await fetchBudgetWithLines(budget.id);
+        if (fresh) { setBudget(fresh.budget); setLines(fresh.lines); }
+        await syncKpisFromBudget(budget.project_id, (fresh?.lines || data.lines) as never, budget.horizon_months, { budgetId: budget.id });
         toast.success("Budget généré — KPIs synchronisés avec la comparaison de scénarios.");
       }
     } catch (err) {
@@ -131,10 +156,11 @@ export default function BudgetDetail() {
         if (Array.isArray(data.coherence_justifications)) setCoherenceJustifs(data.coherence_justifications);
         if (data.bp_id) setBpId(data.bp_id);
         if (data.bm_id) setBmId(data.bm_id);
-        await loadData();
-        // Re-sync KPIs using the full merged set of lines after refresh.
-        const merged = [...lines.filter(l => l.category !== category), ...data.lines];
-        await syncKpisFromBudget(budget.project_id, merged, budget.horizon_months);
+        const fresh = await fetchBudgetWithLines(budget.id);
+        if (fresh) { setBudget(fresh.budget); setLines(fresh.lines); }
+        // Re-sync KPIs using the fresh persisted lines (with DB IDs for deep links).
+        const merged = fresh?.lines || [...lines.filter(l => l.category !== category), ...data.lines];
+        await syncKpisFromBudget(budget.project_id, merged as never, budget.horizon_months, { budgetId: budget.id });
         toast.success("Catégorie générée — KPIs mis à jour.");
       }
     } catch (err) {
@@ -287,7 +313,7 @@ export default function BudgetDetail() {
             const expanded = expandedCats.includes(cat.key);
 
             return (
-              <motion.div key={cat.key} className="glass-card rounded-xl overflow-hidden">
+              <motion.div key={cat.key} id={`budget-cat-${cat.key}`} className="glass-card rounded-xl overflow-hidden transition-shadow">
                 <button
                   onClick={() => toggleCat(cat.key)}
                   className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
@@ -340,7 +366,7 @@ export default function BudgetDetail() {
                           const total = values.slice(0, visibleMonths).reduce((a, b) => a + b, 0);
 
                           return (
-                            <tr key={line.id} className={`border-t ${line.is_total ? "bg-muted/50 font-bold" : "hover:bg-muted/20"}`}>
+                            <tr key={line.id} id={`budget-line-${line.id}`} className={`border-t transition-shadow ${line.is_total ? "bg-muted/50 font-bold" : "hover:bg-muted/20"}`}>
                               <td className="px-4 py-1.5 sticky left-0 bg-background">
                                 <Input
                                   value={line.label}
