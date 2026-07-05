@@ -216,7 +216,11 @@ export default function BusinessPlanDetail() {
           const info = SECTION_TYPES.find(s => s.type === sectionType);
           await addSection(plan.id, sectionType, data.result.title || info?.title || "", data.result.content, SECTION_TYPES.findIndex(s => s.type === sectionType));
         }
-        await syncKpisFromTexts(plan.project_id, [data.result.content]);
+        await syncKpisFromTexts(
+          plan.project_id,
+          [{ content: data.result.content, sectionKey: sectionType, label: data.result.title }],
+          { docType: "bp", docId: plan.id },
+        );
         toast.success("Section générée !");
         await load();
         setActiveSection(sectionType);
