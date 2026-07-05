@@ -59,6 +59,7 @@ export type KpiResult = {
 // -----------------------------------------------------------------------
 
 export type BudgetLineLite = {
+  id?: string;
   category: string;
   label?: string;
   subcategory?: string;
@@ -90,9 +91,24 @@ function lineLabel(l: BudgetLineLite): string {
   return l.label || l.subcategory || l.category || "Ligne";
 }
 
+function budgetLineHref(budgetId: string | undefined, l: BudgetLineLite): string | undefined {
+  if (!budgetId) return undefined;
+  const cat = encodeURIComponent(l.category || "");
+  if (l.id) return `/budget/${budgetId}?category=${cat}&line=${encodeURIComponent(l.id)}`;
+  return `/budget/${budgetId}?category=${cat}`;
+}
+
+function categoryHref(budgetId: string | undefined, category: string): string | undefined {
+  if (!budgetId) return undefined;
+  return `/budget/${budgetId}?category=${encodeURIComponent(category)}`;
+}
+
+export type BudgetSyncOpts = { budgetId?: string };
+
 export function kpisFromBudgetLines(
   lines: BudgetLineLite[],
   horizonMonths = 12,
+  opts: BudgetSyncOpts = {},
 ): KpiResult {
   const months = Math.min(horizonMonths || 12, 12);
   const kept = (lines || []).filter((l) => !l?.is_total);
