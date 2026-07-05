@@ -184,7 +184,11 @@ export default function BusinessPlanDetail() {
         }));
         await upsertSections(plan.id, secs);
         await updatePlanStatus(plan.id, "in_progress");
-        await syncKpisFromTexts(plan.project_id, secs.map((s: any) => s.content));
+        await syncKpisFromTexts(
+          plan.project_id,
+          secs.map((s: any) => ({ content: s.content, sectionKey: s.section_type, label: s.title })),
+          { docType: "bp", docId: plan.id },
+        );
         toast.success("Business plan généré — KPIs synchronisés.");
         await load();
       }
