@@ -138,14 +138,20 @@ export function kpisFromBudgetLines(
   const patch: Partial<BusinessAssumptions> = {};
   const sources: KpiSources = {};
 
+  const bId = opts.budgetId;
+
   if (revenue > 0) {
     patch.expected_annual_revenue = Math.round(revenue);
     sources.expected_annual_revenue = {
       origin: "budget",
       formula: `Somme des lignes « Revenus » sur ${months} mois`,
+      href: categoryHref(bId, "revenue"),
+      hrefLabel: "Ouvrir la catégorie « Revenus »",
       contributors: revenueLines.map((l) => ({
         label: lineLabel(l),
         value: Math.round(sliceAnnual(l.monthly_values, months)),
+        href: budgetLineHref(bId, l),
+        hrefLabel: "Voir la ligne",
       })),
     };
   }
@@ -155,9 +161,13 @@ export function kpisFromBudgetLines(
     sources.fixed_costs_monthly = {
       origin: "budget",
       formula: `Moyenne mensuelle des lignes « Charges fixes » sur ${months} mois`,
+      href: categoryHref(bId, "fixed_charges"),
+      hrefLabel: "Ouvrir la catégorie « Charges fixes »",
       contributors: fixedLines.map((l) => ({
         label: lineLabel(l),
         value: Math.round(monthlyAvg(l.monthly_values, months)),
+        href: budgetLineHref(bId, l),
+        hrefLabel: "Voir la ligne",
       })),
     };
   }
@@ -171,9 +181,13 @@ export function kpisFromBudgetLines(
       sources.gross_margin_pct = {
         origin: "budget",
         formula: `(CA − ${cogsAnnual > 0 ? "COGS" : "charges variables"}) ÷ CA = (${Math.round(revenue)} − ${Math.round(cogs)}) ÷ ${Math.round(revenue)}`,
+        href: categoryHref(bId, "variable_charges"),
+        hrefLabel: "Ouvrir la catégorie « Charges variables »",
         contributors: contribLines.map((l) => ({
           label: lineLabel(l),
           value: Math.round(sliceAnnual(l.monthly_values, months)),
+          href: budgetLineHref(bId, l),
+          hrefLabel: "Voir la ligne",
         })),
       };
     }
@@ -184,10 +198,12 @@ export function kpisFromBudgetLines(
       sources.ebitda_margin_pct = {
         origin: "budget",
         formula: `(CA − charges fixes annuelles − charges variables) ÷ CA = (${Math.round(revenue)} − ${Math.round(fixedMonthly * 12)} − ${Math.round(variableAnnual)}) ÷ ${Math.round(revenue)}`,
+        href: bId ? `/budget/${bId}` : undefined,
+        hrefLabel: "Ouvrir le budget",
         contributors: [
-          { label: "CA annuel", value: Math.round(revenue) },
-          { label: "Charges fixes (annuelles)", value: Math.round(fixedMonthly * 12) },
-          { label: "Charges variables (annuelles)", value: Math.round(variableAnnual) },
+          { label: "CA annuel", value: Math.round(revenue), href: categoryHref(bId, "revenue"), hrefLabel: "Voir les revenus" },
+          { label: "Charges fixes (annuelles)", value: Math.round(fixedMonthly * 12), href: categoryHref(bId, "fixed_charges"), hrefLabel: "Voir les charges fixes" },
+          { label: "Charges variables (annuelles)", value: Math.round(variableAnnual), href: categoryHref(bId, "variable_charges"), hrefLabel: "Voir les charges variables" },
         ],
       };
     }
