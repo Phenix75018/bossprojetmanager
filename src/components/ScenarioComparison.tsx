@@ -395,7 +395,7 @@ export default function ScenarioComparison({
                           { label: "LTV", source: c.sources.avg_ltv, value: c.a.avg_ltv ?? null },
                           { label: "CAC", source: c.sources.avg_cac, value: c.a.avg_cac ?? null },
                         ])}
-                        currency={currency}
+                        currency={currency} onNavigate={goTo}
                       />
                     </TableCell>
                   ))}
@@ -444,7 +444,7 @@ export default function ScenarioComparison({
                             value: c.a.ebitda_margin_pct ?? null,
                           },
                         ])}
-                        currency={currency}
+                        currency={currency} onNavigate={goTo}
                       />
                     </TableCell>
                   ))}
@@ -481,7 +481,7 @@ export default function ScenarioComparison({
                             value: c.a.gross_margin_pct ?? null,
                           },
                         ])}
-                        currency={currency}
+                        currency={currency} onNavigate={goTo}
                       />
                     </TableCell>
                   ))}
