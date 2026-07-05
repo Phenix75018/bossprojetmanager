@@ -554,9 +554,11 @@ function LockToggle({
 function SourceInfo({
   source,
   currency = "EUR",
+  onNavigate,
 }: {
   source?: KpiSource | null;
   currency?: string;
+  onNavigate?: (href: string) => void;
 }) {
   if (!source) return null;
   const originLabel =
@@ -565,6 +567,8 @@ function SourceInfo({
       : source.origin === "text"
         ? "Extrait du texte généré"
         : "Saisie manuelle";
+  const currencySym =
+    currency === "USD" ? "$" : currency === "GBP" ? "£" : currency === "EUR" ? "€" : "";
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -584,6 +588,16 @@ function SourceInfo({
             {source.formula}
           </div>
         )}
+        {source.href && onNavigate && (
+          <button
+            type="button"
+            onClick={() => onNavigate(source.href!)}
+            className="inline-flex items-center gap-1 text-primary hover:underline text-[11px] font-medium"
+          >
+            <ExternalLink className="w-3 h-3" />
+            {source.hrefLabel || "Ouvrir la source"}
+          </button>
+        )}
         {source.contributors && source.contributors.length > 0 && (
           <div>
             <div className="font-medium text-foreground mb-1">
@@ -591,9 +605,23 @@ function SourceInfo({
             </div>
             <ul className="space-y-1 max-h-52 overflow-y-auto">
               {source.contributors.map((c, i) => (
-                <li key={i} className="flex justify-between gap-2">
-                  <span className="text-muted-foreground truncate">
-                    {c.snippet ? (
+                <li key={i} className="flex justify-between gap-2 items-start">
+                  <span className="text-muted-foreground truncate flex-1">
+                    {c.href && onNavigate ? (
+                      <button
+                        type="button"
+                        onClick={() => onNavigate(c.href!)}
+                        className="inline-flex items-center gap-1 text-left hover:text-primary hover:underline"
+                        title={c.hrefLabel || "Ouvrir"}
+                      >
+                        {c.snippet ? (
+                          <em className="not-italic">« {c.snippet} »</em>
+                        ) : (
+                          c.label
+                        )}
+                        <ExternalLink className="w-3 h-3 shrink-0 opacity-70" />
+                      </button>
+                    ) : c.snippet ? (
                       <em className="not-italic">« {c.snippet} »</em>
                     ) : (
                       c.label
@@ -601,14 +629,7 @@ function SourceInfo({
                   </span>
                   {typeof c.value === "number" && (
                     <span className="tabular-nums font-medium shrink-0">
-                      {c.value.toLocaleString("fr-FR")}{" "}
-                      {currency === "USD"
-                        ? "$"
-                        : currency === "GBP"
-                          ? "£"
-                          : currency === "EUR"
-                            ? "€"
-                            : ""}
+                      {c.value.toLocaleString("fr-FR")} {currencySym}
                     </span>
                   )}
                 </li>
@@ -627,27 +648,40 @@ function derivedSource(
   parts: Array<{ label: string; source?: KpiSource | null; value?: number | null }>,
 ): KpiSource | null {
   const contributors: KpiContributorLite[] = [];
+  let firstHref: { href?: string; hrefLabel?: string } = {};
   for (const p of parts) {
     if (p.value !== null && p.value !== undefined && Number.isFinite(p.value)) {
-      contributors.push({ label: p.label, value: Math.round(p.value) });
+      contributors.push({
+        label: p.label,
+        value: Math.round(p.value),
+        href: p.source?.href,
+        hrefLabel: p.source?.hrefLabel,
+      });
     }
     const src = p.source;
+    if (src?.href && !firstHref.href) {
+      firstHref = { href: src.href, hrefLabel: src.hrefLabel };
+    }
     if (src?.contributors) {
       for (const c of src.contributors) {
         contributors.push({
           label: `${p.label} · ${c.label}`,
           value: c.value,
           snippet: c.snippet,
+          href: c.href,
+          hrefLabel: c.hrefLabel,
         });
       }
     }
   }
   if (contributors.length === 0) return null;
-  return { origin: "budget", formula, contributors };
+  return { origin: "budget", formula, contributors, ...firstHref };
 }
 
 type KpiContributorLite = {
   label: string;
   value?: number | string;
   snippet?: string;
+  href?: string;
+  hrefLabel?: string;
 };
