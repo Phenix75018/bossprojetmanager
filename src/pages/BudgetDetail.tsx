@@ -311,7 +311,7 @@ export default function BudgetDetail() {
             const expanded = expandedCats.includes(cat.key);
 
             return (
-              <motion.div key={cat.key} className="glass-card rounded-xl overflow-hidden">
+              <motion.div key={cat.key} id={`budget-cat-${cat.key}`} className="glass-card rounded-xl overflow-hidden transition-shadow">
                 <button
                   onClick={() => toggleCat(cat.key)}
                   className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
