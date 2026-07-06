@@ -133,8 +133,22 @@ function CalendarIcon({ cal }: { cal: (typeof CALENDARS)[0] }) {
   );
 }
 
+const COMMON_TIMEZONES = [
+  "Europe/Paris", "Europe/London", "Europe/Berlin", "Europe/Madrid", "Europe/Lisbon",
+  "Africa/Casablanca", "Africa/Algiers", "Africa/Tunis",
+  "America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles",
+  "America/Toronto", "America/Sao_Paulo",
+  "Asia/Dubai", "Asia/Kolkata", "Asia/Shanghai", "Asia/Tokyo", "Asia/Singapore",
+  "Australia/Sydney", "Pacific/Auckland",
+];
+
+function getBrowserTz(): string {
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Paris"; }
+  catch { return "Europe/Paris"; }
+}
+
 export default function Integrations() {
-  const { integrations, loading, toggleIntegration, getICSUrl } =
+  const { integrations, loading, toggleIntegration, getICSUrl, timezone, updateTimezone } =
     useCalendarIntegrations();
   const { prefs: notifPrefs, loading: notifLoading, toggleEnabled: toggleNotifications, updateReminder1, updateReminder2, permissionState } =
     useNotifications();
