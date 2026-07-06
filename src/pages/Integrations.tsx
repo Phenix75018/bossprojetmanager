@@ -217,6 +217,49 @@ export default function Integrations() {
             </div>
           </div>
 
+          {/* Timezone strategy */}
+          <div className="glass-card rounded-2xl p-6 mb-8">
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-accent flex items-center justify-center">
+                  <Calendar className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <h2 className="font-display font-bold text-lg">
+                    Fuseau horaire du calendrier
+                  </h2>
+                  <p className="text-sm text-muted-foreground max-w-md">
+                    Contrôle la façon dont les heures sont interprétées par Google Calendar, Outlook, Apple, etc.
+                  </p>
+                </div>
+              </div>
+              <select
+                value={timezone}
+                onChange={(e) => updateTimezone(e.target.value)}
+                className="rounded-lg border border-border bg-background px-3 py-2 text-sm min-w-[240px] focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="floating">Heure locale flottante (même heure partout)</option>
+                <option value="UTC">UTC (heure universelle)</option>
+                <optgroup label={`Détecté : ${getBrowserTz()}`}>
+                  <option value={getBrowserTz()}>{getBrowserTz()} (recommandé)</option>
+                </optgroup>
+                <optgroup label="Fuseaux courants">
+                  {COMMON_TIMEZONES.map((tz) => (
+                    <option key={tz} value={tz}>{tz}</option>
+                  ))}
+                </optgroup>
+              </select>
+            </div>
+            <div className="mt-4 pt-4 border-t border-border text-xs text-muted-foreground space-y-1">
+              <p><strong className="text-foreground">Flottant :</strong> l'événement s'affiche à la même heure dans chaque zone (ex. 9h partout).</p>
+              <p><strong className="text-foreground">UTC :</strong> heure absolue, convertie automatiquement selon la zone du calendrier.</p>
+              <p><strong className="text-foreground">IANA (ex. Europe/Paris) :</strong> heure fixée dans votre zone, convertie pour les autres viewers. Recommandé pour Google Calendar.</p>
+              <p className="pt-1">⏱ Google Calendar met jusqu'à 24 h pour rafraîchir un abonnement ICS après un changement.</p>
+            </div>
+          </div>
+
+
+
           {/* Notifications */}
           <div className="glass-card rounded-2xl p-6 mb-8">
             <div className="flex items-center justify-between">
