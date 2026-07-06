@@ -402,6 +402,7 @@ export type Database = {
           id: string
           provider: string
           sync_direction: string
+          timezone: string
           updated_at: string
           user_id: string
         }
@@ -412,6 +413,7 @@ export type Database = {
           id?: string
           provider: string
           sync_direction?: string
+          timezone?: string
           updated_at?: string
           user_id: string
         }
@@ -422,6 +424,7 @@ export type Database = {
           id?: string
           provider?: string
           sync_direction?: string
+          timezone?: string
           updated_at?: string
           user_id?: string
         }

@@ -8,6 +8,7 @@ export interface CalendarIntegration {
   enabled: boolean;
   ics_feed_token: string;
   sync_direction: string;
+  timezone: string;
 }
 
 export function useCalendarIntegrations() {
@@ -39,11 +40,14 @@ export function useCalendarIntegrations() {
         .update({ enabled: !existing.enabled })
         .eq("id", existing.id);
     } else {
+      // Inherit any previously chosen timezone so a new provider matches the others
+      const tz = integrations[0]?.timezone ?? "floating";
       await supabase.from("calendar_integrations").insert({
         user_id: user.id,
         provider,
         enabled: true,
-      });
+        timezone: tz,
+      } as never);
     }
     await fetchIntegrations();
   };
@@ -58,5 +62,36 @@ export function useCalendarIntegrations() {
     return `https://${projectId}.supabase.co/functions/v1/calendar-ics?token=${integration.ics_feed_token}&user_id=${user.id}`;
   };
 
-  return { integrations, loading, toggleIntegration, getICSUrl, refetch: fetchIntegrations };
+  const timezone: string = integrations[0]?.timezone ?? "floating";
+
+  const updateTimezone = async (tz: string) => {
+    if (!user) return;
+    // Optimistic UI
+    setIntegrations((prev) => prev.map((i) => ({ ...i, timezone: tz })));
+    if (integrations.length > 0) {
+      await supabase
+        .from("calendar_integrations")
+        .update({ timezone: tz } as never)
+        .eq("user_id", user.id);
+    } else {
+      // Create a placeholder row so the setting is stored even before any provider is enabled
+      await supabase.from("calendar_integrations").insert({
+        user_id: user.id,
+        provider: "_settings",
+        enabled: false,
+        timezone: tz,
+      } as never);
+      await fetchIntegrations();
+    }
+  };
+
+  return {
+    integrations,
+    loading,
+    toggleIntegration,
+    getICSUrl,
+    refetch: fetchIntegrations,
+    timezone,
+    updateTimezone,
+  };
 }

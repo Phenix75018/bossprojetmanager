@@ -1,0 +1,1 @@
+ALTER TABLE public.calendar_integrations ADD COLUMN IF NOT EXISTS timezone text NOT NULL DEFAULT 'floating';

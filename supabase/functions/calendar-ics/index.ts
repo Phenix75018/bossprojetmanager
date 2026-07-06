@@ -10,13 +10,12 @@ function escapeICS(str: string): string {
   return String(str).replace(/[\\;,]/g, (m) => "\\" + m).replace(/\r?\n/g, "\\n");
 }
 
-// UTC timestamp for calendar_events (already ISO)
+// UTC timestamp (ends with Z)
 function formatDateUTC(d: string | Date): string {
   return new Date(d).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
 }
 
-// Local floating time (no Z) for scheduled slots — displays at the same
-// wall-clock time in every calendar client, matching the app's dispatch view.
+// Local floating time (no Z, no TZID) — wall-clock in every client
 function formatDateLocalFloating(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   return (
@@ -28,6 +27,39 @@ function formatDateLocalFloating(d: Date): string {
     pad(d.getMinutes()) +
     "00"
   );
+}
+
+// Convert a Date whose wall-clock values (year/month/day/hours/minutes) should
+// be interpreted in the given IANA timezone into the correct UTC instant, then
+// format as UTC ICS timestamp.
+function formatWallClockAsUTC(d: Date, tz: string): string {
+  // Treat the Date's local getters as wall-clock in `tz`.
+  // Compute the offset of `tz` at that wall-clock and shift accordingly.
+  const asIfUTC = Date.UTC(
+    d.getFullYear(),
+    d.getMonth(),
+    d.getDate(),
+    d.getHours(),
+    d.getMinutes(),
+    0,
+  );
+  // Get the offset (minutes) that `tz` has at that instant.
+  const dtf = new Intl.DateTimeFormat("en-US", {
+    timeZone: tz,
+    hourCycle: "h23",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+  });
+  const parts = dtf.formatToParts(new Date(asIfUTC));
+  const map: Record<string, string> = {};
+  for (const p of parts) if (p.type !== "literal") map[p.type] = p.value;
+  const tzWall = Date.UTC(
+    Number(map.year), Number(map.month) - 1, Number(map.day),
+    Number(map.hour), Number(map.minute), Number(map.second),
+  );
+  const offsetMs = tzWall - asIfUTC; // tz is ahead of UTC by this many ms
+  const utcInstant = asIfUTC - offsetMs;
+  return formatDateUTC(new Date(utcInstant));
 }
 
 const DAY_MAP: Record<string, number> = {
@@ -69,10 +101,10 @@ function dispatchProject(
   phases: any[],
   tasks: any[],
   subtasks: any[],
-  startDate: Date
+  startDate: Date,
 ): ScheduledChunk[] {
   const availableDays = new Set(
-    (project.days_per_week || []).map((d: string) => DAY_MAP[d] ?? -1).filter((d: number) => d >= 0)
+    (project.days_per_week || []).map((d: string) => DAY_MAP[d] ?? -1).filter((d: number) => d >= 0),
   );
   if (availableDays.size === 0) return [];
   const timeSlots = parseTimeSlots(project.time_slots);
@@ -100,28 +132,17 @@ function dispatchProject(
     if (sts.length > 0) {
       for (const st of sts) {
         items.push({
-          taskId: task.id,
-          taskTitle: task.title,
-          description: task.description,
-          priority: task.priority,
-          phaseName,
-          projectTitle: project.title,
-          duration: st.duration_hours || 1,
-          subtaskTitle: st.title,
-          isSubtask: true,
-          sortOrder: task.sort_order ?? 0,
+          taskId: task.id, taskTitle: task.title, description: task.description,
+          priority: task.priority, phaseName, projectTitle: project.title,
+          duration: st.duration_hours || 1, subtaskTitle: st.title,
+          isSubtask: true, sortOrder: task.sort_order ?? 0,
         });
       }
     } else {
       items.push({
-        taskId: task.id,
-        taskTitle: task.title,
-        description: task.description,
-        priority: task.priority,
-        phaseName,
-        projectTitle: project.title,
-        duration: task.duration_hours || 1,
-        isSubtask: false,
+        taskId: task.id, taskTitle: task.title, description: task.description,
+        priority: task.priority, phaseName, projectTitle: project.title,
+        duration: task.duration_hours || 1, isSubtask: false,
         sortOrder: task.sort_order ?? 0,
       });
     }
@@ -131,7 +152,7 @@ function dispatchProject(
   items.sort(
     (a, b) =>
       (priorityOrder[a.priority] ?? 1) - (priorityOrder[b.priority] ?? 1) ||
-      a.sortOrder - b.sortOrder
+      a.sortOrder - b.sortOrder,
   );
 
   const findNextAvailableDay = (from: Date): Date => {
@@ -192,6 +213,17 @@ function dispatchProject(
   return out;
 }
 
+// Minimal VTIMEZONE using X-LIC-LOCATION — Google & Apple resolve DST from
+// their own IANA DB when only the location is supplied, so no rrule needed.
+function buildVTimezone(tz: string): string[] {
+  return [
+    "BEGIN:VTIMEZONE",
+    `TZID:${tz}`,
+    `X-LIC-LOCATION:${tz}`,
+    "END:VTIMEZONE",
+  ];
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -208,7 +240,7 @@ serve(async (req) => {
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
     const { data: integration } = await supabase
@@ -223,15 +255,17 @@ serve(async (req) => {
       return new Response("Invalid or disabled feed", { status: 403 });
     }
 
+    // Timezone strategy — 'floating' (default), 'UTC', or IANA (e.g. 'Europe/Paris')
+    const rawTz = (integration.timezone as string | null) || "floating";
+    const tzMode: "floating" | "utc" | "iana" =
+      rawTz === "floating" ? "floating" : rawTz === "UTC" ? "utc" : "iana";
+    const ianaTz = tzMode === "iana" ? rawTz : null;
+
     const { data: events } = await supabase
-      .from("calendar_events")
-      .select("*")
-      .eq("user_id", userId);
+      .from("calendar_events").select("*").eq("user_id", userId);
 
     const { data: projects } = await supabase
-      .from("projects")
-      .select("*")
-      .eq("user_id", userId);
+      .from("projects").select("*").eq("user_id", userId);
 
     const projectIds = (projects || []).map((p: any) => p.id);
     let phases: any[] = [];
@@ -239,10 +273,7 @@ serve(async (req) => {
     let subtasks: any[] = [];
 
     if (projectIds.length > 0) {
-      const { data: p } = await supabase
-        .from("phases")
-        .select("*")
-        .in("project_id", projectIds);
+      const { data: p } = await supabase.from("phases").select("*").in("project_id", projectIds);
       phases = p || [];
       const phaseIds = phases.map((x) => x.id);
       if (phaseIds.length > 0) {
@@ -256,7 +287,6 @@ serve(async (req) => {
       }
     }
 
-    // Dispatch each project starting today
     const startDate = new Date();
     startDate.setHours(0, 0, 0, 0);
     const allChunks: ScheduledChunk[] = [];
@@ -275,10 +305,16 @@ serve(async (req) => {
       "X-PUBLISHED-TTL:PT1H",
       "REFRESH-INTERVAL;VALUE=DURATION:PT1H",
     ];
+    if (ianaTz) {
+      ics.push(`X-WR-TIMEZONE:${ianaTz}`);
+      ics.push(...buildVTimezone(ianaTz));
+    } else if (tzMode === "utc") {
+      ics.push("X-WR-TIMEZONE:UTC");
+    }
 
     const dtstamp = formatDateUTC(new Date().toISOString());
 
-    // Custom events (absolute UTC times)
+    // Custom events (stored as absolute UTC timestamps already)
     for (const ev of events || []) {
       ics.push("BEGIN:VEVENT");
       ics.push(`UID:event-${ev.id}@bosspm`);
@@ -290,7 +326,7 @@ serve(async (req) => {
       ics.push("END:VEVENT");
     }
 
-    // Scheduled task chunks (floating local time — matches the app view in every timezone)
+    // Scheduled task chunks — emit with the chosen TZ strategy
     let chunkIdx = 0;
     for (const c of allChunks) {
       const start = new Date(c.date);
@@ -299,9 +335,7 @@ serve(async (req) => {
       start.setHours(startWholeHour, startMinutes, 0, 0);
       const end = new Date(start.getTime() + c.chunkHours * 3600000);
 
-      const title = c.isSubtask
-        ? `${c.taskTitle} — ${c.subtaskTitle}`
-        : c.taskTitle;
+      const title = c.isSubtask ? `${c.taskTitle} — ${c.subtaskTitle}` : c.taskTitle;
       const descParts = [
         `Projet : ${c.projectTitle}`,
         `Phase : ${c.phaseName}`,
@@ -309,11 +343,27 @@ serve(async (req) => {
       ];
       if (c.description) descParts.push("", c.description);
 
+      let dtstart: string;
+      let dtend: string;
+      if (ianaTz) {
+        // Wall-clock in the user's IANA zone, no offset math needed
+        dtstart = `DTSTART;TZID=${ianaTz}:${formatDateLocalFloating(start)}`;
+        dtend = `DTEND;TZID=${ianaTz}:${formatDateLocalFloating(end)}`;
+      } else if (tzMode === "utc") {
+        // Treat dispatch wall-clock as UTC hours
+        dtstart = `DTSTART:${formatWallClockAsUTC(start, "UTC")}`;
+        dtend = `DTEND:${formatWallClockAsUTC(end, "UTC")}`;
+      } else {
+        // Floating (current behavior)
+        dtstart = `DTSTART:${formatDateLocalFloating(start)}`;
+        dtend = `DTEND:${formatDateLocalFloating(end)}`;
+      }
+
       ics.push("BEGIN:VEVENT");
       ics.push(`UID:task-${c.taskId}-${chunkIdx++}@bosspm`);
       ics.push(`DTSTAMP:${dtstamp}`);
-      ics.push(`DTSTART:${formatDateLocalFloating(start)}`);
-      ics.push(`DTEND:${formatDateLocalFloating(end)}`);
+      ics.push(dtstart);
+      ics.push(dtend);
       ics.push(`SUMMARY:${escapeICS(title)}`);
       ics.push(`DESCRIPTION:${escapeICS(descParts.join("\n"))}`);
       ics.push("END:VEVENT");
