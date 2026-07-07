@@ -32,9 +32,17 @@ export default function Auth() {
         toast.success("Connexion réussie !");
         navigate("/dashboard");
       } else {
-        const { error } = await supabase.auth.signUp({ email, password });
+        const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
-        toast.success("Compte créé ! Vérifiez votre email pour confirmer.");
+        // With email confirmation disabled, sign-up returns an active session
+        // right away, so the user is logged straight in. Keep a graceful
+        // fallback in case confirmation is ever re-enabled server-side.
+        if (data.session) {
+          toast.success("Compte créé ! Bienvenue 🎉");
+          navigate("/dashboard");
+        } else {
+          toast.success("Compte créé ! Vérifiez votre email pour confirmer.");
+        }
       }
     } catch (error: any) {
       toast.error(error.message || "Une erreur est survenue");
