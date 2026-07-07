@@ -1,5 +1,15 @@
 project_id = "eplxmeedcrbrmzlvqjxe"
 
+[auth]
+# Allow new users to register.
+enable_signup = true
+
+[auth.email]
+# Allow email/password sign-ups and skip the email confirmation step:
+# new accounts are active immediately without clicking a confirmation link.
+enable_signup = true
+enable_confirmations = false
+
 [functions.generate-plan]
 verify_jwt = false
 
