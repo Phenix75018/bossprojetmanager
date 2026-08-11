@@ -29,6 +29,7 @@ import Budgets from "./pages/Budgets";
 import BudgetDetail from "./pages/BudgetDetail";
 import SharedBudget from "./pages/SharedBudget";
 import CoherenceDashboard from "./pages/CoherenceDashboard";
+import ProgressReports from "./pages/ProgressReports";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -144,6 +145,14 @@ const AppRoutes = () => (
         element={
           <ProtectedRoute>
             <BudgetDetail />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/reports"
+        element={
+          <ProtectedRoute>
+            <ProgressReports />
           </ProtectedRoute>
         }
       />
