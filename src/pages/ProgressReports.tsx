@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import Navbar from "@/components/layout/Navbar";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import ProgressReportCharts from "@/components/ProgressReportCharts";
 import { exportProgressReportPDF, euro, type ProgressReportPayload } from "@/lib/progressReportPdf";
 
 type Period = "week" | "month" | "quarter";
@@ -215,6 +216,11 @@ export default function ProgressReports() {
                 </div>
               ))}
             </div>
+
+            {/* Charts */}
+            <ProgressReportCharts charts={data.charts} />
+
+
 
             {/* Executive summary */}
             <section className="glass-card rounded-2xl p-6 border border-border/50">
