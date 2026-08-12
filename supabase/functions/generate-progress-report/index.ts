@@ -330,6 +330,41 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ---- Chart series : tendance d'avancement + burndown ----
+    const dayKeys = Array.from({ length: days }, (_, i) => {
+      const d = new Date(since.getTime() + (i + 1) * 86400_000);
+      return d;
+    });
+    const doneBefore = done.filter((t) => new Date(t.updated_at) < since);
+    const baseDone = doneBefore.length;
+    const baseHours = doneBefore.reduce((s, t) => s + Number(t.duration_hours || 0), 0);
+    const dailyIdeal = days > 0 ? (tasks.length - baseDone) / days : 0;
+    const dailyIdealHours = days > 0 ? (totalHours - baseHours) / days : 0;
+
+    const progressTrend = dayKeys.map((d, i) => {
+      const upTo = done.filter((t) => new Date(t.updated_at) <= d);
+      const cumulTasks = upTo.length;
+      const cumulHours = upTo.reduce((s, t) => s + Number(t.duration_hours || 0), 0);
+      return {
+        date: d.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" }),
+        doneCumul: cumulTasks,
+        percent: tasks.length ? Math.round((cumulTasks / tasks.length) * 100) : 0,
+        target: Math.round(baseDone + dailyIdeal * (i + 1)),
+        remainingHours: Math.max(0, Math.round(totalHours - cumulHours)),
+        idealHours: Math.max(0, Math.round(totalHours - (baseHours + dailyIdealHours * (i + 1)))),
+      };
+    });
+
+    const phaseProgress = (phases ?? []).map((ph: any) => {
+      const pt = tasks.filter((t) => t.phase_id === ph.id);
+      return {
+        name: String(ph.name).length > 22 ? String(ph.name).slice(0, 21) + "…" : String(ph.name),
+        done: pt.filter((t) => t.status === "done").length,
+        inProgress: pt.filter((t) => t.status === "in_progress").length,
+        todo: pt.filter((t) => t.status !== "done" && t.status !== "in_progress").length,
+      };
+    });
+
     const payload = {
       engine,
       generated_at: new Date().toISOString(),
