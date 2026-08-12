@@ -11,6 +11,7 @@ const navItems = [
 { to: "/business-models", label: "Business Models", icon: LayoutGrid },
 { to: "/budgets", label: "Budgets", icon: DollarSign },
 { to: "/coherence", label: "Cohérence", icon: ShieldCheck },
+{ to: "/checks", label: "Vérifications", icon: ScanSearch },
 { to: "/reports", label: "Rapports", icon: FileBarChart },
 { to: "/calendar", label: "Calendrier", icon: CalendarDays },
 { to: "/integrations", label: "Intégrations", icon: Link2 }];
