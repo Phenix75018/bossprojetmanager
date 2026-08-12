@@ -392,6 +392,7 @@ Deno.serve(async (req) => {
         bmBlocks: bmBlocksCount,
       },
       budget: budgetMeta,
+      charts: { progressTrend, phaseProgress, budgetMonthly },
       report,
     };
 
