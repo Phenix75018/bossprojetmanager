@@ -216,6 +216,11 @@ export default function ProgressReports() {
               ))}
             </div>
 
+            {/* Charts */}
+            <ProgressReportCharts charts={data.charts} />
+
+
+
             {/* Executive summary */}
             <section className="glass-card rounded-2xl p-6 border border-border/50">
               <h2 className="font-display text-xl mb-3 flex items-center gap-2">
