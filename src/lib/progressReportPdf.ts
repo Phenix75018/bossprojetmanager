@@ -6,6 +6,20 @@ export interface ReportMetric {
   comment?: string;
 }
 
+export interface ProgressReportCharts {
+  progressTrend?: {
+    date: string;
+    doneCumul: number;
+    percent: number;
+    target: number;
+    remainingHours: number;
+    idealHours: number;
+  }[];
+  phaseProgress?: { name: string; done: number; inProgress: number; todo: number }[];
+  budgetMonthly?: { month: string; revenue: number; charges: number; net: number; cumulNet: number }[];
+}
+
+
 export interface ProgressReportPayload {
   engine: string;
   generated_at: string;
