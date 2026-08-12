@@ -210,6 +210,22 @@ Deno.serve(async (req) => {
       const grossMargin = revenue - variable;
       const ebitda = grossMargin - fixed;
       budgetMeta = { revenue, fixed, variable, invest, grossMargin, ebitda, horizon: budgets[0].horizon_months, lines: real.length };
+
+      // Monthly series (revenue vs charges) for the écarts chart
+      const horizon = Number(budgets[0].horizon_months || 12);
+      const monthSum = (cats: string[], i: number) =>
+        real
+          .filter((l: any) => cats.includes(l.category))
+          .reduce((s: number, l: any) => s + Number(Array.isArray(l.monthly_values) ? l.monthly_values[i] || 0 : 0), 0);
+      let cumul = 0;
+      budgetMonthly = Array.from({ length: Math.min(horizon, 36) }, (_, i) => {
+        const rev = monthSum(["revenue"], i);
+        const ch = Math.abs(monthSum(["fixed_charges", "variable_charges", "investments"], i));
+        const net = rev - ch;
+        cumul += net;
+        return { month: `M${i + 1}`, revenue: Math.round(rev), charges: Math.round(ch), net: Math.round(net), cumulNet: Math.round(cumul) };
+      });
+
       budgetBlock = [
         `Budget "${budgets[0].title}" — horizon ${budgets[0].horizon_months} mois, ${real.length} lignes.`,
         `Revenus cumulés : ${euro(revenue)}`,
