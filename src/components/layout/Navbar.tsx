@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { FolderKanban, CalendarDays, Zap, LogOut, User, Link2, FileText, LayoutGrid, DollarSign, ShieldCheck, Search, FileBarChart } from "lucide-react";
+import { FolderKanban, CalendarDays, Zap, LogOut, User, Link2, FileText, LayoutGrid, DollarSign, ShieldCheck, Search, FileBarChart, ScanSearch } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import ThemeToggle from "@/components/ThemeToggle";
 
@@ -11,6 +11,7 @@ const navItems = [
 { to: "/business-models", label: "Business Models", icon: LayoutGrid },
 { to: "/budgets", label: "Budgets", icon: DollarSign },
 { to: "/coherence", label: "Cohérence", icon: ShieldCheck },
+{ to: "/checks", label: "Vérifications", icon: ScanSearch },
 { to: "/reports", label: "Rapports", icon: FileBarChart },
 { to: "/calendar", label: "Calendrier", icon: CalendarDays },
 { to: "/integrations", label: "Intégrations", icon: Link2 }];
