@@ -188,6 +188,7 @@ Deno.serve(async (req) => {
       .limit(1);
     let budgetBlock = "Aucun budget prévisionnel lié à ce projet.";
     let budgetMeta: any = null;
+    let budgetMonthly: { month: string; revenue: number; charges: number; net: number; cumulNet: number }[] = [];
     if (budgets?.length) {
       const { data: lines } = await supabase
         .from("budget_lines")
