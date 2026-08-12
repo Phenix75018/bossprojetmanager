@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { FolderKanban, CalendarDays, Zap, LogOut, User, Link2, FileText, LayoutGrid, DollarSign, ShieldCheck, Search, FileBarChart } from "lucide-react";
+import { FolderKanban, CalendarDays, Zap, LogOut, User, Link2, FileText, LayoutGrid, DollarSign, ShieldCheck, Search, FileBarChart, ScanSearch } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import ThemeToggle from "@/components/ThemeToggle";
 
