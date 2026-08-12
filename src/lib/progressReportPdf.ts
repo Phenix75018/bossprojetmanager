@@ -56,6 +56,7 @@ export interface ProgressReportPayload {
     horizon: number;
     lines: number;
   } | null;
+  charts?: ProgressReportCharts | null;
   report: {
     executive_summary?: string;
     highlights?: string[];
