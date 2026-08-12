@@ -165,6 +165,14 @@ const AppRoutes = () => (
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/checks"
+        element={
+          <ProtectedRoute>
+            <ChecksPage />
+          </ProtectedRoute>
+        }
+      />
       <Route path="*" element={<NotFound />} />
     </Routes>
     <CopilotWidget />
