@@ -29,6 +29,7 @@ import Budgets from "./pages/Budgets";
 import BudgetDetail from "./pages/BudgetDetail";
 import SharedBudget from "./pages/SharedBudget";
 import CoherenceDashboard from "./pages/CoherenceDashboard";
+import ChecksPage from "./pages/ChecksPage";
 import ProgressReports from "./pages/ProgressReports";
 import NotFound from "./pages/NotFound";
 
