@@ -88,6 +88,25 @@ export default function ChecksPage() {
   const [result, setResult] = useState<CheckResult | null>(null);
   const [filter, setFilter] = useState<CheckCategory | "all">("all");
   const [ranAt, setRanAt] = useState<Date | null>(null);
+  const [fixing, setFixing] = useState<string | null>(null);
+
+  async function applyFix(findingId: string, fix: QuickFix) {
+    if (!selectedId) return;
+    if (!user) {
+      toast.error("Session expirée");
+      return;
+    }
+    setFixing(findingId);
+    try {
+      const summary = await fix.run({ projectId: selectedId, userId: user.id });
+      toast.success(summary);
+      await run(selectedId);
+    } catch (e: any) {
+      toast.error(e?.message || "Correction impossible");
+    } finally {
+      setFixing(null);
+    }
+  }
 
   useEffect(() => {
     if (!user) return;
