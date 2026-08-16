@@ -12,11 +12,13 @@ import {
   RefreshCw,
   ScanSearch,
   XCircle,
+  Wand2,
 } from "lucide-react";
 import { toast } from "sonner";
 import Navbar from "@/components/layout/Navbar";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { getQuickFix, type QuickFix } from "@/lib/quickFixes";
 import {
   runConsistencyChecks,
   type CheckCategory,
