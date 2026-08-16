@@ -325,43 +325,68 @@ export default function ChecksPage() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {visible.map((f, i) => (
-                    <motion.article
-                      key={f.id}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.03 }}
-                      className={`rounded-xl border p-4 ${sevStyles[f.severity]}`}
-                    >
-                      <div className="flex items-start gap-3">
-                        {sevIcon[f.severity]}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="font-semibold">{f.title}</h3>
-                            <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full bg-background/70 border border-border/60">
-                              {sevLabel[f.severity]}
-                            </span>
-                            <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                              {CATEGORIES.find((c) => c.key === f.category)?.label}
-                            </span>
+                  {visible.map((f, i) => {
+                    const fix = getQuickFix(f);
+                    return (
+                      <motion.article
+                        key={f.id}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.03 }}
+                        className={`rounded-xl border p-4 ${sevStyles[f.severity]}`}
+                      >
+                        <div className="flex items-start gap-3">
+                          {sevIcon[f.severity]}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h3 className="font-semibold">{f.title}</h3>
+                              <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full bg-background/70 border border-border/60">
+                                {sevLabel[f.severity]}
+                              </span>
+                              <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                                {CATEGORIES.find((c) => c.key === f.category)?.label}
+                              </span>
+                              {fix && (
+                                <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full bg-teal-500/10 text-teal-600 border border-teal-500/30">
+                                  Correction auto
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-1">{f.detail}</p>
+                            <p className="text-sm mt-2">
+                              <span className="font-semibold text-primary">Recommandation : </span>
+                              {f.recommendation}
+                            </p>
+                            {fix && (
+                              <div className="mt-3 flex items-center gap-2 flex-wrap">
+                                <button
+                                  onClick={() => applyFix(f.id, fix)}
+                                  disabled={!!fixing}
+                                  className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
+                                >
+                                  {fixing === f.id ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  ) : (
+                                    <Wand2 className="w-3.5 h-3.5" />
+                                  )}
+                                  {fixing === f.id ? "Correction…" : fix.label}
+                                </button>
+                                <span className="text-[11px] text-muted-foreground">{fix.description}</span>
+                              </div>
+                            )}
                           </div>
-                          <p className="text-sm text-muted-foreground mt-1">{f.detail}</p>
-                          <p className="text-sm mt-2">
-                            <span className="font-semibold text-primary">Recommandation : </span>
-                            {f.recommendation}
-                          </p>
+                          {f.href && (
+                            <Link
+                              to={f.href}
+                              className="shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg border border-border hover:bg-muted transition-colors"
+                            >
+                              {f.cta || "Ouvrir"}
+                            </Link>
+                          )}
                         </div>
-                        {f.href && (
-                          <Link
-                            to={f.href}
-                            className="shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg border border-border hover:bg-muted transition-colors"
-                          >
-                            {f.cta || "Ouvrir"}
-                          </Link>
-                        )}
-                      </div>
-                    </motion.article>
-                  ))}
+                      </motion.article>
+                    );
+                  })}
                 </div>
               )}
             </section>
