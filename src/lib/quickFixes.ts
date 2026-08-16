@@ -54,10 +54,10 @@ async function loadPlan(projectId: string) {
   return { project: projectRes.data as any, phases, tasks: (tasksRes.data || []) as any[] };
 }
 
-function resolver(tasks: { id: string; title: string }[]) {
+function resolver<T extends { id: string; title: string }>(tasks: T[]) {
   const byId = new Map(tasks.map((t) => [t.id, t]));
   const byTitle = new Map(tasks.map((t) => [t.title.trim().toLowerCase(), t]));
-  return (dep: string) => byId.get(dep) ?? byTitle.get(String(dep).trim().toLowerCase());
+  return (dep: string): T | undefined => byId.get(dep) ?? byTitle.get(String(dep).trim().toLowerCase());
 }
 
 async function saveDependencies(updates: { id: string; dependencies: string[] }[]) {
