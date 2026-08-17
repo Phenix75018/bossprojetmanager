@@ -12,6 +12,7 @@ import {
   ListChecks,
   Target,
   TrendingUp,
+  FileSpreadsheet,
 } from "lucide-react";
 import { toast } from "sonner";
 import Navbar from "@/components/layout/Navbar";
@@ -19,6 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import ProgressReportCharts from "@/components/ProgressReportCharts";
 import { exportProgressReportPDF, euro, type ProgressReportPayload } from "@/lib/progressReportPdf";
+import { exportProgressReportCSV } from "@/lib/progressReportCsv";
 
 type Period = "week" | "month" | "quarter";
 
@@ -163,12 +165,23 @@ export default function ProgressReports() {
                 {generating ? "Génération…" : "Générer le rapport"}
               </button>
               {data && (
-                <button
-                  onClick={() => exportProgressReportPDF(data)}
-                  className="px-4 py-2.5 rounded-lg text-sm font-semibold border border-border hover:bg-muted transition-colors flex items-center gap-2"
-                >
-                  <Download className="w-4 h-4" /> PDF
-                </button>
+                <>
+                  <button
+                    onClick={() => exportProgressReportPDF(data)}
+                    className="px-4 py-2.5 rounded-lg text-sm font-semibold border border-border hover:bg-muted transition-colors flex items-center gap-2"
+                  >
+                    <Download className="w-4 h-4" /> PDF
+                  </button>
+                  <button
+                    onClick={() => {
+                      exportProgressReportCSV(data);
+                      toast.success("Export CSV généré");
+                    }}
+                    className="px-4 py-2.5 rounded-lg text-sm font-semibold border border-border hover:bg-muted transition-colors flex items-center gap-2"
+                  >
+                    <FileSpreadsheet className="w-4 h-4" /> CSV
+                  </button>
+                </>
               )}
             </div>
           </div>
