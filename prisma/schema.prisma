@@ -1,0 +1,436 @@
+// Reproduction fidèle du schéma Postgres actuel (schema "public") au format Prisma.
+//
+// IMPORTANT : ce schéma est une représentation de référence / documentation.
+// L'application reste une SPA qui interroge le backend (Postgres + RLS + Edge
+// Functions) via le client HTTP. Prisma exige un runtime Node.js côté serveur :
+// ne jamais instancier PrismaClient dans le code du navigateur.
+//
+// Utilisation :
+//   npx prisma generate            (génère le client, pour un backend Node)
+//   npx prisma db pull             (re-synchronise depuis la base réelle)
+//   npx prisma migrate diff ...    (comparer avec la base existante)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Utilisateurs
+// ---------------------------------------------------------------------------
+
+// Miroir de auth.users géré par le backend. La table publique "profiles"
+// référence cet identifiant, mais la contrainte réelle vit dans le schéma auth
+// (non modélisé ici volontairement).
+model profiles {
+  id         String    @id @db.Uuid
+  email      String?
+  full_name  String?
+  avatar_url String?
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at DateTime  @default(now()) @db.Timestamptz(6)
+}
+
+// ---------------------------------------------------------------------------
+// Projets / Phases / Tâches / Sous-tâches
+// ---------------------------------------------------------------------------
+
+model projects {
+  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id              String   @db.Uuid
+  title                String
+  description          String
+  project_type         String   @default("professional")
+  status               String   @default("active")
+  completion_percent   Int      @default(0)
+  hours_per_week       Int      @default(10)
+  days_per_week        String[] @default([])
+  time_slots           String?
+  deadline             DateTime? @db.Timestamptz(6)
+  business_assumptions Json     @default("{}")
+  assumption_scenarios Json     @default("{}")
+  active_scenario      String   @default("base")
+  share_token          String?  @unique
+  share_password       String?
+  created_at           DateTime @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime @default(now()) @db.Timestamptz(6)
+
+  phases               phases[]
+  tasks_calendar       calendar_events[]
+  business_plans       business_plans[]
+  business_models      business_models[]
+  budgets              budgets[]
+  team_recommendations team_recommendations[]
+
+  @@index([user_id])
+}
+
+model phases {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id String   @db.Uuid
+  name       String
+  sort_order Int      @default(0)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  project projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  tasks   tasks[]
+
+  @@index([project_id])
+}
+
+model tasks {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  phase_id       String    @db.Uuid
+  title          String
+  description    String?
+  notes          String?
+  status         String    @default("todo")
+  priority       String    @default("P2")
+  duration_hours Float     @default(1)
+  sort_order     Int       @default(0)
+  optional       Boolean   @default(false)
+  tags           String[]?
+  dependencies   String[]?
+  created_at     DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime  @default(now()) @db.Timestamptz(6)
+
+  phase            phases             @relation(fields: [phase_id], references: [id], onDelete: Cascade)
+  subtasks         subtasks[]
+  calendar_events  calendar_events[]
+  task_explanations task_explanations[]
+
+  @@index([phase_id])
+}
+
+model subtasks {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  task_id        String   @db.Uuid
+  title          String
+  status         String   @default("todo")
+  duration_hours Float    @default(0.5)
+  sort_order     Int      @default(0)
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+
+  task              tasks               @relation(fields: [task_id], references: [id], onDelete: Cascade)
+  task_explanations task_explanations[]
+
+  @@index([task_id])
+}
+
+model task_explanations {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id     String   @db.Uuid
+  task_id     String?  @db.Uuid
+  subtask_id  String?  @db.Uuid
+  explanation String
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+
+  task    tasks?    @relation(fields: [task_id], references: [id], onDelete: Cascade)
+  subtask subtasks? @relation(fields: [subtask_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+}
+
+// ---------------------------------------------------------------------------
+// Recrutement / équipe
+// ---------------------------------------------------------------------------
+
+model team_recommendations {
+  id                     String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id             String   @db.Uuid
+  role                   String
+  description            String   @default("")
+  importance             String   @default("recommended")
+  skills                 String[] @default([])
+  estimated_monthly_cost String?
+  sort_order             Int      @default(0)
+  created_at             DateTime @default(now()) @db.Timestamptz(6)
+
+  project      projects                     @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  alternatives recommendation_alternatives[]
+
+  @@index([project_id])
+}
+
+model recommendation_alternatives {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  recommendation_id String   @db.Uuid
+  type              String
+  title             String
+  description       String   @default("")
+  pros              String[] @default([])
+  cons              String[] @default([])
+  feasibility       String   @default("medium")
+  estimated_cost    String?
+  duration          String?
+  chosen            Boolean  @default(false)
+  created_at        DateTime @default(now()) @db.Timestamptz(6)
+
+  recommendation team_recommendations @relation(fields: [recommendation_id], references: [id], onDelete: Cascade)
+
+  @@index([recommendation_id])
+}
+
+// ---------------------------------------------------------------------------
+// Business Plan
+// ---------------------------------------------------------------------------
+
+model business_plans {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id        String   @db.Uuid
+  project_id     String?  @db.Uuid
+  title          String
+  description    String   @default("")
+  status         String   @default("draft")
+  share_token    String?  @unique
+  share_password String?
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime @default(now()) @db.Timestamptz(6)
+
+  project  projects?                @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  sections business_plan_sections[]
+
+  @@index([user_id])
+  @@index([project_id])
+}
+
+model business_plan_sections {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  business_plan_id String   @db.Uuid
+  section_type     String
+  title            String
+  content          String   @default("")
+  generated        Boolean  @default(false)
+  sort_order       Int      @default(0)
+  created_at       DateTime @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime @default(now()) @db.Timestamptz(6)
+
+  business_plan business_plans         @relation(fields: [business_plan_id], references: [id], onDelete: Cascade)
+  charts        business_plan_charts[]
+
+  @@index([business_plan_id])
+}
+
+model business_plan_charts {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  section_id String   @db.Uuid
+  title      String   @default("")
+  chart_type String   @default("bar")
+  chart_data Json     @default("{}")
+  sort_order Int      @default(0)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  section business_plan_sections @relation(fields: [section_id], references: [id], onDelete: Cascade)
+
+  @@index([section_id])
+}
+
+// ---------------------------------------------------------------------------
+// Business Model
+// ---------------------------------------------------------------------------
+
+model business_models {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id        String   @db.Uuid
+  project_id     String?  @db.Uuid
+  title          String
+  description    String   @default("")
+  framework      String   @default("canvas")
+  status         String   @default("draft")
+  share_token    String?  @unique
+  share_password String?
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime @default(now()) @db.Timestamptz(6)
+
+  project projects?              @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  blocks  business_model_blocks[]
+
+  @@index([user_id])
+  @@index([project_id])
+}
+
+model business_model_blocks {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  business_model_id String   @db.Uuid
+  block_type        String
+  title             String
+  content           String   @default("")
+  generated         Boolean  @default(false)
+  sort_order        Int      @default(0)
+  created_at        DateTime @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime @default(now()) @db.Timestamptz(6)
+
+  business_model business_models @relation(fields: [business_model_id], references: [id], onDelete: Cascade)
+
+  @@index([business_model_id])
+}
+
+// ---------------------------------------------------------------------------
+// Budget prévisionnel
+// ---------------------------------------------------------------------------
+
+model budgets {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id        String   @db.Uuid
+  project_id     String?  @db.Uuid
+  title          String
+  description    String   @default("")
+  horizon_months Int      @default(12)
+  status         String   @default("draft")
+  share_token    String?  @unique
+  share_password String?
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime @default(now()) @db.Timestamptz(6)
+
+  project projects?      @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  lines   budget_lines[]
+
+  @@index([user_id])
+  @@index([project_id])
+}
+
+model budget_lines {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  budget_id      String   @db.Uuid
+  category       String
+  subcategory    String   @default("")
+  label          String
+  monthly_values Json     @default("[]")
+  is_total       Boolean  @default(false)
+  sort_order     Int      @default(0)
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime @default(now()) @db.Timestamptz(6)
+
+  budget budgets @relation(fields: [budget_id], references: [id], onDelete: Cascade)
+
+  @@index([budget_id])
+}
+
+// ---------------------------------------------------------------------------
+// Versioning des documents stratégiques
+// ---------------------------------------------------------------------------
+
+model document_versions {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id        String   @db.Uuid
+  document_type  String
+  document_id    String   @db.Uuid
+  version_number Int      @default(1)
+  label          String   @default("")
+  snapshot       Json     @default("{}")
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([document_type, document_id, version_number])
+  @@index([user_id])
+}
+
+// ---------------------------------------------------------------------------
+// Calendrier / notifications
+// ---------------------------------------------------------------------------
+
+model calendar_events {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id     String   @db.Uuid
+  project_id  String?  @db.Uuid
+  task_id     String?  @db.Uuid
+  title       String
+  description String?
+  start_time  DateTime @db.Timestamptz(6)
+  end_time    DateTime @db.Timestamptz(6)
+  all_day     Boolean  @default(false)
+  color       String?
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime @default(now()) @db.Timestamptz(6)
+
+  project            projects?           @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  task               tasks?              @relation(fields: [task_id], references: [id], onDelete: Cascade)
+  sent_notifications sent_notifications[]
+
+  @@index([user_id])
+  @@index([start_time])
+}
+
+model calendar_integrations {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id        String   @db.Uuid
+  provider       String
+  enabled        Boolean  @default(true)
+  sync_direction String   @default("export")
+  ics_feed_token String   @unique @default(dbgenerated("gen_random_uuid()"))
+  timezone       String   @default("floating")
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([user_id])
+}
+
+model calendar_shares {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id        String   @db.Uuid
+  share_token    String   @unique @default(dbgenerated("gen_random_uuid()"))
+  share_password String?
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([user_id])
+}
+
+model notification_preferences {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id            String   @unique @db.Uuid
+  enabled            Boolean  @default(true)
+  remind_12h         Boolean  @default(true)
+  remind_5min        Boolean  @default(true)
+  reminder_1_minutes Int      @default(720)
+  reminder_2_minutes Int      @default(5)
+  created_at         DateTime @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime @default(now()) @db.Timestamptz(6)
+}
+
+model sent_notifications {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id       String   @db.Uuid
+  event_id      String   @db.Uuid
+  reminder_type String
+  sent_at       DateTime @default(now()) @db.Timestamptz(6)
+
+  event calendar_events @relation(fields: [event_id], references: [id], onDelete: Cascade)
+
+  @@unique([event_id, reminder_type])
+  @@index([user_id])
+}
+
+// ---------------------------------------------------------------------------
+// Copilot IA contextuel
+// ---------------------------------------------------------------------------
+
+model copilot_conversations {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id       String   @db.Uuid
+  title         String   @default("Nouvelle conversation")
+  context_route String?
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime @default(now()) @db.Timestamptz(6)
+
+  messages copilot_messages[]
+
+  @@index([user_id])
+}
+
+model copilot_messages {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  conversation_id String   @db.Uuid
+  user_id         String   @db.Uuid
+  role            String
+  content         String
+  suggestions     Json?
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+
+  conversation copilot_conversations @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+
+  @@index([conversation_id])
+  @@index([user_id])
+}
