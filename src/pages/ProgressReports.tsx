@@ -20,6 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import ProgressReportCharts from "@/components/ProgressReportCharts";
 import { exportProgressReportPDF, euro, type ProgressReportPayload } from "@/lib/progressReportPdf";
+import { exportProgressReportCSV } from "@/lib/progressReportCsv";
 
 type Period = "week" | "month" | "quarter";
 
