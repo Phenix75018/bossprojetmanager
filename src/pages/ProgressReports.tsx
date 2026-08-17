@@ -163,12 +163,23 @@ export default function ProgressReports() {
                 {generating ? "Génération…" : "Générer le rapport"}
               </button>
               {data && (
-                <button
-                  onClick={() => exportProgressReportPDF(data)}
-                  className="px-4 py-2.5 rounded-lg text-sm font-semibold border border-border hover:bg-muted transition-colors flex items-center gap-2"
-                >
-                  <Download className="w-4 h-4" /> PDF
-                </button>
+                <>
+                  <button
+                    onClick={() => exportProgressReportPDF(data)}
+                    className="px-4 py-2.5 rounded-lg text-sm font-semibold border border-border hover:bg-muted transition-colors flex items-center gap-2"
+                  >
+                    <Download className="w-4 h-4" /> PDF
+                  </button>
+                  <button
+                    onClick={() => {
+                      exportProgressReportCSV(data);
+                      toast.success("Export CSV généré");
+                    }}
+                    className="px-4 py-2.5 rounded-lg text-sm font-semibold border border-border hover:bg-muted transition-colors flex items-center gap-2"
+                  >
+                    <FileSpreadsheet className="w-4 h-4" /> CSV
+                  </button>
+                </>
               )}
             </div>
           </div>
