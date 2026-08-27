@@ -25,17 +25,18 @@ export default function Navbar() {
     <motion.header
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      className="fixed top-0 left-0 right-0 z-50 glass-card border-b border-border/50">
+      className="fixed top-0 left-0 right-0 z-50 glass-card !rounded-none border-x-0 border-t-0 border-b border-border/60">
 
       <div className="container flex items-center justify-between h-16">
-        <Link to="/" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg gradient-bg flex items-center justify-center">
+        <Link to="/" className="flex items-center gap-2.5 group">
+          <div className="w-9 h-9 rounded-xl gradient-bg flex items-center justify-center animate-glow-pulse transition-transform group-hover:scale-105">
             <Zap className="w-4 h-4 text-primary-foreground" />
           </div>
           <span className="font-display font-bold text-2xl tracking-tight italic">
-            Boss <span className="text-primary">Project Manager</span>
+            Boss <span className="gradient-text">Project Manager</span>
           </span>
         </Link>
+
 
         <nav className="hidden md:flex items-center gap-1">
           {navItems.map((item) => {
