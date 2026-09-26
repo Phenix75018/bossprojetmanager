@@ -32,6 +32,7 @@ import CoherenceDashboard from "./pages/CoherenceDashboard";
 import ChecksPage from "./pages/ChecksPage";
 import ProgressReports from "./pages/ProgressReports";
 import NotFound from "./pages/NotFound";
+import LiveTracking from "./pages/LiveTracking";
 
 const queryClient = new QueryClient();
 
@@ -173,6 +174,7 @@ const AppRoutes = () => (
           </ProtectedRoute>
         }
       />
+      <Route path="/tracking" element={<ProtectedRoute><LiveTracking /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
     <CopilotWidget />
