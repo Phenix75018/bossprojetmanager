@@ -182,7 +182,7 @@ const AppRoutes = () => (
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem storageKey="bpm-theme">
       <AuthProvider>
         <TooltipProvider>
           <Toaster />
