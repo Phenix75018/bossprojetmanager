@@ -73,7 +73,7 @@ function getAvailableHoursPerDay(slots: { start: number; end: number }[]): numbe
   return slots.reduce((sum, s) => sum + (s.end - s.start), 0);
 }
 
-function dispatchTasks(
+export function dispatchTasks(
   project: ProjectWithDetails,
   startDate: Date
 ): Map<string, ScheduledTask[]> {

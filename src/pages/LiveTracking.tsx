@@ -106,6 +106,21 @@ export default function LiveTracking() {
     return m;
   }, [events]);
 
+  // Same auto-planning as the calendar & external feeds
+  const planned = useMemo(() => {
+    const m = new Map<string, { first: string; last: string }>();
+    if (!projectFull) return m;
+    const sched = dispatchTasks({
+      ...projectFull,
+      phases: phases.map((ph) => ({ ...ph, tasks: tasks.filter((t) => t.phase_id === ph.id).map((t) => ({ ...t, subtasks: subtasks.filter((s) => s.task_id === t.id) })) })),
+    } as any, new Date());
+    [...sched.keys()].sort().forEach((day) => sched.get(day)!.forEach((st) => {
+      const cur = m.get(st.task.id);
+      m.set(st.task.id, { first: cur?.first ?? day, last: day });
+    }));
+    return m;
+  }, [projectFull, phases, tasks, subtasks]);
+
   const project = projects.find((p) => p.id === projectId);
 
   return (
