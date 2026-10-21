@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { dispatchTasks } from "@/components/CalendarView";
 
 type Project = { id: string; title: string; deadline: string | null; completion_percent: number };
 type Phase = { id: string; name: string; project_id: string; sort_order: number };
@@ -31,6 +32,7 @@ export default function LiveTracking() {
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [lines, setLines] = useState<Line[]>([]);
+  const [projectFull, setProjectFull] = useState<any>(null);
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [live, setLive] = useState(false);
 
@@ -45,13 +47,15 @@ export default function LiveTracking() {
   const load = useCallback(async () => {
     if (!projectId) return;
     const { data: ph } = await supabase.from("phases").select("id,name,project_id,sort_order").eq("project_id", projectId).order("sort_order");
+    const { data: pf } = await supabase.from("projects").select("*").eq("id", projectId).maybeSingle();
+    setProjectFull(pf);
     const phaseIds = (ph ?? []).map((p) => p.id);
     const { data: tk } = phaseIds.length
-      ? await supabase.from("tasks").select("id,phase_id,title,status,priority,duration_hours").in("phase_id", phaseIds).order("sort_order")
+      ? await supabase.from("tasks").select("*").in("phase_id", phaseIds).order("sort_order")
       : { data: [] as Task[] };
     const taskIds = (tk ?? []).map((t) => t.id);
     const [st, ev, bd] = await Promise.all([
-      taskIds.length ? supabase.from("subtasks").select("id,task_id,status").in("task_id", taskIds) : Promise.resolve({ data: [] }),
+      taskIds.length ? supabase.from("subtasks").select("id,task_id,status,title,duration_hours,sort_order").in("task_id", taskIds) : Promise.resolve({ data: [] }),
       supabase.from("calendar_events").select("id,task_id,project_id,start_time,end_time").eq("project_id", projectId).order("start_time"),
       supabase.from("budgets").select("id").eq("project_id", projectId),
     ]);
@@ -106,12 +110,31 @@ export default function LiveTracking() {
     return m;
   }, [events]);
 
+  // Same auto-planning as the calendar & external feeds
+  const planned = useMemo(() => {
+    const m = new Map<string, { first: string; last: string }>();
+    if (!projectFull) return m;
+    const sched = dispatchTasks({
+      ...projectFull,
+      phases: phases.map((ph) => ({ ...ph, tasks: tasks.filter((t) => t.phase_id === ph.id).map((t) => ({ ...t, subtasks: subtasks.filter((s) => s.task_id === t.id) })) })),
+    } as any, new Date());
+    [...sched.keys()].sort().forEach((day) => sched.get(day)!.forEach((st) => {
+      const cur = m.get(st.task.id);
+      m.set(st.task.id, { first: cur?.first ?? day, last: day });
+    }));
+    return m;
+  }, [projectFull, phases, tasks, subtasks]);
+
   const project = projects.find((p) => p.id === projectId);
+  const plannedDays = [...planned.values()].flatMap((v) => [v.first, v.last]).sort();
+  const plannedEnd = plannedDays[plannedDays.length - 1];
+  const plannedNext = plannedDays[0];
+  const endDate = stats.last?.end_time ?? plannedEnd;
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <main className="container mx-auto px-4 py-8 space-y-6">
+      <main className="container mx-auto px-4 pt-24 pb-16 space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="font-display text-3xl text-foreground flex items-center gap-2"><Activity className="h-7 w-7 text-primary" /> Suivi en temps réel</h1>
@@ -136,12 +159,12 @@ export default function LiveTracking() {
                 <p className="text-xs text-muted-foreground mt-1">consommé estimé / {eur(stats.cost)} de charges</p>
                 <p className="text-xs text-muted-foreground">Revenus prévus : {eur(stats.rev)}</p></CardContent></Card>
             <Card><CardHeader className="pb-2"><CardTitle className="text-sm flex gap-2"><Clock className="h-4 w-4 text-primary" />Prochain créneau</CardTitle></CardHeader>
-              <CardContent><div className="text-2xl font-bold">{stats.next ? new Date(stats.next.start_time).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" }) : "—"}</div>
-                <p className="text-xs text-muted-foreground mt-1">{events.length} créneaux au calendrier</p></CardContent></Card>
+              <CardContent><div className="text-2xl font-bold">{stats.next ? new Date(stats.next.start_time).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" }) : fmtDate(plannedNext)}</div>
+                <p className="text-xs text-muted-foreground mt-1">{events.length} événements · {planned.size} tâches planifiées</p></CardContent></Card>
             <Card><CardHeader className="pb-2"><CardTitle className="text-sm flex gap-2"><CalendarDays className="h-4 w-4 text-primary" />Dates</CardTitle></CardHeader>
-              <CardContent><div className="text-sm">Fin prévue : <b>{fmtDate(stats.last?.end_time)}</b></div>
+              <CardContent><div className="text-sm">Fin prévue : <b>{fmtDate(endDate)}</b></div>
                 <div className="text-sm">Échéance : <b>{fmtDate(project.deadline)}</b></div>
-                {project.deadline && stats.last && new Date(stats.last.end_time) > new Date(project.deadline) &&
+                {project.deadline && endDate && new Date(endDate) > new Date(project.deadline) &&
                   <Badge variant="destructive" className="mt-2">En retard sur l'échéance</Badge>}</CardContent></Card>
           </div>
 
@@ -167,7 +190,7 @@ export default function LiveTracking() {
                         {st.length > 0 && <span className="text-xs text-muted-foreground">{sd}/{st.length} sous-tâches</span>}
                         <span className="text-xs text-muted-foreground w-12 text-right">{t.duration_hours} h</span>
                         <span className="text-xs text-muted-foreground w-40 text-right">
-                          {ev.length ? `${fmtDate(ev[0].start_time)} → ${fmtDate(ev[ev.length - 1].end_time)}` : "Non planifiée"}
+                          {ev.length ? `${fmtDate(ev[0].start_time)} → ${fmtDate(ev[ev.length - 1].end_time)}` : planned.get(t.id) ? `${fmtDate(planned.get(t.id)!.first)} → ${fmtDate(planned.get(t.id)!.last)}` : done(t.status) ? "Terminée" : "Non planifiée"}
                         </span>
                       </div>
                     );
