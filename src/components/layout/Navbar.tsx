@@ -33,7 +33,7 @@ export default function Navbar() {
           <div className="w-8 h-8 rounded-lg gradient-bg flex items-center justify-center">
             <Zap className="w-4 h-4 text-primary-foreground" />
           </div>
-          <span className="font-display font-bold text-2xl tracking-tight italic">
+          <span className="font-display font-bold text-xl tracking-tight italic whitespace-nowrap hidden lg:inline">
             Boss <span className="text-primary">Project Manager</span>
           </span>
         </Link>
@@ -45,12 +45,13 @@ export default function Navbar() {
               <Link
                 key={item.to}
                 to={item.to}
-                className={`relative flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                title={item.label}
+                className={`relative flex items-center gap-2 px-2.5 xl:px-3 py-2 rounded-lg whitespace-nowrap text-sm font-medium transition-colors ${
                 active ? "text-primary" : "text-muted-foreground hover:text-foreground"}`
                 }>
 
                 <item.icon className="w-4 h-4" />
-                {item.label}
+                <span className="hidden 2xl:inline">{item.label}</span>
                 {active &&
                 <motion.div
                   layoutId="nav-indicator"
