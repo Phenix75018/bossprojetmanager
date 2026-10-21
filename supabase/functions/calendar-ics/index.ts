@@ -290,9 +290,20 @@ serve(async (req) => {
     const startDate = new Date();
     startDate.setHours(0, 0, 0, 0);
     const allChunks: ScheduledChunk[] = [];
+    // Live-tracking metadata per chunk: progress + late alert vs project deadline
+    const chunkMeta = new Map<ScheduledChunk, { late: boolean; progress: number; deadline: string | null }>();
     for (const project of projects || []) {
       const projectPhases = phases.filter((p) => p.project_id === project.id);
-      allChunks.push(...dispatchProject(project, projectPhases, tasks, subtasks, startDate));
+      const pTasks = tasks.filter((t) => projectPhases.some((ph) => ph.id === t.phase_id));
+      const totalH = pTasks.reduce((a, t) => a + Number(t.duration_hours || 0), 0);
+      const doneH = pTasks.filter((t) => t.status === "done").reduce((a, t) => a + Number(t.duration_hours || 0), 0);
+      const progress = totalH ? Math.round((doneH / totalH) * 100) : 0;
+      const deadline = project.deadline ? new Date(project.deadline + "T23:59:59") : null;
+      const chunks = dispatchProject(project, projectPhases, tasks, subtasks, startDate);
+      for (const c of chunks) {
+        chunkMeta.set(c, { late: !!deadline && new Date(c.date) > deadline, progress, deadline: project.deadline });
+      }
+      allChunks.push(...chunks);
     }
 
     const ics: string[] = [
@@ -335,12 +346,16 @@ serve(async (req) => {
       start.setHours(startWholeHour, startMinutes, 0, 0);
       const end = new Date(start.getTime() + c.chunkHours * 3600000);
 
-      const title = c.isSubtask ? `${c.taskTitle} — ${c.subtaskTitle}` : c.taskTitle;
+      const meta = chunkMeta.get(c);
+      const baseTitle = c.isSubtask ? `${c.taskTitle} — ${c.subtaskTitle}` : c.taskTitle;
+      const title = meta?.late ? `⚠ EN RETARD — ${baseTitle}` : baseTitle;
       const descParts = [
         `Projet : ${c.projectTitle}`,
         `Phase : ${c.phaseName}`,
         `Priorité : ${c.priority}`,
+        `Avancement projet : ${meta?.progress ?? 0}%`,
       ];
+      if (meta?.late) descParts.push(`⚠ Planifiée après l'échéance du projet (${meta.deadline})`);
       if (c.description) descParts.push("", c.description);
 
       let dtstart: string;
@@ -366,6 +381,11 @@ serve(async (req) => {
       ics.push(dtend);
       ics.push(`SUMMARY:${escapeICS(title)}`);
       ics.push(`DESCRIPTION:${escapeICS(descParts.join("\n"))}`);
+      if (meta?.late) {
+        ics.push("CATEGORIES:RETARD");
+        ics.push("PRIORITY:1");
+        ics.push("BEGIN:VALARM", "ACTION:DISPLAY", `DESCRIPTION:${escapeICS(`Tâche en retard : ${baseTitle}`)}`, "TRIGGER:-PT30M", "END:VALARM");
+      }
       ics.push("END:VEVENT");
     }
 
