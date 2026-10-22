@@ -118,6 +118,7 @@ export default function BudgetDetail() {
         if (data.bm_id) setBmId(data.bm_id);
         const fresh = await fetchBudgetWithLines(budget.id);
         if (fresh) { setBudget(fresh.budget); setLines(fresh.lines); }
+        await supabase.from("budgets").update({ updated_at: new Date().toISOString() }).eq("id", budget.id);
         await syncKpisFromBudget(budget.project_id, (fresh?.lines || data.lines) as never, budget.horizon_months, { budgetId: budget.id });
         toast.success("Budget généré — KPIs synchronisés avec la comparaison de scénarios.");
       }
@@ -160,6 +161,7 @@ export default function BudgetDetail() {
         if (fresh) { setBudget(fresh.budget); setLines(fresh.lines); }
         // Re-sync KPIs using the fresh persisted lines (with DB IDs for deep links).
         const merged = fresh?.lines || [...lines.filter(l => l.category !== category), ...data.lines];
+        await supabase.from("budgets").update({ updated_at: new Date().toISOString() }).eq("id", budget.id);
         await syncKpisFromBudget(budget.project_id, merged as never, budget.horizon_months, { budgetId: budget.id });
         toast.success("Catégorie générée — KPIs mis à jour.");
       }
