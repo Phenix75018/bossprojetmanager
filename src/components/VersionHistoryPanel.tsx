@@ -30,6 +30,13 @@ export default function VersionHistoryPanel({
   const [saving, setSaving] = useState(false);
   const [confirmRestore, setConfirmRestore] = useState<DocumentVersion | null>(null);
   const [showCompare, setShowCompare] = useState(false);
+  const [comparePair, setComparePair] = useState<[string, string] | null>(null);
+  // Pair each "Après génération" version with its matching "Avant génération" one
+  const beforeOf = (v: DocumentVersion) => {
+    if (!v.label.startsWith("Après génération")) return null;
+    const key = v.label.replace("Après génération", "Avant génération");
+    return versions.find((x) => x.version_number < v.version_number && x.label === key) ?? null;
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -64,7 +71,7 @@ export default function VersionHistoryPanel({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={e => { e.stopPropagation(); setShowCompare(true); }}
+                onClick={e => { e.stopPropagation(); setComparePair(null); setShowCompare(true); }}
                 className="gap-1 text-xs"
               >
                 <GitCompareArrows className="w-3 h-3" />
@@ -121,6 +128,15 @@ export default function VersionHistoryPanel({
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
+                        {(v.snapshot as any)?.__kpis && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary" title="Les KPIs du projet sont inclus et seront restaurés">KPIs</span>
+                        )}
+                        {beforeOf(v) && (
+                          <Button size="sm" variant="ghost" className="gap-1 text-xs h-7" title="Comparer avant / après cette génération"
+                            onClick={() => { setComparePair([beforeOf(v)!.id, v.id]); setShowCompare(true); }}>
+                            <GitCompareArrows className="w-3 h-3" /> Avant/après
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="ghost"
@@ -178,7 +194,7 @@ export default function VersionHistoryPanel({
             <DialogTitle>Restaurer la version {confirmRestore?.version_number} ?</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Les données actuelles seront remplacées par celles de cette version. Pensez à sauvegarder la version actuelle avant de restaurer.
+            Les données actuelles seront remplacées par celles de cette version, KPIs compris. Une sauvegarde automatique de l'état actuel est créée avant la restauration.
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmRestore(null)}>Annuler</Button>
@@ -193,6 +209,7 @@ export default function VersionHistoryPanel({
         onOpenChange={setShowCompare}
         versions={versions}
         documentType={documentType}
+        initialPair={comparePair}
       />
     </>
   );
