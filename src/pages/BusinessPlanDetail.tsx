@@ -46,7 +46,12 @@ export default function BusinessPlanDetail() {
   const [showChartEditor, setShowChartEditor] = useState(false);
   const [editingChart, setEditingChart] = useState<ChartConfig | null>(null);
   const [generatingCharts, setGeneratingCharts] = useState(false);
-  const { versions, saveVersion, deleteVersion } = useDocumentVersions("business_plan", id);
+  const { versions, saveVersion, deleteVersion, withGenerationVersions, restoreKpis } = useDocumentVersions("business_plan", id);
+  const buildSnapshot = async () => {
+    const { data: p } = await supabase.from("business_plans").select("*").eq("id", id!).maybeSingle();
+    const { data: ss } = await supabase.from("business_plan_sections").select("section_type,title,content,sort_order").eq("business_plan_id", id!).order("sort_order");
+    return { plan: p, sections: ss ?? [] } as Record<string, unknown>;
+  };
 
   const loadCharts = useCallback(async (sectionIds: string[]) => {
     if (sectionIds.length === 0) return;
@@ -166,9 +171,10 @@ export default function BusinessPlanDetail() {
     setGeneratingCharts(false);
   };
 
-  const generateFull = async () => {
-    if (!plan) return;
-    if (!(await preflightAssumptions(plan.project_id))) return;
+  const generateFullInner = async (): Promise<boolean> => {
+    let ok = false;
+    if (!plan) return false;
+    if (!(await preflightAssumptions(plan.project_id))) return false;
     setGeneratingFull(true);
     try {
       const { data, error } = await supabase.functions.invoke("generate-business-plan", {
@@ -190,17 +196,22 @@ export default function BusinessPlanDetail() {
           { docType: "bp", docId: plan.id },
         );
         toast.success("Business plan généré — KPIs synchronisés.");
+        ok = true;
         await load();
       }
     } catch (e: any) {
       toast.error(e?.message || "Erreur lors de la génération");
     }
     setGeneratingFull(false);
+    return ok;
   };
 
-  const generateSingle = async (sectionType: string) => {
-    if (!plan) return;
-    if (!(await preflightAssumptions(plan.project_id))) return;
+  const generateFull = async () => withGenerationVersions("Business plan complet", plan?.project_id, buildSnapshot, () => generateFullInner());
+
+  const generateSingleInner = async (sectionType: string): Promise<boolean> => {
+    let ok = false;
+    if (!plan) return false;
+    if (!(await preflightAssumptions(plan.project_id))) return false;
     setGeneratingSection(sectionType);
     try {
       const existingSections = sections.map(s => ({ title: s.title, content: s.content }));
@@ -222,6 +233,7 @@ export default function BusinessPlanDetail() {
           { docType: "bp", docId: plan.id },
         );
         toast.success("Section générée !");
+        ok = true;
         await load();
         setActiveSection(sectionType);
       }
@@ -229,7 +241,10 @@ export default function BusinessPlanDetail() {
       toast.error(e?.message || "Erreur lors de la génération");
     }
     setGeneratingSection(null);
+    return ok;
   };
+
+  const generateSingle = async (sectionType: string) => withGenerationVersions(`Section ${sectionType}`, plan?.project_id, buildSnapshot, () => generateSingleInner(sectionType));
 
   const handleSave = async (sectionId: string) => {
     if (editContent[sectionId] !== undefined) {
@@ -494,11 +509,13 @@ export default function BusinessPlanDetail() {
           versions={versions}
           loading={false}
           onSaveVersion={async (label) => {
-            await saveVersion({ plan, sections: sections.map(s => ({ section_type: s.section_type, title: s.title, content: s.content, sort_order: s.sort_order })) }, label);
+            await saveVersion(await buildSnapshot(), label, { projectId: plan?.project_id });
           }}
           onRestoreVersion={async (snapshot: any) => {
             if (snapshot.sections && id) {
+              await saveVersion(await buildSnapshot(), "Sauvegarde auto avant restauration", { projectId: plan?.project_id, silent: true });
               await upsertSections(id, snapshot.sections);
+              if (await restoreKpis(snapshot)) toast.success("KPIs restaurés");
               await load();
               toast.success("Version restaurée !");
             }

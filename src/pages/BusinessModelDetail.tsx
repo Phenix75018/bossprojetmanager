@@ -82,7 +82,12 @@ export default function BusinessModelDetail() {
   const [editContent, setEditContent] = useState<Record<string, string>>({});
   const [showShare, setShowShare] = useState(false);
   const [selectedBlock, setSelectedBlock] = useState<string | null>(null);
-  const { versions, saveVersion, deleteVersion } = useDocumentVersions("business_model", id);
+  const { versions, saveVersion, deleteVersion, withGenerationVersions, restoreKpis } = useDocumentVersions("business_model", id);
+  const buildSnapshot = async () => {
+    const { data: m } = await supabase.from("business_models").select("*").eq("id", id!).maybeSingle();
+    const { data: bs } = await supabase.from("business_model_blocks").select("block_type,title,content,sort_order").eq("business_model_id", id!).order("sort_order");
+    return { model: m, blocks: bs ?? [] } as Record<string, unknown>;
+  };
 
   const BLOCKS = model?.framework === "lean" ? LEAN_BLOCKS : BMC_BLOCKS;
 
@@ -110,9 +115,10 @@ export default function BusinessModelDetail() {
     }
   }, [searchParams, blocks]);
 
-  const generateFull = async () => {
-    if (!model) return;
-    if (!(await preflightAssumptions(model.project_id))) return;
+  const generateFullInner = async (): Promise<boolean> => {
+    let ok = false;
+    if (!model) return false;
+    if (!(await preflightAssumptions(model.project_id))) return false;
     setGeneratingFull(true);
     try {
       const { data, error } = await supabase.functions.invoke("generate-business-model", {
@@ -134,17 +140,22 @@ export default function BusinessModelDetail() {
           { docType: "bm", docId: model.id },
         );
         toast.success("Business model généré — KPIs synchronisés.");
+        ok = true;
         await load();
       }
     } catch (e: any) {
       toast.error(e?.message || "Erreur lors de la génération");
     }
     setGeneratingFull(false);
+    return ok;
   };
 
-  const generateSingle = async (blockType: string) => {
-    if (!model) return;
-    if (!(await preflightAssumptions(model.project_id))) return;
+  const generateFull = async () => withGenerationVersions("Business model complet", model?.project_id, buildSnapshot, () => generateFullInner());
+
+  const generateSingleInner = async (blockType: string): Promise<boolean> => {
+    let ok = false;
+    if (!model) return false;
+    if (!(await preflightAssumptions(model.project_id))) return false;
     setGeneratingBlock(blockType);
     try {
       const existingBlocks = blocks.map(b => ({ title: b.title, content: b.content }));
@@ -166,13 +177,17 @@ export default function BusinessModelDetail() {
           { docType: "bm", docId: model.id },
         );
         toast.success("Bloc généré !");
+        ok = true;
         await load();
       }
     } catch (e: any) {
       toast.error(e?.message || "Erreur lors de la génération");
     }
     setGeneratingBlock(null);
+    return ok;
   };
+
+  const generateSingle = async (blockType: string) => withGenerationVersions(`Bloc ${blockType}`, model?.project_id, buildSnapshot, () => generateSingleInner(blockType));
 
   const handleSave = async (blockId: string) => {
     if (editContent[blockId] !== undefined) {
@@ -362,11 +377,13 @@ export default function BusinessModelDetail() {
           versions={versions}
           loading={false}
           onSaveVersion={async (label) => {
-            await saveVersion({ model, blocks: blocks.map(b => ({ block_type: b.block_type, title: b.title, content: b.content, sort_order: b.sort_order })) }, label);
+            await saveVersion(await buildSnapshot(), label, { projectId: model?.project_id });
           }}
           onRestoreVersion={async (snapshot: any) => {
             if (snapshot.blocks && id) {
+              await saveVersion(await buildSnapshot(), "Sauvegarde auto avant restauration", { projectId: model?.project_id, silent: true });
               await upsertBlocks(id, snapshot.blocks);
+              if (await restoreKpis(snapshot)) toast.success("KPIs restaurés");
               await load();
               toast.success("Version restaurée !");
             }

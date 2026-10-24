@@ -54,7 +54,12 @@ export default function BudgetDetail() {
   const [coherenceJustifs, setCoherenceJustifs] = useState<Justif[]>([]);
   const [bpId, setBpId] = useState<string | null>(null);
   const [bmId, setBmId] = useState<string | null>(null);
-  const { versions, saveVersion, deleteVersion } = useDocumentVersions("budget", id);
+  const { versions, saveVersion, deleteVersion, withGenerationVersions, restoreKpis } = useDocumentVersions("budget", id);
+  const buildSnapshot = async () => {
+    const { data: b } = await supabase.from("budgets").select("*").eq("id", id!).maybeSingle();
+    const { data: ls } = await supabase.from("budget_lines").select("category,subcategory,label,monthly_values,is_total,sort_order").eq("budget_id", id!).order("sort_order");
+    return { budget: b, lines: ls ?? [] } as Record<string, unknown>;
+  };
 
   const loadData = useCallback(async () => {
     if (!id) return;
@@ -96,9 +101,10 @@ export default function BudgetDetail() {
     setExpandedCats(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
   };
 
-  const generateAll = async () => {
-    if (!budget) return;
-    if (!(await preflightAssumptions(budget.project_id))) return;
+  const generateAllInner = async (): Promise<boolean> => {
+    let ok = false;
+    if (!budget) return false;
+    if (!(await preflightAssumptions(budget.project_id))) return false;
     setGenerating("all");
     try {
       const { data, error } = await supabase.functions.invoke("generate-budget", {
@@ -121,17 +127,22 @@ export default function BudgetDetail() {
         await supabase.from("budgets").update({ updated_at: new Date().toISOString() }).eq("id", budget.id);
         await syncKpisFromBudget(budget.project_id, (fresh?.lines || data.lines) as never, budget.horizon_months, { budgetId: budget.id });
         toast.success("Budget généré — KPIs synchronisés avec la comparaison de scénarios.");
+        ok = true;
       }
     } catch (err) {
       console.error(err);
       toast.error("Erreur lors de la génération");
     }
     setGenerating(null);
+    return ok;
   };
 
-  const generateCategory = async (category: string) => {
-    if (!budget) return;
-    if (!(await preflightAssumptions(budget.project_id))) return;
+  const generateAll = async () => withGenerationVersions("Budget complet", budget?.project_id, buildSnapshot, () => generateAllInner());
+
+  const generateCategoryInner = async (category: string): Promise<boolean> => {
+    let ok = false;
+    if (!budget) return false;
+    if (!(await preflightAssumptions(budget.project_id))) return false;
     setGenerating(category);
     try {
       const { data, error } = await supabase.functions.invoke("generate-budget", {
@@ -164,13 +175,17 @@ export default function BudgetDetail() {
         await supabase.from("budgets").update({ updated_at: new Date().toISOString() }).eq("id", budget.id);
         await syncKpisFromBudget(budget.project_id, merged as never, budget.horizon_months, { budgetId: budget.id });
         toast.success("Catégorie générée — KPIs mis à jour.");
+        ok = true;
       }
     } catch (err) {
       console.error(err);
       toast.error("Erreur lors de la génération");
     }
     setGenerating(null);
+    return ok;
   };
+
+  const generateCategory = async (category: string) => withGenerationVersions(`Catégorie ${category}`, budget?.project_id, buildSnapshot, () => generateCategoryInner(category));
 
   const handleAddLine = async (category: string) => {
     if (!budget) return;
@@ -437,11 +452,13 @@ export default function BudgetDetail() {
           versions={versions}
           loading={false}
           onSaveVersion={async (label) => {
-            await saveVersion({ budget, lines: lines.map(l => ({ category: l.category, subcategory: l.subcategory, label: l.label, monthly_values: l.monthly_values, is_total: l.is_total, sort_order: l.sort_order })) }, label);
+            await saveVersion(await buildSnapshot(), label, { projectId: budget?.project_id });
           }}
           onRestoreVersion={async (snapshot: any) => {
             if (snapshot.lines && id) {
+              await saveVersion(await buildSnapshot(), "Sauvegarde auto avant restauration", { projectId: budget?.project_id, silent: true });
               await upsertLines(id, snapshot.lines);
+              if (await restoreKpis(snapshot)) toast.success("KPIs restaurés");
               await loadData();
               toast.success("Version restaurée !");
             }

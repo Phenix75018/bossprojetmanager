@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -113,9 +113,12 @@ function ContentDiff({ left, right }: { left: string; right: string }) {
   );
 }
 
-export default function VersionCompareDialog({ open, onOpenChange, versions, documentType }: VersionCompareDialogProps) {
+export default function VersionCompareDialog({ open, onOpenChange, versions, documentType, initialPair }: VersionCompareDialogProps & { initialPair?: [string, string] | null }) {
   const [leftId, setLeftId] = useState<string>("");
   const [rightId, setRightId] = useState<string>("");
+  useEffect(() => {
+    if (open && initialPair) { setLeftId(initialPair[0]); setRightId(initialPair[1]); }
+  }, [open, initialPair]);
 
   const leftVersion = versions.find(v => v.id === leftId);
   const rightVersion = versions.find(v => v.id === rightId);
