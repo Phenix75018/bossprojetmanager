@@ -8,7 +8,7 @@ interface VersionCompareDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   versions: DocumentVersion[];
-  documentType: "business_plan" | "business_model" | "budget";
+  documentType: "plan" | "business_plan" | "business_model" | "budget";
 }
 
 // Deep diff: returns a flat list of { path, left, right } for changed values
@@ -59,6 +59,12 @@ const LABEL_MAP: Record<string, string> = {
   description: "Description",
   status: "Statut",
   framework: "Framework",
+  name: "Nom",
+  priority: "Priorité",
+  duration_hours: "Durée (h)",
+  dependencies: "Dépendances",
+  notes: "Notes",
+  deadline: "Échéance",
 };
 
 function friendlyPath(path: string, docType: string): string {
@@ -70,7 +76,7 @@ function friendlyPath(path: string, docType: string): string {
     if (arrMatch) {
       const name = arrMatch[1];
       const idx = parseInt(arrMatch[2]) + 1;
-      const prefix = name === "sections" ? "Section" : name === "blocks" ? "Bloc" : name === "lines" ? "Ligne" : name;
+      const prefix = ({ sections: "Section", blocks: "Bloc", lines: "Ligne", phases: "Phase", tasks: "Tâche", subtasks: "Sous-tâche" } as Record<string, string>)[name] ?? name;
       result += `${prefix} ${idx} → `;
     } else {
       result += (LABEL_MAP[part] || part) + " → ";
