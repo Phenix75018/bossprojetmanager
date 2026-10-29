@@ -30,6 +30,7 @@ import BudgetDetail from "./pages/BudgetDetail";
 import SharedBudget from "./pages/SharedBudget";
 import CoherenceDashboard from "./pages/CoherenceDashboard";
 import ChecksPage from "./pages/ChecksPage";
+import ProjectHistory from "./pages/ProjectHistory";
 import ProgressReports from "./pages/ProgressReports";
 import NotFound from "./pages/NotFound";
 import LiveTracking from "./pages/LiveTracking";
@@ -174,6 +175,7 @@ const AppRoutes = () => (
           </ProtectedRoute>
         }
       />
+      <Route path="/project/:id/history" element={<ProtectedRoute><ProjectHistory /></ProtectedRoute>} />
       <Route path="/tracking" element={<ProtectedRoute><LiveTracking /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>

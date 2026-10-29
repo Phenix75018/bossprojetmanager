@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronDown,
+  History,
   ChevronRight,
   CheckCircle2,
   Circle,
@@ -465,6 +466,13 @@ export default function PlanDetail() {
               <div className="h-full gradient-bg rounded-full transition-all duration-500" style={{ width: `${percent}%` }} />
             </div>
             <div className="flex items-center gap-2 mt-3">
+              <Link
+                to={`/project/${id}/history`}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border hover:border-primary/30 hover:text-primary transition-all"
+              >
+                <History className="w-3.5 h-3.5" />
+                Historique
+              </Link>
               <button
                 onClick={() => setShowShareModal(true)}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border hover:border-primary/30 hover:text-primary transition-all"
