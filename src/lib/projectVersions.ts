@@ -116,9 +116,10 @@ async function restorePlan(projectId: string, snap: any) {
 }
 
 async function replaceChildren(table: "business_plan_sections" | "business_model_blocks" | "budget_lines", fk: string, docId: string, rows: any[]) {
-  await supabase.from(table).delete().eq(fk, docId);
+  const sb = supabase as any;
+  await sb.from(table).delete().eq(fk, docId);
   if (!rows.length) return;
-  const { error } = await supabase.from(table).insert(rows.map((r, i) => ({ ...r, [fk]: docId, sort_order: r.sort_order ?? i })) as any);
+  const { error } = await sb.from(table).insert(rows.map((r, i) => ({ ...r, [fk]: docId, sort_order: r.sort_order ?? i })) as any);
   if (error) throw error;
 }
 
