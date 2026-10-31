@@ -552,6 +552,53 @@ export type Database = {
         }
         Relationships: []
       }
+      market_studies: {
+        Row: {
+          config: Json
+          created_at: string
+          description: string
+          id: string
+          project_id: string | null
+          sections: Json
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          description?: string
+          id?: string
+          project_id?: string | null
+          sections?: Json
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          description?: string
+          id?: string
+          project_id?: string | null
+          sections?: Json
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "market_studies_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_preferences: {
         Row: {
           created_at: string
