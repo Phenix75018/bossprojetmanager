@@ -34,6 +34,8 @@ import ProjectHistory from "./pages/ProjectHistory";
 import ProgressReports from "./pages/ProgressReports";
 import NotFound from "./pages/NotFound";
 import LiveTracking from "./pages/LiveTracking";
+import MarketStudies from "./pages/MarketStudies";
+import MarketStudyDetail from "./pages/MarketStudyDetail";
 
 const queryClient = new QueryClient();
 
@@ -177,6 +179,8 @@ const AppRoutes = () => (
       />
       <Route path="/project/:id/history" element={<ProtectedRoute><ProjectHistory /></ProtectedRoute>} />
       <Route path="/tracking" element={<ProtectedRoute><LiveTracking /></ProtectedRoute>} />
+      <Route path="/market-studies" element={<ProtectedRoute><MarketStudies /></ProtectedRoute>} />
+      <Route path="/market-study/:id" element={<ProtectedRoute><MarketStudyDetail /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
     <CopilotWidget />
