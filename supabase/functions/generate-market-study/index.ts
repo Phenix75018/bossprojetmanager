@@ -63,19 +63,41 @@ ${previous.length ? "SECTIONS DÉJÀ RÉDIGÉES (extraits) :\n" + previous.map((
 
     const key = Deno.env.get("LOVABLE_API_KEY");
     if (!key) throw new Error("LOVABLE_API_KEY missing");
-    const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const r = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
       method: "POST",
-      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      headers: { "Lovable-API-Key": key, "X-Lovable-AIG-SDK": "fetch", "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: c.depth === "experte" ? "google/gemini-2.5-pro" : "google/gemini-3-flash-preview",
-        messages: [{ role: "system", content: system }, { role: "user", content: user }],
+        model: "openai/gpt-6-astra",
+        instructions: system,
+        input: user,
+        reasoning: { effort: c.depth === "experte" ? "medium" : "low" },
+        store: false,
+        stream: true,
       }),
     });
     if (r.status === 429) return json({ error: "Trop de requêtes, réessayez dans un moment." }, 429);
     if (r.status === 402) return json({ error: "Crédits IA insuffisants." }, 402);
-    if (!r.ok) throw new Error(`AI ${r.status}: ${await r.text()}`);
-    const data = await r.json();
-    let content: string = data.choices?.[0]?.message?.content ?? "";
+    if (!r.ok || !r.body) throw new Error(`AI ${r.status}: ${await r.text()}`);
+    let content = "";
+    const reader = r.body.pipeThrough(new TextDecoderStream()).getReader();
+    let buf = "";
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += value;
+      const lines = buf.split("\n");
+      buf = lines.pop() ?? "";
+      for (const line of lines) {
+        if (!line.startsWith("data:")) continue;
+        const d = line.slice(5).trim();
+        if (!d || d === "[DONE]") continue;
+        try {
+          const ev = JSON.parse(d);
+          if (ev.type === "response.output_text.delta") content += ev.delta ?? "";
+          if (ev.type === "response.failed" || ev.type === "error") throw new Error("AI stream failed");
+        } catch (e) { if ((e as Error).message === "AI stream failed") throw e; }
+      }
+    }
     content = content.replace(/^```(?:markdown|md)?\s*/i, "").replace(/```\s*$/, "").trim();
     if (!content) throw new Error("Réponse vide");
     return json({ content });
