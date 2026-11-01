@@ -11,6 +11,7 @@ export interface MarketStudyConfig {
   objectives: string;
   frameworks: string[];
   sections: string[];
+  hourlyRate?: number;
 }
 
 export interface MarketStudySection {
@@ -55,6 +56,7 @@ export const DEFAULT_CONFIG: MarketStudyConfig = {
   objectives: "",
   frameworks: ["PESTEL", "Porter", "SWOT", "TAM/SAM/SOM", "Personas"],
   sections: SECTION_CATALOG.map((s) => s.key),
+  hourlyRate: 80,
 };
 
 /** Keep only known sections, in catalog order. */
