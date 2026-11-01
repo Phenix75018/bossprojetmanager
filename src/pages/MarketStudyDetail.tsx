@@ -16,6 +16,9 @@ import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
+import { syncStudyToTracking, sectionCost } from "@/lib/marketStudyTracking";
+import { Activity } from "lucide-react";
 import {
   DEFAULT_CONFIG, FRAMEWORKS, SECTION_CATALOG, completion, orderedSections,
   type MarketStudyConfig, type MarketStudySection,
@@ -34,6 +37,16 @@ export default function MarketStudyDetail() {
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [tab, setTab] = useState("config");
+  const { user } = useAuth();
+  const [projectId, setProjectId] = useState<string | null>(null);
+  const projectRef = useRef<string | null>(null);
+  const sync = async (secs: MarketStudySection[], cfg = config) => {
+    if (!user) return;
+    try {
+      const pid = await syncStudyToTracking({ studyId: id!, userId: user.id, projectId: projectRef.current, title, description, config: cfg, sections: secs });
+      projectRef.current = pid; setProjectId(pid);
+    } catch (e) { console.error(e); toast.error("Synchronisation avec le Suivi live impossible"); }
+  };
 
   useEffect(() => {
     (async () => {
@@ -43,6 +56,7 @@ export default function MarketStudyDetail() {
         setDescription(data.description);
         setConfig({ ...DEFAULT_CONFIG, ...(data.config as any) });
         setSections((data.sections as any) ?? []);
+        projectRef.current = data.project_id; setProjectId(data.project_id);
         if (((data.sections as any) ?? []).length) setTab("report");
       }
       setLoading(false);
@@ -56,7 +70,8 @@ export default function MarketStudyDetail() {
 
   const saveConfig = async () => {
     await persist({ title, description, config });
-    toast.success("Configuration enregistrée");
+    await sync(sections);
+    toast.success("Configuration enregistrée et synchronisée avec le Suivi live");
   };
 
   const set = <K extends keyof MarketStudyConfig>(k: K, v: MarketStudyConfig[K]) => setConfig((c) => ({ ...c, [k]: v }));
@@ -78,11 +93,13 @@ export default function MarketStudyDetail() {
     const next = [...current.filter((s) => s.key !== key), { key, title: meta.title, content: data.content, generated_at: new Date().toISOString() }];
     setSections(next);
     await persist({ sections: next, status: "in_progress" });
+    await sync(next);
     return next;
   };
 
   const generateAll = async (onlyMissing: boolean) => {
     await persist({ title, description, config });
+    await sync(sections);
     setTab("report");
     setRunning(true);
     stopRef.current = false;
@@ -179,6 +196,7 @@ export default function MarketStudyDetail() {
                 )}
               </>
             )}
+            {projectId && <Button variant="outline" asChild className="gap-2"><Link to={`/tracking?project=${projectId}`}><Activity className="w-4 h-4" /> Suivi live</Link></Button>}
             <Button variant="outline" onClick={exportPdf} disabled={!ordered.length} className="gap-2"><FileDown className="w-4 h-4" /> PDF</Button>
             <Button variant="outline" onClick={exportMd} disabled={!ordered.length} className="gap-2"><FileText className="w-4 h-4" /> Markdown</Button>
           </div>
@@ -227,6 +245,7 @@ export default function MarketStudyDetail() {
                   </Select>
                 </div>
               </div>
+              <div><Label>Taux horaire analyste ({config.currency}/h) — sert au budget</Label><Input type="number" min={0} value={config.hourlyRate ?? 80} onChange={(e) => set("hourlyRate", Number(e.target.value) || 0)} /></div>
               <div><Label>Public du rapport</Label><Input value={config.audience} onChange={(e) => set("audience", e.target.value)} /></div>
               <div><Label>Concurrents connus</Label><Input value={config.competitors} onChange={(e) => set("competitors", e.target.value)} placeholder="Séparés par des virgules" /></div>
               <div className="md:col-span-2"><Label>Objectifs & questions clés</Label><Textarea rows={3} value={config.objectives} onChange={(e) => set("objectives", e.target.value)} placeholder="Ex : valider le prix, choisir la ville d'implantation, convaincre une banque…" /></div>
@@ -253,7 +272,7 @@ export default function MarketStudyDetail() {
                 {SECTION_CATALOG.map((s) => (
                   <label key={s.key} className="flex gap-2 text-sm items-start">
                     <Checkbox className="mt-0.5" checked={config.sections.includes(s.key)} onCheckedChange={() => toggle("sections", s.key)} />
-                    <span><span className="font-medium">{s.title}</span><br /><span className="text-muted-foreground text-xs">{s.brief}</span></span>
+                    <span><span className="font-medium">{s.title}</span><br /><span className="text-muted-foreground text-xs">{s.brief}</span><br /><span className="text-xs text-primary">Budget estimé : {sectionCost(s.key, config).toLocaleString("fr-FR")} {config.currency}</span></span>
                   </label>
                 ))}
               </div>

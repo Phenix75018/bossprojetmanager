@@ -26,7 +26,7 @@ export async function syncStudyToTracking(opts: {
   let projectId = opts.projectId;
   if (!projectId) {
     const { data, error } = await supabase.from("projects")
-      .insert({ user_id: userId, title: `Étude de marché — ${title}`, description: description || title, status: "active" })
+      .insert({ user_id: userId, title: `Étude de marché — ${title}`, description: description || title, status: "halfway" })
       .select("id").single();
     if (error) throw error;
     projectId = data.id;

@@ -16,7 +16,7 @@ type Phase = { id: string; name: string; project_id: string; sort_order: number 
 type Task = { id: string; phase_id: string; title: string; status: string; priority: string; duration_hours: number };
 type Subtask = { id: string; task_id: string; status: string };
 type Event = { id: string; task_id: string | null; project_id: string | null; start_time: string; end_time: string };
-type Line = { budget_id: string; category: string; monthly_values: any; is_total: boolean };
+type Line = { budget_id: string; label: string; category: string; monthly_values: any; is_total: boolean };
 
 const sumVals = (v: any) => (Array.isArray(v) ? v : Object.values(v ?? {})).reduce((a: number, x: any) => a + (Number(x) || 0), 0);
 const fmtDate = (d?: string | null) => (d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }) : "—");
@@ -61,7 +61,7 @@ export default function LiveTracking() {
     ]);
     const budgetIds = (bd.data ?? []).map((b: any) => b.id);
     const { data: bl } = budgetIds.length
-      ? await supabase.from("budget_lines").select("budget_id,category,monthly_values,is_total").in("budget_id", budgetIds)
+      ? await supabase.from("budget_lines").select("budget_id,label,category,monthly_values,is_total").in("budget_id", budgetIds)
       : { data: [] as Line[] };
     setPhases((ph as Phase[]) ?? []);
     setTasks((tk as Task[]) ?? []);
@@ -188,6 +188,7 @@ export default function LiveTracking() {
                         <span className={`flex-1 min-w-[200px] text-sm ${done(t.status) ? "line-through text-muted-foreground" : "text-foreground"}`}>{t.title}</span>
                         <Badge variant="outline">{t.priority}</Badge>
                         {st.length > 0 && <span className="text-xs text-muted-foreground">{sd}/{st.length} sous-tâches</span>}
+                        {(() => { const bl = lines.find((l) => !l.is_total && l.label === t.title); return bl ? <span className="text-xs text-muted-foreground w-20 text-right">{eur(sumVals(bl.monthly_values))}</span> : null; })()}
                         <span className="text-xs text-muted-foreground w-12 text-right">{t.duration_hours} h</span>
                         <span className="text-xs text-muted-foreground w-40 text-right">
                           {ev.length ? `${fmtDate(ev[0].start_time)} → ${fmtDate(ev[ev.length - 1].end_time)}` : planned.get(t.id) ? `${fmtDate(planned.get(t.id)!.first)} → ${fmtDate(planned.get(t.id)!.last)}` : done(t.status) ? "Terminée" : "Non planifiée"}
