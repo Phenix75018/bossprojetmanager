@@ -57,11 +57,14 @@ export default function MarketStudyDetail() {
         setConfig({ ...DEFAULT_CONFIG, ...(data.config as any) });
         setSections((data.sections as any) ?? []);
         projectRef.current = data.project_id; setProjectId(data.project_id);
+        if (user) syncStudyToTracking({ studyId: data.id, userId: user.id, projectId: data.project_id, title: data.title, description: data.description,
+          config: { ...DEFAULT_CONFIG, ...(data.config as any) }, sections: (data.sections as any) ?? [] })
+          .then((pid) => { projectRef.current = pid; setProjectId(pid); }).catch(console.error);
         if (((data.sections as any) ?? []).length) setTab("report");
       }
       setLoading(false);
     })();
-  }, [id]);
+  }, [id, user]);
 
   const persist = async (patch: Record<string, unknown>) => {
     const { error } = await supabase.from("market_studies").update(patch as any).eq("id", id!);
