@@ -40,7 +40,9 @@ export default function LiveTracking() {
     if (!user) return;
     supabase.from("projects").select("id,title,deadline,completion_percent").order("updated_at", { ascending: false }).then(({ data }) => {
       setProjects((data as Project[]) ?? []);
-      if (data?.[0] && !projectId) setProjectId(data[0].id);
+      const wanted = new URLSearchParams(window.location.search).get("project");
+      if (wanted && data?.some((p: any) => p.id === wanted)) setProjectId(wanted);
+      else if (data?.[0] && !projectId) setProjectId(data[0].id);
     });
   }, [user]);
 
