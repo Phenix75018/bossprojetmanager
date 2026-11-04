@@ -212,8 +212,8 @@ export default function StudyCalendar() {
                 <CardContent><div className="text-2xl font-bold">{money(kpis.remaining, currency)}</div>
                   <p className="text-xs text-muted-foreground mt-1">{kpis.pendingHours} h encore à réaliser</p></CardContent></Card>
               <Card><CardHeader className="pb-2"><CardTitle className="text-sm flex gap-2"><CalendarDays className="h-4 w-4 text-primary" />Échéances</CardTitle></CardHeader>
-                <CardContent><div className="text-xl font-bold">{fmtDay(kpis.next)}</div>
-                  <p className="text-xs text-muted-foreground mt-1">prochaine section · fin au {fmtDay(kpis.lastEnd)}</p></CardContent></Card>
+                <CardContent><div className="text-xl font-bold">{kpis.next ? fmtDay(kpis.next) : "Terminée"}</div>
+                  <p className="text-xs text-muted-foreground mt-1">{kpis.next ? "prochaine section" : "toutes les sections rédigées"} · fin au {fmtDay(kpis.lastEnd)}</p></CardContent></Card>
             </div>
 
             {span && (
