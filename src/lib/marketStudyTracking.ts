@@ -14,16 +14,40 @@ export function sectionCost(key: string, config: MarketStudyConfig) {
 
 const tagOf = (key: string) => `market-study:${key}`;
 
+const inFlight = new Map<string, Promise<string>>();
+
 /**
  * Mirrors a market study into a project (phase + one task per section + budget lines),
  * so it shows up in Suivi live and the calendar like any project. Returns the project id.
+ * Calls for the same study are serialized so parallel syncs never create duplicate projects.
  */
-export async function syncStudyToTracking(opts: {
+export function syncStudyToTracking(opts: Parameters<typeof doSync>[0]): Promise<string> {
+  const prev = inFlight.get(opts.studyId) ?? Promise.resolve("");
+  const next = prev.catch(() => "").then(() => doSync(opts));
+  inFlight.set(opts.studyId, next);
+  next.finally(() => { if (inFlight.get(opts.studyId) === next) inFlight.delete(opts.studyId); }).catch(() => {});
+  return next;
+}
+
+/** Deletes a study together with its mirrored project and budget. */
+export async function deleteStudyWithMirror(studyId: string) {
+  const { data } = await supabase.from("market_studies").select("project_id").eq("id", studyId).maybeSingle();
+  const pid = data?.project_id;
+  await supabase.from("market_studies").delete().eq("id", studyId);
+  if (pid) {
+    await supabase.from("budgets").delete().eq("project_id", pid).like("title", "Budget — Étude de marché%");
+    await supabase.from("projects").delete().eq("id", pid);
+  }
+}
+
+async function doSync(opts: {
   studyId: string; userId: string; projectId: string | null; title: string; description: string;
   config: MarketStudyConfig; sections: MarketStudySection[];
 }) {
   const { studyId, userId, title, description, config, sections } = opts;
-  let projectId = opts.projectId;
+  // Always trust the stored link: the caller's copy may be stale.
+  const { data: current } = await supabase.from("market_studies").select("project_id").eq("id", studyId).maybeSingle();
+  let projectId = current?.project_id ?? opts.projectId;
   if (!projectId) {
     const { data, error } = await supabase.from("projects")
       .insert({ user_id: userId, title: `Étude de marché — ${title}`, description: description || title, status: "halfway" })
