@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import jsPDF from "jspdf";
@@ -26,6 +26,7 @@ import {
 
 export default function MarketStudyDetail() {
   const { id } = useParams();
+  const [params] = useSearchParams();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [config, setConfig] = useState<MarketStudyConfig>(DEFAULT_CONFIG);
@@ -65,6 +66,15 @@ export default function MarketStudyDetail() {
       setLoading(false);
     })();
   }, [id, user]);
+
+  // Deep link from the studies calendar: open the report on the asked section.
+  useEffect(() => {
+    const key = params.get("section");
+    if (!key || loading) return;
+    setTab("report");
+    const t = setTimeout(() => document.getElementById(key)?.scrollIntoView({ behavior: "smooth", block: "start" }), 200);
+    return () => clearTimeout(t);
+  }, [params, loading]);
 
   const persist = async (patch: Record<string, unknown>) => {
     const { error } = await supabase.from("market_studies").update(patch as any).eq("id", id!);
