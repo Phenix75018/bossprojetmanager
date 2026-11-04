@@ -60,8 +60,8 @@ describe("study timeline", () => {
 describe("study monthly spread", () => {
   it("puts 4 sections per month, the same way the mirrored budget does", () => {
     const m = studyMonthly(study({ config: { ...DEFAULT_CONFIG, depth: "standard", hourlyRate: 100, sections: ["executive_summary", "methodology", "market_definition", "market_sizing", "trends"] } }));
-    expect(m.planned[0]).toBe(1200); // 4 × 200
-    expect(m.planned[1]).toBe(700); // trends 200 + market_sizing 500
+    expect(m.planned[0]).toBe(1300); // 200 + 200 + 200 + (200 + 500 market data)
+    expect(m.planned[1]).toBe(200); // trends
     expect(m.planned[2]).toBe(0);
   });
 });
