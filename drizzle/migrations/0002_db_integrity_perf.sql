@@ -1,0 +1,31 @@
+REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated;
+
+CREATE TRIGGER update_budgets_updated_at BEFORE UPDATE ON public.budgets FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_budget_lines_updated_at BEFORE UPDATE ON public.budget_lines FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_business_models_updated_at BEFORE UPDATE ON public.business_models FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_business_model_blocks_updated_at BEFORE UPDATE ON public.business_model_blocks FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+CREATE INDEX IF NOT EXISTS idx_phases_project ON public.phases(project_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_phase ON public.tasks(phase_id);
+CREATE INDEX IF NOT EXISTS idx_subtasks_task ON public.subtasks(task_id);
+CREATE INDEX IF NOT EXISTS idx_events_project ON public.calendar_events(project_id);
+CREATE INDEX IF NOT EXISTS idx_events_task ON public.calendar_events(task_id);
+CREATE INDEX IF NOT EXISTS idx_events_user_start ON public.calendar_events(user_id, start_time);
+CREATE INDEX IF NOT EXISTS idx_sent_notif_event ON public.sent_notifications(event_id);
+CREATE INDEX IF NOT EXISTS idx_team_reco_project ON public.team_recommendations(project_id);
+CREATE INDEX IF NOT EXISTS idx_reco_alt_reco ON public.recommendation_alternatives(recommendation_id);
+CREATE INDEX IF NOT EXISTS idx_bp_project ON public.business_plans(project_id);
+CREATE INDEX IF NOT EXISTS idx_bp_user ON public.business_plans(user_id);
+CREATE INDEX IF NOT EXISTS idx_bps_plan ON public.business_plan_sections(business_plan_id);
+CREATE INDEX IF NOT EXISTS idx_bpc_section ON public.business_plan_charts(section_id);
+CREATE INDEX IF NOT EXISTS idx_bm_project ON public.business_models(project_id);
+CREATE INDEX IF NOT EXISTS idx_bm_user ON public.business_models(user_id);
+CREATE INDEX IF NOT EXISTS idx_bmb_model ON public.business_model_blocks(business_model_id);
+CREATE INDEX IF NOT EXISTS idx_budgets_project ON public.budgets(project_id);
+CREATE INDEX IF NOT EXISTS idx_budgets_user ON public.budgets(user_id);
+CREATE INDEX IF NOT EXISTS idx_budget_lines_budget ON public.budget_lines(budget_id);
+CREATE INDEX IF NOT EXISTS idx_projects_user ON public.projects(user_id);
+CREATE INDEX IF NOT EXISTS idx_ms_user ON public.market_studies(user_id);
+CREATE INDEX IF NOT EXISTS idx_ms_project ON public.market_studies(project_id);
+CREATE INDEX IF NOT EXISTS idx_docver_doc ON public.document_versions(document_type, document_id, version_number DESC);
