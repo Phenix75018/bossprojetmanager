@@ -12,6 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { DEFAULT_CONFIG, completion, type MarketStudySection } from "@/lib/marketStudy";
+import { deleteStudyWithMirror } from "@/lib/marketStudyTracking";
 
 interface Row { id: string; title: string; description: string; config: any; sections: any; created_at: string }
 
@@ -43,7 +44,7 @@ export default function MarketStudies() {
 
   const remove = async (id: string) => {
     if (!confirm("Supprimer cette étude ?")) return;
-    await supabase.from("market_studies").delete().eq("id", id);
+    await deleteStudyWithMirror(id);
     load();
   };
 
