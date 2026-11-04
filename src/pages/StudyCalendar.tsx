@@ -37,7 +37,7 @@ export default function StudyCalendar() {
 
   const load = useCallback(async () => {
     const { data } = await supabase.from("market_studies").select("*").order("created_at", { ascending: false });
-    const rows = (data as StudyRow[]) ?? [];
+    const rows = (data as unknown as StudyRow[]) ?? [];
     setStudies(rows);
     const ids = [...new Set(rows.map((r) => r.project_id).filter(Boolean))] as string[];
     const detailed = await Promise.all(ids.map((id) => fetchProjectWithDetails(id)));
