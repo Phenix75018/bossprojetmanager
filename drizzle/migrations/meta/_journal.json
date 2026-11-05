@@ -22,6 +22,13 @@
       "when": 1793779004081,
       "tag": "0002_db_integrity_perf",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793913284726,
+      "tag": "0003_propagate_document_modification_dates",
+      "breakpoints": true
     }
   ]
 }
