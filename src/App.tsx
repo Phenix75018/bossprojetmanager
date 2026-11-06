@@ -37,6 +37,7 @@ import LiveTracking from "./pages/LiveTracking";
 import MarketStudies from "./pages/MarketStudies";
 import MarketStudyDetail from "./pages/MarketStudyDetail";
 import StudyCalendar from "./pages/StudyCalendar";
+import StudyCompare from "./pages/StudyCompare";
 
 const queryClient = new QueryClient();
 
@@ -183,6 +184,7 @@ const AppRoutes = () => (
       <Route path="/market-studies" element={<ProtectedRoute><MarketStudies /></ProtectedRoute>} />
       <Route path="/market-study/:id" element={<ProtectedRoute><MarketStudyDetail /></ProtectedRoute>} />
       <Route path="/market-studies/calendar" element={<ProtectedRoute><StudyCalendar /></ProtectedRoute>} />
+      <Route path="/market-studies/compare" element={<ProtectedRoute><StudyCompare /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
     <CopilotWidget />

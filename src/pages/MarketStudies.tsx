@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, Telescope, Trash2, Loader2, CalendarRange } from "lucide-react";
+import { Plus, Telescope, Trash2, Loader2, CalendarRange, ShieldCheck } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
