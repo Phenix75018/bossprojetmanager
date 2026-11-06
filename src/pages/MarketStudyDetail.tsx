@@ -217,7 +217,11 @@ export default function MarketStudyDetail() {
         {(running || pct > 0) && <Progress value={pct} className="mb-6" />}
 
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList><TabsTrigger value="config">Configuration</TabsTrigger><TabsTrigger value="report">Rapport ({ordered.length})</TabsTrigger></TabsList>
+          <TabsList><TabsTrigger value="config">Configuration</TabsTrigger><TabsTrigger value="report">Rapport ({ordered.length})</TabsTrigger><TabsTrigger value="audit">Vérification ({audit.score}/100)</TabsTrigger></TabsList>
+
+          <TabsContent value="audit" className="mt-6">
+            <MarketStudyAuditPanel audit={audit} onOpen={(k) => { setTab("report"); setTimeout(() => document.getElementById(`section-${k}`)?.scrollIntoView({ behavior: "smooth" }), 200); }} />
+          </TabsContent>
 
           <TabsContent value="config" className="space-y-6 mt-6">
             <div className="glass-card rounded-2xl p-6 grid md:grid-cols-2 gap-4">
