@@ -39,7 +39,7 @@ export default function MarketStudyDetail() {
   const stopRef = useRef(false);
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
-  const [tab, setTab] = useState("config");
+  const [tab, setTab] = useState(params.get("tab") === "audit" ? "audit" : "config");
   const { user } = useAuth();
   const [projectId, setProjectId] = useState<string | null>(null);
   const projectRef = useRef<string | null>(null);
