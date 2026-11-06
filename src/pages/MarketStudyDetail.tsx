@@ -19,6 +19,8 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { syncStudyToTracking, sectionCost } from "@/lib/marketStudyTracking";
 import { Activity } from "lucide-react";
+import MarketStudyAuditPanel from "@/components/MarketStudyAuditPanel";
+import { auditMarketStudy } from "@/lib/marketStudyAudit";
 import {
   DEFAULT_CONFIG, FRAMEWORKS, SECTION_CATALOG, completion, orderedSections,
   type MarketStudyConfig, type MarketStudySection,
@@ -137,6 +139,7 @@ export default function MarketStudyDetail() {
     await persist({ sections: next });
   };
 
+  const audit = auditMarketStudy(config, sections);
   const ordered = orderedSections(config.sections)
     .map((m) => sections.find((s) => s.key === m.key))
     .filter(Boolean) as MarketStudySection[];
@@ -220,7 +223,7 @@ export default function MarketStudyDetail() {
           <TabsList><TabsTrigger value="config">Configuration</TabsTrigger><TabsTrigger value="report">Rapport ({ordered.length})</TabsTrigger><TabsTrigger value="audit">Vérification ({audit.score}/100)</TabsTrigger></TabsList>
 
           <TabsContent value="audit" className="mt-6">
-            <MarketStudyAuditPanel audit={audit} onOpen={(k) => { setTab("report"); setTimeout(() => document.getElementById(`section-${k}`)?.scrollIntoView({ behavior: "smooth" }), 200); }} />
+            <MarketStudyAuditPanel audit={audit} onOpen={(k) => { setTab("report"); setTimeout(() => document.getElementById(k)?.scrollIntoView({ behavior: "smooth" }), 200); }} />
           </TabsContent>
 
           <TabsContent value="config" className="space-y-6 mt-6">
