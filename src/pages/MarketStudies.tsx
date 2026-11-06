@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, Telescope, Trash2, Loader2, CalendarRange } from "lucide-react";
+import { Plus, Telescope, Trash2, Loader2, CalendarRange, ShieldCheck } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -60,6 +60,9 @@ export default function MarketStudies() {
           <div className="flex gap-2">
             <Button variant="outline" asChild className="gap-2 rounded-xl">
               <Link to="/market-studies/calendar"><CalendarRange className="w-4 h-4" /> Calendrier des études</Link>
+            </Button>
+            <Button variant="outline" asChild className="gap-2 rounded-xl">
+              <Link to="/market-studies/compare"><ShieldCheck className="w-4 h-4" /> Comparer les études</Link>
             </Button>
             <Button onClick={() => setOpen(true)} className="gap-2 gradient-bg text-primary-foreground rounded-xl font-bold">
               <Plus className="w-4 h-4" /> Nouvelle étude
