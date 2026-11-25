@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import jsPDF from "jspdf";
+import { buildMarketStudyPdf } from "@/lib/marketStudyPdf";
 import { ArrowLeft, Loader2, Sparkles, RefreshCw, Pencil, Save, FileDown, FileText, Square } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import { supabase } from "@/integrations/supabase/client";
@@ -154,35 +154,9 @@ export default function MarketStudyDetail() {
   };
 
   const exportPdf = () => {
-    const doc = new jsPDF({ unit: "mm", format: "a4" });
-    const W = 180; let y = 20;
-    const add = (txt: string, size: number, bold = false, gap = 2) => {
-      doc.setFont("helvetica", bold ? "bold" : "normal"); doc.setFontSize(size);
-      for (const line of doc.splitTextToSize(txt, W)) {
-        if (y > 280) { doc.addPage(); y = 20; }
-        doc.text(line, 15, y); y += size * 0.45;
-      }
-      y += gap;
-    };
-    add(title, 22, true, 4);
-    add(`${config.sector} · ${config.geography} · ${config.targetType} · horizon ${config.horizonYears} ans`, 11, false, 2);
-    add(`Généré le ${new Date().toLocaleDateString("fr-FR")}`, 9, false, 6);
-    add("Sommaire", 14, true);
-    ordered.forEach((s, i) => add(`${i + 1}. ${s.title}`, 10, false, 0));
-    for (const [i, s] of ordered.entries()) {
-      doc.addPage(); y = 20;
-      add(`${i + 1}. ${s.title}`, 16, true, 4);
-      for (const raw of s.content.split("\n")) {
-        const l = raw.replace(/\*\*/g, "").replace(/`/g, "");
-        if (/^\s*\|?\s*:?-{3,}/.test(l)) continue;
-        if (l.startsWith("### ")) add(l.slice(4), 12, true);
-        else if (l.startsWith("## ")) add(l.slice(3), 13, true);
-        else if (l.startsWith("|")) add(l.split("|").filter((c) => c.trim()).map((c) => c.trim()).join("  ·  "), 9, false, 0.5);
-        else if (l.trim()) add(l.replace(/^\s*[-*]\s+/, "• "), 10, false, 1);
-        else y += 2;
-      }
-    }
-    doc.save(`etude-marche-${title.replace(/\W+/g, "-")}.pdf`);
+    const written = ordered.filter((s) => s.content?.trim());
+    if (!written.length) { toast.error("Aucune section rédigée à exporter"); return; }
+    buildMarketStudyPdf(title, config, written).save(`etude-marche-${title.replace(/\W+/g, "-")}.pdf`);
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
