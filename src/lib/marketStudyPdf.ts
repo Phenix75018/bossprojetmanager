@@ -14,7 +14,7 @@ export function pdfSafe(s: string): string {
 const M = 18, PW = 210, PH = 297, W = PW - 2 * M, BOTTOM = PH - 20;
 const BURGUNDY: [number, number, number] = [122, 31, 52];
 
-export function buildMarketStudyPdf(title: string, config: MarketStudyConfig, sections: MarketStudySection[]): jsPDF {
+export function buildMarketStudyPdf(title: string, config: MarketStudyConfig, sections: MarketStudySection[], webUrl?: (key: string) => string): jsPDF {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   let y = M;
   const newPage = () => { doc.addPage(); y = M + 4; };
@@ -68,6 +68,10 @@ export function buildMarketStudyPdf(title: string, config: MarketStudyConfig, se
     newPage(); starts.push(doc.getNumberOfPages());
     doc.setTextColor(...BURGUNDY); text(`${i + 1}. ${s.title}`, 17, true, 1);
     doc.setDrawColor(...BURGUNDY); doc.setLineWidth(0.6); doc.line(M, y, M + 40, y); doc.setLineWidth(0.2); y += 6;
+    if (webUrl) {
+      doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(...BURGUNDY);
+      doc.textWithLink("Ouvrir cette section dans le navigateur ->", M, y - 2, { url: webUrl(s.key) }); y += 4;
+    }
     doc.setTextColor(40, 30, 30);
     const lines = (s.content || "_Section non rédigée._").split("\n");
     for (let k = 0; k < lines.length; k++) {
@@ -94,15 +98,17 @@ export function buildMarketStudyPdf(title: string, config: MarketStudyConfig, se
   // TOC with clickable links
   doc.setPage(tocPage);
   doc.setTextColor(...BURGUNDY); doc.setFont("helvetica", "bold"); doc.setFontSize(18); doc.text("Sommaire", M, M + 8);
+  if (webUrl) { doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(110, 100, 100); doc.text("Titre : aller à la page du PDF  ·  « En ligne » : ouvrir la section sur le site", M, M + 14); }
   doc.setTextColor(40, 30, 30); doc.setFontSize(10.5);
   sections.forEach((s, i) => {
     const ty = M + 22 + i * 8.5;
     doc.setFont("helvetica", "normal");
-    const label = doc.splitTextToSize(pdfSafe(`${i + 1}. ${s.title}`), W - 20)[0] as string;
+    const label = doc.splitTextToSize(pdfSafe(`${i + 1}. ${s.title}`), W - 45)[0] as string;
     doc.text(label, M, ty);
-    doc.text(String(starts[i]), PW - M, ty, { align: "right" });
-    doc.setDrawColor(220, 210, 200); doc.line(M + doc.getTextWidth(label) + 2, ty, PW - M - 8, ty);
-    doc.link(M, ty - 5, W, 7, { pageNumber: starts[i] });
+    doc.link(M, ty - 5, doc.getTextWidth(label), 7, { pageNumber: starts[i] });
+    doc.text(String(starts[i]), PW - M - (webUrl ? 22 : 0), ty, { align: "right" });
+    doc.setDrawColor(220, 210, 200); doc.line(M + doc.getTextWidth(label) + 2, ty, PW - M - (webUrl ? 30 : 8), ty);
+    if (webUrl) { doc.setTextColor(...BURGUNDY); doc.setFontSize(8.5); doc.textWithLink("En ligne ->", PW - M - 16, ty, { url: webUrl(s.key) }); doc.setTextColor(40, 30, 30); doc.setFontSize(10.5); }
   });
 
   // Header / footer

@@ -156,7 +156,7 @@ export default function MarketStudyDetail() {
   const exportPdf = () => {
     const written = ordered.filter((s) => s.content?.trim());
     if (!written.length) { toast.error("Aucune section rédigée à exporter"); return; }
-    buildMarketStudyPdf(title, config, written).save(`etude-marche-${title.replace(/\W+/g, "-")}.pdf`);
+    buildMarketStudyPdf(title, config, written, (key) => `${window.location.origin}/market-study/${id}?section=${encodeURIComponent(key)}`).save(`etude-marche-${title.replace(/\W+/g, "-")}.pdf`);
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
